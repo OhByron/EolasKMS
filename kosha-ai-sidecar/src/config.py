@@ -13,7 +13,7 @@ class Settings(BaseSettings):
 
     # Processing
     tesseract_lang: str = "eng"
-    spacy_model: str = "en_core_web_lg"
+    spacy_model: str = "en_core_web_sm"
     max_keywords: int = 20
     max_taxonomy_suggestions: int = 5
     summarization_max_tokens: int = 500

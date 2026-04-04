@@ -1,44 +1,115 @@
+"""Handles AI task messages from NATS — dispatches to processing pipelines."""
+
 import json
 import logging
 
+from minio import Minio
+
+from config import settings
 from models.messages import AiTaskMessage
+from pipelines.summarizer import summarize
+from pipelines.keyword_extractor import extract_keywords
+from pipelines.classifier import classify_keywords, invalidate_cache
 
 logger = logging.getLogger(__name__)
 
 
+def _get_minio_client() -> Minio:
+    return Minio(
+        settings.minio_endpoint,
+        access_key=settings.minio_access_key,
+        secret_key=settings.minio_secret_key,
+        secure=settings.minio_secure,
+    )
+
+
+async def _fetch_document_text(task: AiTaskMessage) -> str:
+    """Get document text — from message payload or by fetching from MinIO."""
+    if task.extracted_text:
+        return task.extracted_text
+
+    if not task.storage_key:
+        logger.warning("No text or storage key for task %s", task.task_id)
+        return ""
+
+    try:
+        client = _get_minio_client()
+        response = client.get_object(settings.minio_bucket, task.storage_key)
+        data = response.read()
+        response.close()
+        response.release_conn()
+
+        # Try to decode as text. For binary docs (PDF, Word), the backend's
+        # Tika should extract text and pass it in extracted_text field.
+        try:
+            return data.decode("utf-8")
+        except UnicodeDecodeError:
+            logger.info("Binary file for %s — needs Tika text extraction", task.storage_key)
+            return f"[Binary document: {task.storage_key}]"
+    except Exception:
+        logger.exception("Failed to fetch from MinIO: %s", task.storage_key)
+        return ""
+
+
 async def handle_ai_task(payload: dict, js) -> None:
-    """Dispatch an AI task through the processing pipeline."""
+    """Dispatch an AI task through the processing pipelines."""
     task = AiTaskMessage(**payload)
+    logger.info(
+        "Processing task %s: type=%s doc=%s ver=%s",
+        task.task_id, task.task_type, task.document_id, task.version_id,
+    )
 
+    # Fetch document text
+    text = await _fetch_document_text(task)
+    if not text:
+        logger.warning("No text available for task %s, skipping", task.task_id)
+        return
+
+    # Run summarization
     if task.task_type in ("FULL_ANALYSIS", "SUMMARIZE"):
-        summary_result = await _summarize(task)
-        await js.publish("ai.summary.completed", json.dumps(summary_result).encode())
+        summary, confidence = await summarize(text, title=str(task.document_id))
+        if summary:
+            result = {
+                "versionId": str(task.version_id),
+                "summary": summary,
+                "confidence": confidence,
+            }
+            await js.publish("ai.summary.completed", json.dumps(result).encode())
+            logger.info("Published summary for version %s (confidence=%.2f)", task.version_id, confidence)
 
-    if task.task_type in ("FULL_ANALYSIS", "EXTRACT_KEYWORDS"):
-        keyword_result = await _extract_keywords(task)
-        await js.publish("ai.keywords.extracted", json.dumps(keyword_result).encode())
+    # Run keyword extraction + taxonomy classification
+    if task.task_type in ("FULL_ANALYSIS", "EXTRACT_KEYWORDS", "CLASSIFY"):
+        keywords = await extract_keywords(text)
+        if keywords:
+            result = {
+                "versionId": str(task.version_id),
+                "keywords": keywords,
+            }
+            await js.publish("ai.keywords.extracted", json.dumps(result).encode())
+            logger.info("Published %d keywords for version %s", len(keywords), task.version_id)
 
-    if task.task_type in ("FULL_ANALYSIS", "CLASSIFY"):
-        classification_result = await _classify(task)
-        await js.publish("ai.classification.completed", json.dumps(classification_result).encode())
+            # Classify keywords against taxonomy
+            classifications, candidates = await classify_keywords(keywords, str(task.document_id))
 
+            if classifications:
+                result = {
+                    "documentId": str(task.document_id),
+                    "classifications": classifications,
+                }
+                await js.publish("ai.classification.completed", json.dumps(result).encode())
+                logger.info(
+                    "Published %d classifications for document %s",
+                    len(classifications), task.document_id,
+                )
 
-async def _summarize(task: AiTaskMessage) -> dict:
-    """Summarize document text using the configured LLM."""
-    # TODO: implement with LangChain summarization chain
-    logger.info("Summarizing document version %s", task.version_id)
-    return {"version_id": str(task.version_id), "summary": "", "confidence": 0.0}
-
-
-async def _extract_keywords(task: AiTaskMessage) -> dict:
-    """Extract keywords using spaCy NER + LLM."""
-    # TODO: implement with spaCy pipeline
-    logger.info("Extracting keywords for version %s", task.version_id)
-    return {"version_id": str(task.version_id), "keywords": []}
-
-
-async def _classify(task: AiTaskMessage) -> dict:
-    """Classify document against taxonomy using embeddings."""
-    # TODO: implement with embedding similarity
-    logger.info("Classifying document %s", task.document_id)
-    return {"document_id": str(task.document_id), "classifications": []}
+            if candidates:
+                result = {
+                    "documentId": str(task.document_id),
+                    "candidates": candidates,
+                }
+                await js.publish("ai.taxonomy.candidates", json.dumps(result).encode())
+                logger.info(
+                    "Published %d taxonomy candidates for document %s",
+                    len(candidates), task.document_id,
+                )
+                invalidate_cache()  # New terms will be created, refresh cache

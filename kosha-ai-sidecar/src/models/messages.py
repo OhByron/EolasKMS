@@ -1,17 +1,26 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
 
 
-class AiTaskMessage(BaseModel):
-    task_id: UUID
-    task_type: str  # FULL_ANALYSIS, SUMMARIZE, EXTRACT_KEYWORDS, CLASSIFY, OCR
-    document_id: UUID
-    version_id: UUID
-    storage_key: str
+class CamelModel(BaseModel):
+    """Base model that accepts both camelCase and snake_case field names."""
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
+
+
+class AiTaskMessage(CamelModel):
+    task_id: str
+    task_type: str  # FULL_ANALYSIS, SUMMARIZE, EXTRACT_KEYWORDS, CLASSIFY
+    document_id: str
+    version_id: str
+    storage_key: str | None = None
     extracted_text: str | None = None
-    mime_type: str
+    mime_type: str | None = None
     config: dict | None = None
 
 
@@ -32,29 +41,8 @@ class ExtractedKeyword(BaseModel):
     confidence: float
 
 
-class ClassificationResult(BaseModel):
-    document_id: UUID
-    classifications: list["Classification"]
-
-
-class Classification(BaseModel):
-    term_id: UUID
-    confidence: float
-
-
-class RelationshipResult(BaseModel):
-    document_id: UUID
-    relationships: list["SuggestedRelationship"]
-
-
-class SuggestedRelationship(BaseModel):
-    target_document_id: UUID
-    relationship_type: str  # RELATED_TO, SUPERSEDES, REFERENCES
-    confidence: float
-
-
 class FeedbackCorrection(BaseModel):
-    correction_type: str  # SUMMARY, KEYWORD, CLASSIFICATION
+    correction_type: str
     document_id: UUID
     version_id: UUID
     original: dict

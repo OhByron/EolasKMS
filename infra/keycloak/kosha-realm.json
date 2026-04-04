@@ -1,0 +1,189 @@
+{
+  "realm": "kosha",
+  "enabled": true,
+  "displayName": "Kosha KMS",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 5,
+  "roles": {
+    "realm": [
+      {
+        "name": "GLOBAL_ADMIN",
+        "description": "System-wide configuration, department setup, AI configuration, policy management"
+      },
+      {
+        "name": "DEPT_ADMIN",
+        "description": "Department-level user management, workflow configuration"
+      },
+      {
+        "name": "EDITOR",
+        "description": "Review, approve, publish documents"
+      },
+      {
+        "name": "CONTRIBUTOR",
+        "description": "Upload and submit documents for review"
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "Global Admins",
+      "realmRoles": ["GLOBAL_ADMIN"]
+    },
+    {
+      "name": "Department Admins",
+      "realmRoles": ["DEPT_ADMIN"]
+    },
+    {
+      "name": "Editors",
+      "realmRoles": ["EDITOR"]
+    },
+    {
+      "name": "Contributors",
+      "realmRoles": ["CONTRIBUTOR"]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "kosha-api",
+      "name": "Kosha API",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "kosha-api-dev-secret",
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "publicClient": false,
+      "protocol": "openid-connect"
+    },
+    {
+      "clientId": "kosha-web",
+      "name": "Kosha Web Frontend",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:5173/*",
+        "http://localhost:5174/*",
+        "http://localhost:5175/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175"
+      ],
+      "protocol": "openid-connect"
+    }
+  ],
+  "clientScopes": [
+    {
+      "name": "kosha-audience",
+      "description": "Adds kosha-api as audience to access tokens",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "kosha-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "kosha-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin@kosha.dev",
+      "email": "admin@kosha.dev",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Kosha",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["GLOBAL_ADMIN"],
+      "groups": ["Global Admins"]
+    },
+    {
+      "username": "editor@kosha.dev",
+      "email": "editor@kosha.dev",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Test",
+      "lastName": "Editor",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "editor",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["EDITOR"],
+      "groups": ["Editors"]
+    },
+    {
+      "username": "contributor@kosha.dev",
+      "email": "contributor@kosha.dev",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Test",
+      "lastName": "Contributor",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "contributor",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["CONTRIBUTOR"],
+      "groups": ["Contributors"]
+    }
+  ],
+  "scopeMappings": [
+    {
+      "client": "kosha-web",
+      "roles": ["GLOBAL_ADMIN", "DEPT_ADMIN", "EDITOR", "CONTRIBUTOR"]
+    }
+  ]
+}

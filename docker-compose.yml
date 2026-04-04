@@ -1,5 +1,5 @@
 services:
-  # --- Application Services ---
+  # ── Application Services ─────────────────────────────────────
   kosha-api:
     build:
       context: .
@@ -10,28 +10,42 @@ services:
       postgres:
         condition: service_healthy
       nats:
-        condition: service_started
+        condition: service_healthy
       opensearch:
-        condition: service_started
+        condition: service_healthy
       minio:
-        condition: service_started
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      nats-init:
+        condition: service_completed_successfully
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/kosha
       SPRING_DATASOURCE_USERNAME: kosha
       SPRING_DATASOURCE_PASSWORD: kosha
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/kosha
       KOSHA_NATS_URL: nats://nats:4222
-      KOSHA_OPENSEARCH_URL: https://opensearch:9200
+      KOSHA_OPENSEARCH_URL: http://opensearch:9200
       KOSHA_STORAGE_MINIO_ENDPOINT: http://minio:9000
       KOSHA_STORAGE_MINIO_ACCESS_KEY: minioadmin
       KOSHA_STORAGE_MINIO_SECRET_KEY: minioadmin
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   kosha-ai:
     build:
       context: ./kosha-ai-sidecar
     depends_on:
       nats:
-        condition: service_started
+        condition: service_healthy
+      nats-init:
+        condition: service_completed_successfully
     environment:
       KOSHA_AI_NATS_URL: nats://nats:4222
       KOSHA_AI_KOSHA_API_URL: http://kosha-api:8080
@@ -44,12 +58,13 @@ services:
       resources:
         limits:
           memory: 4G
+    restart: unless-stopped
 
-  # --- Infrastructure ---
+  # ── Infrastructure ───────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       POSTGRES_DB: kosha
       POSTGRES_USER: kosha
@@ -60,7 +75,7 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U kosha"]
       interval: 5s
-      timeout: 5s
+      timeout: 3s
       retries: 5
 
   opensearch:
@@ -73,6 +88,12 @@ services:
       DISABLE_SECURITY_PLUGIN: "true"
     volumes:
       - os-data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   minio:
     image: minio/minio:latest
@@ -85,19 +106,30 @@ services:
       MINIO_ROOT_PASSWORD: minioadmin
     volumes:
       - minio-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "mc ready local || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
 
   nats:
     image: nats:2.10-alpine
-    command: ["--jetstream", "--store_dir=/data"]
+    command: ["--jetstream", "--store_dir=/data", "--http_port=8222"]
     ports:
       - "4222:4222"
       - "8222:8222"
     volumes:
       - nats-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8222/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   keycloak:
     image: quay.io/keycloak/keycloak:24.0
-    command: start-dev
+    command: start-dev --import-realm
     ports:
       - "8180:8080"
     environment:
@@ -105,13 +137,65 @@ services:
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: keycloak
       KC_DB_PASSWORD: keycloak
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ./infra/keycloak/kosha-realm.json:/opt/keycloak/data/import/kosha-realm.json
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "echo > /dev/tcp/localhost/8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
 
-  # --- Optional: Local AI model server ---
+  # ── Init Containers ──────────────────────────────────────────
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        mc alias set kosha http://minio:9000 minioadmin minioadmin
+        mc mb --ignore-existing kosha/kosha-vault
+        mc mb --ignore-existing kosha/kosha-vault-connector
+        mc anonymous set download kosha/kosha-vault || true
+        echo "MinIO buckets initialized"
+    restart: "no"
+
+  nats-init:
+    image: natsio/nats-box:latest
+    depends_on:
+      nats:
+        condition: service_healthy
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        nats -s nats://nats:4222 stream add KOSHA_EVENTS \
+          --subjects="doc.>,wf.>,tax.>,retention.>,ident.>,storage.>" \
+          --storage=file --replicas=1 --retention=limits \
+          --max-age=90d --max-bytes=1073741824 \
+          --discard=old --dupe-window=2m --no-allow-rollup \
+          --defaults 2>/dev/null || echo "KOSHA_EVENTS stream exists"
+
+        nats -s nats://nats:4222 stream add KOSHA_AI \
+          --subjects="ai.>" \
+          --storage=file --replicas=1 --retention=work \
+          --max-age=7d --max-bytes=536870912 \
+          --discard=old --dupe-window=2m --no-allow-rollup \
+          --defaults 2>/dev/null || echo "KOSHA_AI stream exists"
+
+        echo "NATS JetStream streams initialized"
+    restart: "no"
+
+  # ── Optional: Local AI model server ──────────────────────────
   ollama:
     image: ollama/ollama:latest
     ports:

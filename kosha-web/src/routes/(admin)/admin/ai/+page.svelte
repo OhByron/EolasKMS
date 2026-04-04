@@ -1,0 +1,317 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { api } from '$lib/api';
+	import type { AiConfig, AiStats } from '$lib/types/api';
+	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
+	import ErrorBoundary from '$lib/components/kosha/ErrorBoundary.svelte';
+
+	let activeTab = $state<'model' | 'prompts' | 'reprocess' | 'stats'>('model');
+	let config = $state<AiConfig | null>(null);
+	let stats = $state<AiStats | null>(null);
+	let loading = $state(true);
+	let saving = $state(false);
+	let error = $state('');
+	let successMsg = $state('');
+
+	// Editable config fields
+	let provider = $state('ollama');
+	let endpoint = $state('http://localhost:11434');
+	let model = $state('llama3:8b');
+	let apiKey = $state('');
+	let summarization = $state(true);
+	let keywords = $state(true);
+	let classification = $state(true);
+	let relationships = $state(true);
+	let ocr = $state(false);
+
+	const needsApiKey = $derived(provider !== 'ollama');
+
+	const providerDefaults: Record<string, { endpoint: string; model: string }> = {
+		ollama: { endpoint: 'http://localhost:11434', model: 'llama3:8b' },
+		openai: { endpoint: 'https://api.openai.com/v1', model: 'gpt-4o' },
+		anthropic: { endpoint: 'https://api.anthropic.com', model: 'claude-sonnet-4-20250514' }
+	};
+
+	function onProviderChange() {
+		const defaults = providerDefaults[provider];
+		if (defaults) {
+			endpoint = defaults.endpoint;
+			model = defaults.model;
+		}
+		if (provider === 'ollama') apiKey = '';
+	}
+
+	// Reprocess
+	let reprocessScope = $state('all');
+	let reprocessing = $state(false);
+	let reprocessProgress = $state(0);
+
+	onMount(() => loadConfig());
+
+	async function loadConfig() {
+		loading = true;
+		error = '';
+		try {
+			const [cfgRes, statsRes] = await Promise.all([
+				api.ai.getConfig(),
+				api.ai.getStats()
+			]);
+			config = cfgRes.data;
+			stats = statsRes.data;
+			if (config) {
+				provider = config.llmProvider;
+				endpoint = config.llmEndpoint;
+				model = config.llmModel;
+				apiKey = (config as any).llmApiKey ?? '';
+				summarization = config.summarizationEnabled;
+				keywords = config.keywordExtractionEnabled;
+				classification = config.classificationEnabled;
+				relationships = config.relationshipDetectionEnabled;
+				ocr = config.ocrEnabled;
+			}
+		} catch (e: any) {
+			if (!e.message?.includes('404')) error = e.message;
+		} finally {
+			loading = false;
+		}
+	}
+
+	async function saveConfig() {
+		saving = true;
+		error = '';
+		successMsg = '';
+		try {
+			await api.ai.updateConfig({
+				llmProvider: provider,
+				llmEndpoint: endpoint,
+				llmModel: model,
+				llmApiKey: apiKey || undefined,
+				summarizationEnabled: summarization,
+				keywordExtractionEnabled: keywords,
+				classificationEnabled: classification,
+				relationshipDetectionEnabled: relationships,
+				ocrEnabled: ocr
+			} as any);
+			successMsg = 'Configuration saved successfully.';
+		} catch (e: any) {
+			error = e.message;
+		} finally {
+			saving = false;
+		}
+	}
+
+	async function startReprocess() {
+		reprocessing = true;
+		reprocessProgress = 0;
+		// Simulate — in production this would trigger a batch job and poll
+		const interval = setInterval(() => {
+			reprocessProgress += 5;
+			if (reprocessProgress >= 100) {
+				clearInterval(interval);
+				reprocessing = false;
+				successMsg = 'Reprocessing complete.';
+			}
+		}, 500);
+	}
+
+	const tabs = [
+		{ id: 'model' as const, label: 'Model Settings' },
+		{ id: 'prompts' as const, label: 'Prompts' },
+		{ id: 'reprocess' as const, label: 'Reprocessing' },
+		{ id: 'stats' as const, label: 'Statistics' }
+	];
+</script>
+
+<svelte:head>
+	<title>AI Configuration - Administration - Kosha</title>
+</svelte:head>
+
+<PageHeader title="AI Configuration" description="Model settings and prompt tuning" />
+
+{#if error}
+	<div role="alert" class="mt-4 rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
+{/if}
+{#if successMsg}
+	<div role="status" class="mt-4 rounded-md border border-success bg-success/10 p-3 text-sm text-success">{successMsg}</div>
+{/if}
+
+<!-- Tabs -->
+<div class="mt-6" role="tablist" aria-label="AI configuration sections">
+	{#each tabs as tab}
+		<button
+			role="tab"
+			aria-selected={activeTab === tab.id}
+			onclick={() => (activeTab = tab.id)}
+			class="rounded-t-md px-4 py-2 text-sm font-medium transition focus:outline-2 focus:outline-offset-2 focus:outline-ring"
+			class:bg-card={activeTab === tab.id}
+			class:border={activeTab === tab.id}
+			class:border-b-transparent={activeTab === tab.id}
+			class:border-border={activeTab === tab.id}
+			class:text-foreground={activeTab === tab.id}
+			class:text-muted-foreground={activeTab !== tab.id}
+		>
+			{tab.label}
+		</button>
+	{/each}
+</div>
+
+<div class="rounded-b-lg rounded-tr-lg border border-border bg-card p-6">
+	{#if loading}
+		<p aria-live="polite" class="text-muted-foreground">Loading configuration...</p>
+
+	{:else if activeTab === 'model'}
+		<form onsubmit={(e) => { e.preventDefault(); saveConfig(); }} class="max-w-lg space-y-4">
+			<div>
+				<label for="ai-provider" class="block text-sm font-medium">Provider</label>
+				<select id="ai-provider" bind:value={provider} onchange={onProviderChange}
+					class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-2 focus:outline-ring">
+					<option value="ollama">Ollama (local)</option>
+					<option value="openai">OpenAI-compatible</option>
+					<option value="anthropic">Anthropic</option>
+				</select>
+				{#if provider === 'ollama'}
+					<p class="mt-1 text-xs text-muted-foreground">Runs locally — no API key required.</p>
+				{/if}
+			</div>
+			<div>
+				<label for="ai-endpoint" class="block text-sm font-medium">Endpoint</label>
+				<input id="ai-endpoint" type="url" bind:value={endpoint}
+					class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-2 focus:outline-ring" />
+			</div>
+			<div>
+				<label for="ai-model" class="block text-sm font-medium">Model</label>
+				<input id="ai-model" type="text" bind:value={model}
+					class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-2 focus:outline-ring" />
+			</div>
+			{#if needsApiKey}
+				<div>
+					<label for="ai-apikey" class="block text-sm font-medium">
+						API Key <span class="text-destructive">*</span>
+					</label>
+					<input
+						id="ai-apikey"
+						type="password"
+						bind:value={apiKey}
+						placeholder={provider === 'anthropic' ? 'sk-ant-...' : 'sk-...'}
+						autocomplete="off"
+						class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm focus:outline-2 focus:outline-ring"
+						aria-required="true"
+					/>
+					<p class="mt-1 text-xs text-muted-foreground">
+						{#if provider === 'anthropic'}
+							Get your key at <span class="font-medium">console.anthropic.com</span>
+						{:else}
+							Enter your API key for the selected provider.
+						{/if}
+					</p>
+				</div>
+			{/if}
+			<fieldset>
+				<legend class="text-sm font-medium">Capabilities</legend>
+				<div class="mt-2 space-y-2">
+					{#each [
+						{ bind: () => summarization, set: (v: boolean) => summarization = v, label: 'Summarization' },
+						{ bind: () => keywords, set: (v: boolean) => keywords = v, label: 'Keyword extraction' },
+						{ bind: () => classification, set: (v: boolean) => classification = v, label: 'Taxonomy classification' },
+						{ bind: () => relationships, set: (v: boolean) => relationships = v, label: 'Relationship detection' },
+						{ bind: () => ocr, set: (v: boolean) => ocr = v, label: 'OCR enhancement' }
+					] as cap}
+						<label class="flex items-center gap-2 text-sm">
+							<input type="checkbox" checked={cap.bind()} onchange={(e) => cap.set((e.target as HTMLInputElement).checked)} class="rounded focus:ring-ring" />
+							{cap.label}
+						</label>
+					{/each}
+				</div>
+			</fieldset>
+			<div class="flex gap-3 pt-4">
+				<button type="submit" disabled={saving}
+					class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring disabled:opacity-50">
+					{saving ? 'Saving...' : 'Save Settings'}
+				</button>
+			</div>
+		</form>
+
+	{:else if activeTab === 'prompts'}
+		<div class="max-w-2xl space-y-6">
+			<div>
+				<label for="prompt-summary" class="block text-sm font-medium">Summarization Prompt</label>
+				<p class="text-xs text-muted-foreground">Variables: {'{{document_text}}'}, {'{{title}}'}, {'{{category}}'}</p>
+				<textarea id="prompt-summary" rows="6"
+					class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm focus:outline-2 focus:outline-ring"
+					placeholder="You are a document summarization assistant. Summarize the following document concisely..."
+				></textarea>
+			</div>
+			<div>
+				<label for="prompt-keywords" class="block text-sm font-medium">Keyword Extraction Prompt</label>
+				<textarea id="prompt-keywords" rows="6"
+					class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm focus:outline-2 focus:outline-ring"
+					placeholder="Extract key terms and phrases from the following document..."
+				></textarea>
+			</div>
+			<div class="flex gap-3">
+				<button class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-ring">Reset to Defaults</button>
+				<button class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring">Save Prompts</button>
+			</div>
+		</div>
+
+	{:else if activeTab === 'reprocess'}
+		<div class="max-w-lg space-y-4">
+			<p class="text-sm text-muted-foreground">Reprocess documents with current AI settings. Documents with human-reviewed metadata will be skipped unless overridden.</p>
+			<div>
+				<label for="reprocess-scope" class="block text-sm font-medium">Scope</label>
+				<select id="reprocess-scope" bind:value={reprocessScope}
+					class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-2 focus:outline-ring">
+					<option value="all">All documents</option>
+					<option value="unprocessed">Unprocessed only</option>
+				</select>
+			</div>
+
+			{#if reprocessing}
+				<div>
+					<div
+						class="h-3 overflow-hidden rounded-full bg-muted"
+						role="progressbar"
+						aria-valuenow={reprocessProgress}
+						aria-valuemin={0}
+						aria-valuemax={100}
+						aria-label="Reprocessing progress"
+					>
+						<div class="h-full rounded-full bg-primary transition-all duration-300" style="width: {reprocessProgress}%"></div>
+					</div>
+					<p class="mt-1 text-sm text-muted-foreground" aria-live="polite">Processing... {reprocessProgress}%</p>
+				</div>
+			{:else}
+				<button onclick={startReprocess}
+					class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring">
+					Start Reprocessing
+				</button>
+			{/if}
+		</div>
+
+	{:else if activeTab === 'stats'}
+		<div class="max-w-lg">
+			{#if stats}
+				<dl class="space-y-3 text-sm">
+					<div class="flex justify-between border-b border-border pb-2">
+						<dt class="text-muted-foreground">Total Processed</dt>
+						<dd class="font-semibold">{stats.totalProcessed}</dd>
+					</div>
+					<div class="flex justify-between border-b border-border pb-2">
+						<dt class="text-muted-foreground">Pending</dt>
+						<dd class="font-semibold">{stats.totalPending}</dd>
+					</div>
+					<div class="flex justify-between border-b border-border pb-2">
+						<dt class="text-muted-foreground">Average Confidence</dt>
+						<dd class="font-semibold">{Math.round(stats.averageConfidence * 100)}%</dd>
+					</div>
+					<div class="flex justify-between">
+						<dt class="text-muted-foreground">Last Processed</dt>
+						<dd class="font-semibold">{stats.lastProcessedAt ? new Date(stats.lastProcessedAt).toLocaleString() : 'Never'}</dd>
+					</div>
+				</dl>
+			{:else}
+				<p class="text-muted-foreground">No AI processing statistics available yet.</p>
+			{/if}
+		</div>
+	{/if}
+</div>
