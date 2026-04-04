@@ -1,0 +1,129 @@
+services:
+  # --- Application Services ---
+  kosha-api:
+    build:
+      context: .
+      dockerfile: kosha-app/Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+      opensearch:
+        condition: service_started
+      minio:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/kosha
+      SPRING_DATASOURCE_USERNAME: kosha
+      SPRING_DATASOURCE_PASSWORD: kosha
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/kosha
+      KOSHA_NATS_URL: nats://nats:4222
+      KOSHA_OPENSEARCH_URL: https://opensearch:9200
+      KOSHA_STORAGE_MINIO_ENDPOINT: http://minio:9000
+      KOSHA_STORAGE_MINIO_ACCESS_KEY: minioadmin
+      KOSHA_STORAGE_MINIO_SECRET_KEY: minioadmin
+
+  kosha-ai:
+    build:
+      context: ./kosha-ai-sidecar
+    depends_on:
+      nats:
+        condition: service_started
+    environment:
+      KOSHA_AI_NATS_URL: nats://nats:4222
+      KOSHA_AI_KOSHA_API_URL: http://kosha-api:8080
+      KOSHA_AI_LLM_PROVIDER: ollama
+      KOSHA_AI_LLM_ENDPOINT: http://ollama:11434
+      KOSHA_AI_MINIO_ENDPOINT: minio:9000
+      KOSHA_AI_MINIO_ACCESS_KEY: minioadmin
+      KOSHA_AI_MINIO_SECRET_KEY: minioadmin
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+  # --- Infrastructure ---
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: kosha
+      POSTGRES_USER: kosha
+      POSTGRES_PASSWORD: kosha
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kosha"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  opensearch:
+    image: opensearchproject/opensearch:2.12.0
+    ports:
+      - "9200:9200"
+    environment:
+      discovery.type: single-node
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+      DISABLE_SECURITY_PLUGIN: "true"
+    volumes:
+      - os-data:/usr/share/opensearch/data
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio-data:/data
+
+  nats:
+    image: nats:2.10-alpine
+    command: ["--jetstream", "--store_dir=/data"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    volumes:
+      - nats-data:/data
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    command: start-dev
+    ports:
+      - "8180:8080"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # --- Optional: Local AI model server ---
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    profiles:
+      - local-ai
+
+volumes:
+  pg-data:
+  os-data:
+  minio-data:
+  nats-data:
+  ollama-data:
