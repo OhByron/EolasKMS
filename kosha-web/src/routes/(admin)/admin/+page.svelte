@@ -2,7 +2,7 @@
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 </script>
 
-<svelte:head><title>Administration - Kosha</title></svelte:head>
+<svelte:head><title>Administration - Eòlas</title></svelte:head>
 
 <PageHeader title="Administration" description="System configuration and management" />
 
@@ -14,6 +14,9 @@
 		{ href: '/admin/ai', title: 'AI Configuration', desc: 'Model settings and prompt tuning' },
 		{ href: '/admin/audit', title: 'Audit Log', desc: 'System-wide activity log' },
 		{ href: '/admin/taxonomy', title: 'Taxonomy Management', desc: 'Edit taxonomy tree and import seeds' },
+		{ href: '/admin/categories', title: 'Document Categories', desc: 'Edit categories and flag those that suggest legal review' },
+		{ href: '/admin/mail-gateway', title: 'Mail Gateway', desc: 'Configure outbound email provider and credentials' },
+		{ href: '/admin/notification-settings', title: 'Notifications', desc: 'Retention scan cadence and legal review time limit' },
 		{ href: '/reports/aging', title: 'Document Aging', desc: 'Age distribution and retention status' },
 		{ href: '/reports/critical-items', title: 'Critical Items', desc: 'Overdue retention reviews by severity' },
 		{ href: '/reports/legal-holds', title: 'Legal Holds', desc: 'Documents under legal hold' }

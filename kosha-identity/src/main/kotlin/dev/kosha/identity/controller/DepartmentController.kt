@@ -5,9 +5,11 @@ import dev.kosha.common.api.Links
 import dev.kosha.common.api.PageMeta
 import dev.kosha.identity.dto.CreateDepartmentRequest
 import dev.kosha.identity.dto.DepartmentResponse
+import dev.kosha.identity.dto.ProvisionUserRequest
 import dev.kosha.identity.dto.UpdateDepartmentRequest
 import dev.kosha.identity.service.DepartmentService
 import dev.kosha.identity.service.UserProfileService
+import dev.kosha.identity.service.UserCreationService
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
@@ -27,6 +29,7 @@ import java.util.UUID
 class DepartmentController(
     private val departmentService: DepartmentService,
     private val userProfileService: UserProfileService,
+    private val userCreationService: UserCreationService,
 ) {
 
     @GetMapping
@@ -63,4 +66,22 @@ class DepartmentController(
                 links = Links(self = "/api/v1/departments/$id/users?page=${page.number}&size=${page.size}"),
             )
         }
+
+    /**
+     * Provision a new user directly into this department. Convenience endpoint
+     * that pre-fills the departmentId — the frontend uses this from the
+     * department detail page's "Add member" button.
+     */
+    @PostMapping("/{id}/users")
+    @ResponseStatus(HttpStatus.CREATED)
+    // TODO: restore @PreAuthorize("hasAnyRole('GLOBAL_ADMIN', 'DEPT_ADMIN')") once Keycloak dev roles are wired up.
+    fun provisionUserInDepartment(
+        @PathVariable id: UUID,
+        @RequestBody request: ProvisionUserRequest,
+    ) = ApiResponse(
+        // Force the departmentId from the path so the frontend can't override
+        // it. DEPT_ADMIN authority is scoped to their own department and we
+        // don't trust the body.
+        data = userCreationService.provision(request.copy(departmentId = id))
+    )
 }

@@ -59,7 +59,7 @@
 </script>
 
 <svelte:head>
-	<title>{policy?.name ?? 'Policy'} - Retention - Kosha</title>
+	<title>{policy?.name ?? 'Policy'} - Retention - Eòlas</title>
 </svelte:head>
 
 {#if loading}

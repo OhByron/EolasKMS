@@ -52,7 +52,7 @@
 </script>
 
 <svelte:head>
-	<title>Version History{doc ? ` - ${doc.title}` : ''} - Kosha</title>
+	<title>Version History{doc ? ` - ${doc.title}` : ''} - Eòlas</title>
 </svelte:head>
 
 {#if loading}

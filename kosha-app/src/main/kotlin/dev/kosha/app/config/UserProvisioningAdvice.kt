@@ -46,7 +46,7 @@ class UserProvisioningService(
             ?: jwt.getClaimAsString("name")
             ?: jwt.subject
 
-        val email = jwt.getClaimAsString("email") ?: "$name@kosha.local"
+        val email = jwt.getClaimAsString("email") ?: "$name@eolaskms.local"
 
         val dept = departmentRepo.findById(defaultDeptId).orElse(null) ?: run {
             log.warn("Default department not found for auto-provisioning")

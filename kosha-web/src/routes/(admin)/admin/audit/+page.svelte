@@ -55,7 +55,7 @@
 </script>
 
 <svelte:head>
-	<title>Audit Log - Administration - Kosha</title>
+	<title>Audit Log - Administration - Eòlas</title>
 </svelte:head>
 
 <PageHeader title="Audit Log" description="System-wide activity log" />

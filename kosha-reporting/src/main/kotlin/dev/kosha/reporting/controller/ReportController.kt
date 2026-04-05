@@ -74,9 +74,15 @@ class ReportController(
         @RequestParam(required = false) departmentId: UUID?,
     ) = ApiResponse(data = mapOf("notified" to reportingService.notifyAll(departmentId)))
 
+    /**
+     * Manually trigger a full retention scan tick (approaching + critical).
+     * Useful for testing the notification pipeline without waiting for the cron.
+     * Honours per-department scan intervals — departments whose interval has
+     * not elapsed will be skipped.
+     */
     @PostMapping("/critical-items/scan-approaching")
-    fun triggerApproachingScan() : ApiResponse<Map<String, String>> {
-        scannerRef.scanApproachingReviews()
+    fun triggerScan(): ApiResponse<Map<String, String>> {
+        scannerRef.scanTick()
         return ApiResponse(data = mapOf("status" to "scan complete"))
     }
 

@@ -14,6 +14,18 @@ import java.util.UUID
 interface DepartmentRepository : JpaRepository<Department, UUID> {
     fun findByStatus(status: String, pageable: Pageable): Page<Department>
     fun findByParentId(parentId: UUID, pageable: Pageable): Page<Department>
+
+    /**
+     * Departments flagged as legal-review providers. Used by the upload
+     * form to build the legal reviewer dropdown.
+     */
+    fun findByHandlesLegalReviewTrueAndStatus(status: String): List<Department>
+
+    /**
+     * All active departments ordered by name. Backs the uploadable-departments
+     * endpoint for global admins (who can file into any department).
+     */
+    fun findByStatusOrderByNameAsc(status: String): List<Department>
 }
 
 @Repository
@@ -24,6 +36,20 @@ interface UserProfileRepository : JpaRepository<UserProfile, UUID> {
 
     @Query("SELECT u FROM UserProfile u WHERE u.status = :status")
     fun findByStatus(status: String, pageable: Pageable): Page<UserProfile>
+
+    /**
+     * Active users from every department flagged as handles_legal_review.
+     * Used to populate the legal reviewer dropdown on the upload form.
+     * Ordered by department then name so the dropdown is predictable.
+     */
+    @Query("""
+        SELECT u FROM UserProfile u
+        WHERE u.status = 'ACTIVE'
+          AND u.department.status = 'ACTIVE'
+          AND u.department.handlesLegalReview = true
+        ORDER BY u.department.name ASC, u.displayName ASC
+    """)
+    fun findActiveLegalReviewers(): List<UserProfile>
 }
 
 @Repository

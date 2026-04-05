@@ -7,6 +7,15 @@ import type {
 	VersionDetail,
 	Department,
 	UserProfile,
+	ProvisionUserRequest,
+	ProvisionedUserResponse,
+	PasswordResetResponse,
+	WorkflowDefinition,
+	UpdateWorkflowRequest,
+	WorkflowValidationResponse,
+	DocumentCategory,
+	LegalReviewSettings,
+	WorkflowEscalationSettings,
 	AuditEvent,
 	ReviewTask,
 	TaxonomyTerm,
@@ -23,7 +32,16 @@ import type {
 	CriticalItemRow,
 	CriticalItemsSummary,
 	LegalHoldRow,
-	LegalHoldSummary
+	LegalHoldSummary,
+	MailGatewayConfig,
+	UpdateMailGatewayRequest,
+	TestGatewayRequest,
+	GatewayTestResult,
+	ProviderPreset,
+	NotificationSettings,
+	UpdateNotificationSettingsRequest,
+	DepartmentScanSettings,
+	UpdateDepartmentScanSettingsRequest
 } from './types/api';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
@@ -91,12 +109,24 @@ export const api = {
 	// --- Documents ---
 
 	documents: {
-		list: (page = 0, size = 20) =>
-			request<DocumentListItem[]>(`/api/v1/documents?page=${page}&size=${size}`),
+		list: (page = 0, size = 20, departmentId?: string) => {
+			const deptSuffix = departmentId ? `&departmentId=${departmentId}` : '';
+			return request<DocumentListItem[]>(`/api/v1/documents?page=${page}&size=${size}${deptSuffix}`);
+		},
 
 		get: (id: string) => request<DocumentDetail>(`/api/v1/documents/${id}`),
 
-		create: (body: { title: string; description?: string; departmentId: string; categoryId?: string; storageMode?: string; workflowType?: string; ownerId?: string }) =>
+		create: (body: {
+			title: string;
+			description?: string;
+			departmentId: string;
+			categoryId?: string;
+			storageMode?: string;
+			workflowType?: string;
+			ownerId?: string;
+			requiresLegalReview?: boolean;
+			legalReviewerId?: string | null;
+		}) =>
 			request<DocumentDetail>('/api/v1/documents', { method: 'POST', body: JSON.stringify(body) }),
 
 		update: (id: string, body: Record<string, unknown>) =>
@@ -117,6 +147,22 @@ export const api = {
 			request<VersionDetail>(`/api/v1/documents/${id}/versions`, { method: 'POST', body: JSON.stringify(body) }),
 	},
 
+	// --- Current user ---
+
+	me: {
+		get: () => request<UserProfile>('/api/v1/me'),
+
+		/**
+		 * Departments the current user is allowed to file documents into.
+		 * The upload form uses this in place of departments.list so non-admin
+		 * contributors only see their home department. GLOBAL_ADMIN sees all
+		 * active departments. The server enforces the same rule on POST, so
+		 * this list is advisory — it just narrows the UI.
+		 */
+		uploadableDepartments: () =>
+			request<Department[]>('/api/v1/me/uploadable-departments'),
+	},
+
 	// --- Departments ---
 
 	departments: {
@@ -133,15 +179,61 @@ export const api = {
 
 		users: (id: string, page = 0, size = 20) =>
 			request<UserProfile[]>(`/api/v1/departments/${id}/users?page=${page}&size=${size}`),
+
+		provisionUser: (id: string, body: ProvisionUserRequest) =>
+			request<ProvisionedUserResponse>(`/api/v1/departments/${id}/users`, {
+				method: 'POST',
+				body: JSON.stringify(body),
+				skipAuth: true,
+			}),
+
+		// Workflow definition (Pass 1 of workflow engine)
+		getWorkflow: (id: string) =>
+			request<WorkflowDefinition>(`/api/v1/departments/${id}/workflow`, { skipAuth: true }),
+
+		updateWorkflow: (id: string, body: UpdateWorkflowRequest) =>
+			request<WorkflowDefinition>(`/api/v1/departments/${id}/workflow`, {
+				method: 'PUT',
+				body: JSON.stringify(body),
+				skipAuth: true,
+			}),
+
+		validateWorkflow: (id: string) =>
+			request<WorkflowValidationResponse>(
+				`/api/v1/departments/${id}/workflow/validation`,
+				{ skipAuth: true }
+			),
 	},
 
 	// --- Users ---
 
 	users: {
-		list: (page = 0, size = 20) =>
-			request<UserProfile[]>(`/api/v1/users?page=${page}&size=${size}`),
+		list: (page = 0, size = 20, departmentId?: string) => {
+			const deptSuffix = departmentId ? `&departmentId=${departmentId}` : '';
+			return request<UserProfile[]>(`/api/v1/users?page=${page}&size=${size}${deptSuffix}`);
+		},
 
 		get: (id: string) => request<UserProfile>(`/api/v1/users/${id}`),
+
+		provision: (body: ProvisionUserRequest) =>
+			request<ProvisionedUserResponse>('/api/v1/users/provision', {
+				method: 'POST',
+				body: JSON.stringify(body),
+				skipAuth: true,
+			}),
+
+		update: (id: string, body: { role?: string; status?: string; departmentId?: string; displayName?: string; email?: string }) =>
+			request<UserProfile>(`/api/v1/users/${id}`, {
+				method: 'PATCH',
+				body: JSON.stringify(body),
+				skipAuth: true,
+			}),
+
+		resetPassword: (id: string) =>
+			request<PasswordResetResponse>(`/api/v1/users/${id}/reset-password`, {
+				method: 'POST',
+				skipAuth: true,
+			}),
 	},
 
 	// --- Workflow ---
@@ -276,6 +368,109 @@ export const api = {
 			const params = departmentId ? `?departmentId=${departmentId}` : '';
 			return request<LegalHoldSummary>(`/api/v1/reports/legal-holds/summary${params}`, { skipAuth: true });
 		},
+	},
+
+	// --- Mail Gateway ---
+
+	mailGateway: {
+		get: () => request<MailGatewayConfig>('/api/v1/admin/mail-gateway', { skipAuth: true }),
+
+		update: (body: UpdateMailGatewayRequest) =>
+			request<MailGatewayConfig>('/api/v1/admin/mail-gateway', {
+				method: 'PUT',
+				body: JSON.stringify(body),
+				skipAuth: true,
+			}),
+
+		testConnection: (body: TestGatewayRequest) =>
+			request<GatewayTestResult>('/api/v1/admin/mail-gateway/test-connection', {
+				method: 'POST',
+				body: JSON.stringify(body),
+				skipAuth: true,
+			}),
+
+		testSend: (body: TestGatewayRequest) =>
+			request<GatewayTestResult>('/api/v1/admin/mail-gateway/test-send', {
+				method: 'POST',
+				body: JSON.stringify(body),
+				skipAuth: true,
+			}),
+
+		presets: () =>
+			request<ProviderPreset[]>('/api/v1/admin/mail-gateway/presets', { skipAuth: true }),
+	},
+
+	// --- Notification Settings (scan intervals) ---
+
+	notificationSettings: {
+		getGlobal: () =>
+			request<NotificationSettings>('/api/v1/admin/notification-settings', { skipAuth: true }),
+
+		updateGlobal: (body: UpdateNotificationSettingsRequest) =>
+			request<NotificationSettings>('/api/v1/admin/notification-settings', {
+				method: 'PUT',
+				body: JSON.stringify(body),
+				skipAuth: true,
+			}),
+
+		getDepartmentScan: (departmentId: string) =>
+			request<DepartmentScanSettings>(`/api/v1/departments/${departmentId}/scan-settings`, {
+				skipAuth: true,
+			}),
+
+		updateDepartmentScan: (departmentId: string, body: UpdateDepartmentScanSettingsRequest) =>
+			request<DepartmentScanSettings>(`/api/v1/departments/${departmentId}/scan-settings`, {
+				method: 'PUT',
+				body: JSON.stringify(body),
+				skipAuth: true,
+			}),
+	},
+
+	// --- Document Categories ---
+
+	documentCategories: {
+		list: () =>
+			request<DocumentCategory[]>('/api/v1/document-categories', { skipAuth: true }),
+
+		update: (id: string, body: Partial<{ name: string; description: string | null; status: string; suggestsLegalReview: boolean }>) =>
+			request<DocumentCategory>(`/api/v1/document-categories/${id}`, {
+				method: 'PATCH',
+				body: JSON.stringify(body),
+				skipAuth: true,
+			}),
+	},
+
+	// --- Legal Review ---
+
+	legalReview: {
+		listReviewers: () =>
+			request<UserProfile[]>('/api/v1/legal-reviewers', { skipAuth: true }),
+
+		getSettings: () =>
+			request<LegalReviewSettings>('/api/v1/admin/legal-review-settings', { skipAuth: true }),
+
+		updateSettings: (body: { defaultTimeLimitDays: number }) =>
+			request<LegalReviewSettings>('/api/v1/admin/legal-review-settings', {
+				method: 'PUT',
+				body: JSON.stringify(body),
+				skipAuth: true,
+			}),
+	},
+
+	// --- Workflow Escalation Settings ---
+
+	workflowEscalation: {
+		getSettings: () =>
+			request<WorkflowEscalationSettings>('/api/v1/admin/workflow-escalation-settings', {
+				skipAuth: true,
+			}),
+
+		updateSettings: (body: { scanIntervalMinutes: number }) =>
+			request<WorkflowEscalationSettings>('/api/v1/admin/workflow-escalation-settings', {
+				method: 'PUT',
+				body: JSON.stringify(body),
+				skipAuth: true,
+			}),
 	},
 
 	// --- Audit ---

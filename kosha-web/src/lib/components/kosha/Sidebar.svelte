@@ -44,7 +44,10 @@
 							{ label: 'Retention', href: '/admin/retention', icon: '🛡' },
 							{ label: 'AI Config', href: '/admin/ai', icon: '🧠' },
 							{ label: 'Audit Log', href: '/admin/audit', icon: '📜' },
-							{ label: 'Taxonomy Mgmt', href: '/admin/taxonomy', icon: '🔗' }
+							{ label: 'Taxonomy Mgmt', href: '/admin/taxonomy', icon: '🔗' },
+							{ label: 'Categories', href: '/admin/categories', icon: '🏷' },
+							{ label: 'Mail Gateway', href: '/admin/mail-gateway', icon: '✉' },
+							{ label: 'Notifications', href: '/admin/notification-settings', icon: '🔔' }
 						]
 					: [])
 			]

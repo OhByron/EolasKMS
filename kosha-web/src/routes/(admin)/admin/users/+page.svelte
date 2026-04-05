@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api } from '$lib/api';
-	import type { UserProfile } from '$lib/types/api';
+	import type { UserProfile, Department } from '$lib/types/api';
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 	import StatusBadge from '$lib/components/kosha/StatusBadge.svelte';
 	import ErrorBoundary from '$lib/components/kosha/ErrorBoundary.svelte';
+	import UserCreateModal from '$lib/components/kosha/UserCreateModal.svelte';
 
 	let users = $state<UserProfile[]>([]);
 	let total = $state(0);
@@ -12,14 +13,35 @@
 	let error = $state('');
 	let currentPage = $state(0);
 	const pageSize = 25;
+	let createModalOpen = $state(false);
 
-	onMount(() => loadUsers());
+	// Department filter state. Empty string means "all departments" — we keep
+	// it as a string so it binds cleanly to the <select> element, and convert
+	// to undefined when calling the API.
+	let departments = $state<Department[]>([]);
+	let departmentFilter = $state('');
+
+	onMount(async () => {
+		// Load departments once for the filter dropdown; failure here shouldn't
+		// block the user list from rendering.
+		try {
+			const res = await api.departments.list(0, 200);
+			departments = res.data;
+		} catch {
+			// Swallow — the filter just won't be populated.
+		}
+		await loadUsers();
+	});
 
 	async function loadUsers() {
 		loading = true;
 		error = '';
 		try {
-			const res = await api.users.list(currentPage, pageSize);
+			const res = await api.users.list(
+				currentPage,
+				pageSize,
+				departmentFilter || undefined,
+			);
 			users = res.data;
 			total = res.meta?.total ?? 0;
 		} catch (e: any) {
@@ -28,13 +50,67 @@
 			loading = false;
 		}
 	}
+
+	const filteredDeptName = $derived(
+		departmentFilter
+			? (departments.find((d) => d.id === departmentFilter)?.name ?? 'department')
+			: 'all departments',
+	);
+
+	function onDepartmentChange() {
+		// Reset to first page whenever the filter changes, otherwise we can end
+		// up on an empty page past the new total.
+		currentPage = 0;
+		loadUsers();
+	}
 </script>
 
 <svelte:head>
-	<title>Users - Administration - Kosha</title>
+	<title>Users - Administration - Eòlas</title>
 </svelte:head>
 
-<PageHeader title="All Users" description="{total} user{total !== 1 ? 's' : ''} across all departments" />
+<PageHeader title="All Users" description="{total} user{total !== 1 ? 's' : ''} across {filteredDeptName}">
+	<button
+		type="button"
+		onclick={() => (createModalOpen = true)}
+		class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring"
+	>
+		+ Add User
+	</button>
+</PageHeader>
+
+<UserCreateModal
+	bind:open={createModalOpen}
+	onCreated={() => loadUsers()}
+/>
+
+<div class="mt-4 flex flex-wrap items-end gap-3">
+	<div class="flex flex-col gap-1">
+		<label for="dept-filter" class="text-xs font-medium text-muted-foreground">
+			Filter by department
+		</label>
+		<select
+			id="dept-filter"
+			bind:value={departmentFilter}
+			onchange={onDepartmentChange}
+			class="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
+		>
+			<option value="">All departments</option>
+			{#each departments as d (d.id)}
+				<option value={d.id}>{d.name}</option>
+			{/each}
+		</select>
+	</div>
+	{#if departmentFilter}
+		<button
+			type="button"
+			onclick={() => { departmentFilter = ''; onDepartmentChange(); }}
+			class="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring"
+		>
+			Clear filter
+		</button>
+	{/if}
+</div>
 
 {#if loading}
 	<p aria-live="polite" class="mt-6 text-muted-foreground">Loading users...</p>

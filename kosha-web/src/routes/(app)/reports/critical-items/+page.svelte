@@ -114,7 +114,7 @@
 </script>
 
 <svelte:head>
-	<title>Critical Items - Kosha</title>
+	<title>Critical Items - Eòlas</title>
 </svelte:head>
 
 <PageHeader title="Critical Items" description="Documents with overdue retention reviews requiring immediate attention" />

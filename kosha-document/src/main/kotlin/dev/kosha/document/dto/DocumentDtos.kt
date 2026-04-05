@@ -13,6 +13,14 @@ data class CreateDocumentRequest(
     val storageMode: String = "VAULT",
     val workflowType: String = "NONE",
     val ownerId: UUID? = null, // null = uploader becomes owner
+    /**
+     * When true, the workflow engine (Pass 3) adds a parallel legal review
+     * step to the submission workflow. Requires [legalReviewerId] to be set
+     * and to reference an ACTIVE user in a department flagged as
+     * handles_legal_review=true.
+     */
+    val requiresLegalReview: Boolean = false,
+    val legalReviewerId: UUID? = null,
 )
 
 data class UpdateDocumentRequest(
@@ -45,6 +53,9 @@ data class DocumentResponse(
     val primaryOwnerName: String,
     val proxyOwnerId: UUID?,
     val proxyOwnerName: String?,
+    val requiresLegalReview: Boolean,
+    val legalReviewerId: UUID?,
+    val legalReviewerName: String?,
     val createdAt: OffsetDateTime,
     val updatedAt: OffsetDateTime,
 )
@@ -106,6 +117,15 @@ data class CreateCategoryRequest(
     val name: String,
     val description: String? = null,
     val departmentId: UUID? = null,
+    val suggestsLegalReview: Boolean = false,
+)
+
+data class UpdateCategoryRequest(
+    val name: String? = null,
+    val description: String? = null,
+    val departmentId: UUID? = null,
+    val status: String? = null,
+    val suggestsLegalReview: Boolean? = null,
 )
 
 data class CategoryResponse(
@@ -114,4 +134,5 @@ data class CategoryResponse(
     val description: String?,
     val departmentId: UUID?,
     val status: String,
+    val suggestsLegalReview: Boolean,
 )

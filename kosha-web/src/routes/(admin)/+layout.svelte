@@ -43,7 +43,7 @@
 			</main>
 
 			<footer class="border-t border-border px-6 py-2 text-center text-xs text-muted-foreground">
-				&copy; 2026 Kosha KMS
+				&copy; 2026 Eòlas
 			</footer>
 		</div>
 	</div>

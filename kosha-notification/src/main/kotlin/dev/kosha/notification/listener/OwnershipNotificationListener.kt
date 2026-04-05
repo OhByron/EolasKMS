@@ -1,6 +1,7 @@
 package dev.kosha.notification.listener
 
 import dev.kosha.common.event.DocumentLegalHoldApplied
+import dev.kosha.common.event.LegalReviewerPreSelected
 import dev.kosha.common.event.RetentionReviewApproaching
 import dev.kosha.common.event.RetentionReviewCritical
 import dev.kosha.identity.repository.DepartmentRepository
@@ -100,6 +101,44 @@ class OwnershipNotificationListener(
                 vars = vars + ("ownerName" to name),
             )
         }
+    }
+
+    /**
+     * Courtesy pre-selection email for legal reviewers. Fires when a submitter
+     * uploads a document with `requiresLegalReview=true` and picks a specific
+     * reviewer from the legal department dropdown. The reviewer does not need
+     * to take any action at this point — the email is informational so they
+     * know they'll be getting a formal task when the document is submitted
+     * for review (Pass 3 of the workflow engine). No due date is tracked yet.
+     */
+    @Async
+    @EventListener
+    fun onLegalReviewerPreSelected(event: LegalReviewerPreSelected) {
+        log.info(
+            "Legal reviewer {} pre-selected for document '{}'",
+            event.legalReviewerId, event.documentTitle
+        )
+
+        val reviewer = userProfileRepo.findById(event.legalReviewerId).orElse(null)
+        if (reviewer == null) {
+            log.warn("Legal reviewer {} not found — skipping pre-selection email", event.legalReviewerId)
+            return
+        }
+
+        val vars = mapOf(
+            "documentTitle" to event.documentTitle,
+            "submitterName" to event.submitterName,
+            "departmentName" to event.departmentName,
+            "reviewerName" to reviewer.displayName,
+            "timeLimitDays" to event.timeLimitDays.toString(),
+        )
+
+        notificationService.sendEmail(
+            eventType = "doc.legal-review.pre-selected",
+            recipientEmail = reviewer.email,
+            recipientId = reviewer.id,
+            vars = vars,
+        )
     }
 
     private data class Recipient(val userId: UUID, val email: String, val name: String)

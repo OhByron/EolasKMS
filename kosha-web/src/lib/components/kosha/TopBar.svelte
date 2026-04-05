@@ -20,9 +20,8 @@
 
 <header class="flex h-14 items-center gap-4 border-b border-border bg-card px-4">
 	<a href="/dashboard" class="flex items-center gap-2 text-lg font-bold text-primary focus:outline-2 focus:outline-offset-2 focus:outline-ring">
-		<img src="/favicon.svg" alt="" class="h-7 w-7 rounded" aria-hidden="true">
-		<span>Kosha</span>
-		<span class="text-accent text-base font-semibold">कोश</span>
+		<img src="/favicon.png" alt="" class="h-8 w-8" aria-hidden="true">
+		<span>Eòlas</span>
 	</a>
 
 	<form onsubmit={handleSearch} class="ml-4 flex-1 max-w-xl" role="search">

@@ -3,7 +3,7 @@
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 </script>
 
-<svelte:head><title>Profile - Kosha</title></svelte:head>
+<svelte:head><title>Profile - Eòlas</title></svelte:head>
 
 <PageHeader title="Profile" />
 

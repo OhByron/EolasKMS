@@ -5,7 +5,9 @@ import dev.kosha.common.event.DocumentCheckedOut
 import dev.kosha.common.event.DocumentCreated
 import dev.kosha.common.event.DocumentLegalHoldApplied
 import dev.kosha.common.event.DocumentStatusChanged
+import dev.kosha.common.event.DocumentSubmittedForReview
 import dev.kosha.common.event.DocumentVersionCreated
+import dev.kosha.common.event.LegalReviewerPreSelected
 import dev.kosha.document.dto.CreateDocumentRequest
 import dev.kosha.document.dto.CreateVersionRequest
 import dev.kosha.document.dto.DocumentListResponse
@@ -21,9 +23,11 @@ import dev.kosha.document.repository.DocumentRepository
 import dev.kosha.document.repository.DocumentVersionRepository
 import dev.kosha.identity.repository.DepartmentRepository
 import dev.kosha.identity.repository.UserProfileRepository
+import jakarta.persistence.EntityManager
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import org.springframework.security.access.AccessDeniedException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.OffsetDateTime
@@ -38,7 +42,25 @@ class DocumentService(
     private val categoryRepo: DocumentCategoryRepository,
     private val userProfileRepo: UserProfileRepository,
     private val events: ApplicationEventPublisher,
+    private val entityManager: EntityManager,
 ) {
+
+    /**
+     * Read the global legal review time limit from notif.legal_review_settings.
+     * Kept as a native query to avoid coupling the document module to the
+     * notification module. Defaults to 5 days if the row is missing (which
+     * should never happen thanks to V024's seed).
+     */
+    private fun legalReviewTimeLimitDays(): Int {
+        return try {
+            val result = entityManager
+                .createNativeQuery("SELECT default_time_limit_days FROM notif.legal_review_settings WHERE id = 'default'")
+                .singleResult
+            (result as Number).toInt()
+        } catch (_: Exception) {
+            5
+        }
+    }
 
     fun findAll(pageable: Pageable): Page<DocumentListResponse> =
         documentRepo.findAllActive(pageable).map { it.toListResponse() }
@@ -63,6 +85,17 @@ class DocumentService(
         val creator = userProfileRepo.findById(actorId)
             .orElseThrow { NoSuchElementException("User not found: $actorId") }
 
+        // Authority: non-admins can only upload into their own department.
+        // Global admins may file into any active department. This mirrors the
+        // rule enforced client-side in MeController.uploadableDepartments; the
+        // check is duplicated here because the frontend list is advisory and
+        // a forged POST must still be rejected.
+        if (creator.role != "GLOBAL_ADMIN" && creator.department.id != department.id) {
+            throw AccessDeniedException(
+                "User is not a member of department ${department.id}",
+            )
+        }
+
         // Ownership: if ownerId provided and differs from uploader,
         // that person is the primary owner and the uploader becomes proxy.
         val primaryOwner = request.ownerId?.let { oid ->
@@ -72,6 +105,31 @@ class DocumentService(
         } ?: creator
 
         val proxyOwner = if (primaryOwner.id != actorId) creator else null
+
+        // Legal review: if requested, resolve and validate the chosen reviewer.
+        //  - reviewer must exist and be ACTIVE
+        //  - reviewer must belong to a department flagged handles_legal_review=true
+        //  - if requiresLegalReview is true, legalReviewerId must be set
+        val legalReviewer = if (request.requiresLegalReview) {
+            val reviewerId = request.legalReviewerId
+                ?: throw IllegalArgumentException(
+                    "legalReviewerId is required when requiresLegalReview is true"
+                )
+            val reviewer = userProfileRepo.findById(reviewerId)
+                .orElseThrow { NoSuchElementException("Legal reviewer not found: $reviewerId") }
+            require(reviewer.status == "ACTIVE") {
+                "Legal reviewer '${reviewer.displayName}' is not active"
+            }
+            val reviewerDept = reviewer.department
+            require(reviewerDept.handlesLegalReview) {
+                "Legal reviewer '${reviewer.displayName}' is not in a department authorised for legal review"
+            }
+            reviewer
+        } else {
+            // Quietly ignore a legalReviewerId if requiresLegalReview is false —
+            // protects against stale form state without surprising the user.
+            null
+        }
 
         val doc = Document(
             title = request.title,
@@ -83,6 +141,8 @@ class DocumentService(
             createdBy = creator,
             primaryOwner = primaryOwner,
             proxyOwner = proxyOwner,
+            requiresLegalReview = request.requiresLegalReview,
+            legalReviewer = legalReviewer,
         )
         doc.owners.add(primaryOwner)
         if (proxyOwner != null) doc.owners.add(proxyOwner)
@@ -94,6 +154,24 @@ class DocumentService(
             departmentId = department.id!!,
             actorId = actorId,
         ))
+
+        // Pre-selection notification: only fired when a reviewer was chosen.
+        // The actual review task is created later when the document is
+        // submitted to the workflow engine (Pass 3). This event just sends
+        // a courtesy heads-up email.
+        if (legalReviewer != null) {
+            events.publishEvent(LegalReviewerPreSelected(
+                aggregateId = saved.id!!,
+                documentTitle = saved.title,
+                submitterId = creator.id!!,
+                submitterName = creator.displayName,
+                departmentId = department.id!!,
+                departmentName = department.name,
+                legalReviewerId = legalReviewer.id!!,
+                timeLimitDays = legalReviewTimeLimitDays(),
+                actorId = actorId,
+            ))
+        }
 
         return saved.toDetailResponse()
     }
@@ -136,6 +214,25 @@ class DocumentService(
                         primaryOwnerId = doc.primaryOwner.id!!,
                         proxyOwnerId = doc.proxyOwner?.id,
                         departmentId = doc.department.id!!,
+                        actorId = actorId,
+                    ))
+                }
+                // DRAFT -> IN_REVIEW kicks off the workflow engine. The engine
+                // listens synchronously and joins this transaction, so if it
+                // throws (broken workflow, missing assignees) the status update
+                // rolls back and the document stays in DRAFT.
+                if (oldStatus == "DRAFT" && newStatus == "IN_REVIEW") {
+                    val latest = versionRepo.findLatestByDocumentId(doc.id!!)
+                        ?: throw IllegalStateException(
+                            "Cannot submit document ${doc.id} for review: no version uploaded"
+                        )
+                    events.publishEvent(DocumentSubmittedForReview(
+                        aggregateId = doc.id!!,
+                        versionId = latest.id!!,
+                        departmentId = doc.department.id!!,
+                        submitterId = actorId,
+                        requiresLegalReview = doc.requiresLegalReview,
+                        legalReviewerId = doc.legalReviewer?.id,
                         actorId = actorId,
                     ))
                 }
@@ -207,6 +304,7 @@ class DocumentService(
 
         val latest = versionRepo.findLatestByDocumentId(documentId)
         val nextVersion = latest?.let { incrementVersion(it.versionNumber) } ?: "1.0"
+        val hadPriorVersion = latest != null
 
         val version = DocumentVersion(
             document = doc,
@@ -226,6 +324,48 @@ class DocumentService(
             versionNumber = nextVersion,
             actorId = actorId,
         ))
+
+        // New-version workflow re-entry (Pass 3d requirement).
+        //
+        // When an existing document gets a new version, the document must
+        // re-enter the department workflow — users shouldn't be able to
+        // slip edits through by uploading a version. We flip the doc to
+        // IN_REVIEW and fire DocumentSubmittedForReview so the engine
+        // creates a fresh instance bound to the new version id.
+        //
+        // Exclusions:
+        //   - hadPriorVersion = false → this IS the initial version for a
+        //     newly-created document; the caller (upload flow) wants the
+        //     doc to stay in DRAFT until the user clicks Submit for Review
+        //   - LEGAL_HOLD → document is frozen, no state changes allowed
+        //   - DRAFT → user is still iterating on the initial submission;
+        //     don't force them into review just because they uploaded a
+        //     revision before submitting
+        val shouldResubmit = hadPriorVersion &&
+            doc.status != "DRAFT" &&
+            doc.status != "LEGAL_HOLD" &&
+            doc.status != "IN_REVIEW"
+        if (shouldResubmit) {
+            val oldStatus = doc.status
+            doc.status = "IN_REVIEW"
+            documentRepo.save(doc)
+
+            events.publishEvent(DocumentStatusChanged(
+                aggregateId = doc.id!!,
+                previousStatus = oldStatus,
+                newStatus = "IN_REVIEW",
+                actorId = actorId,
+            ))
+            events.publishEvent(DocumentSubmittedForReview(
+                aggregateId = doc.id!!,
+                versionId = saved.id!!,
+                departmentId = doc.department.id!!,
+                submitterId = actorId,
+                requiresLegalReview = doc.requiresLegalReview,
+                legalReviewerId = doc.legalReviewer?.id,
+                actorId = actorId,
+            ))
+        }
 
         return saved.toResponse()
     }
@@ -290,6 +430,9 @@ class DocumentService(
             primaryOwnerName = primaryOwner.displayName,
             proxyOwnerId = proxyOwner?.id,
             proxyOwnerName = proxyOwner?.displayName,
+            requiresLegalReview = requiresLegalReview,
+            legalReviewerId = legalReviewer?.id,
+            legalReviewerName = legalReviewer?.displayName,
             createdAt = createdAt,
             updatedAt = updatedAt,
         )

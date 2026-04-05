@@ -19,13 +19,27 @@ import org.springframework.security.web.SecurityFilterChain
 @EnableMethodSecurity
 class SecurityConfig {
 
-    // TODO: remove this chain once Keycloak dev tokens are working — reports
-    //       should use the main chain with @PreAuthorize role checks.
+    // TODO: remove this chain once Keycloak dev tokens are working — these
+    //       endpoints should use the main chain with @PreAuthorize role checks.
     @Bean
     @Order(0)
-    fun reportsSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
+    fun devBypassSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
-            .securityMatcher("/api/v1/reports", "/api/v1/reports/*", "/api/v1/reports/**")
+            .securityMatcher(
+                "/api/v1/reports", "/api/v1/reports/*", "/api/v1/reports/**",
+                "/api/v1/admin/mail-gateway", "/api/v1/admin/mail-gateway/*", "/api/v1/admin/mail-gateway/**",
+                "/api/v1/admin/notification-settings", "/api/v1/admin/notification-settings/*",
+                "/api/v1/admin/legal-review-settings", "/api/v1/admin/legal-review-settings/*",
+                "/api/v1/admin/workflow-escalation-settings", "/api/v1/admin/workflow-escalation-settings/*",
+                "/api/v1/departments/*/scan-settings",
+                "/api/v1/departments/*/workflow", "/api/v1/departments/*/workflow/*",
+                "/api/v1/users/provision",
+                "/api/v1/users/*",
+                "/api/v1/users/*/reset-password",
+                "/api/v1/departments/*/users",
+                "/api/v1/legal-reviewers",
+                "/api/v1/document-categories", "/api/v1/document-categories/*",
+            )
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { it.anyRequest().permitAll() }

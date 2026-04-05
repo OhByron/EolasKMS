@@ -33,6 +33,8 @@ export interface Department {
 	managerUserId: string | null;
 	parentDeptId: string | null;
 	status: string;
+	/** When true, members of this department can be picked as legal reviewers. */
+	handlesLegalReview: boolean;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -84,7 +86,28 @@ export interface DocumentDetail {
 	primaryOwnerName: string;
 	proxyOwnerId: string | null;
 	proxyOwnerName: string | null;
+	requiresLegalReview: boolean;
+	legalReviewerId: string | null;
+	legalReviewerName: string | null;
 	createdAt: string;
+	updatedAt: string;
+}
+
+// --- Document Categories ---
+
+export interface DocumentCategory {
+	id: string;
+	name: string;
+	description: string | null;
+	departmentId: string | null;
+	status: string;
+	suggestsLegalReview: boolean;
+}
+
+// --- Legal Review Settings ---
+
+export interface LegalReviewSettings {
+	defaultTimeLimitDays: number;
 	updatedAt: string;
 }
 
@@ -359,6 +382,210 @@ export interface DepartmentHoldSummary {
 	departmentName: string;
 	holdCount: number;
 	avgHoldDays: number;
+}
+
+// --- Mail Gateway ---
+
+export interface MailGatewayConfig {
+	provider: string;
+	transport: string;
+	host: string;
+	port: number;
+	encryption: 'starttls' | 'tls' | 'none';
+	skipTlsVerify: boolean;
+	username: string | null;
+	hasPassword: boolean;
+	fromEmail: string;
+	fromName: string;
+	replyToEmail: string | null;
+	region: string | null;
+	sandboxMode: boolean;
+	connectionTimeoutMs: number;
+	readTimeoutMs: number;
+	lastTestedAt: string | null;
+	lastTestSuccess: boolean | null;
+	lastTestError: string | null;
+	updatedAt: string;
+}
+
+export interface UpdateMailGatewayRequest {
+	provider: string;
+	transport?: string;
+	host: string;
+	port: number;
+	encryption: 'starttls' | 'tls' | 'none';
+	skipTlsVerify?: boolean;
+	username?: string | null;
+	password?: string | null;  // null = keep existing, '' = clear, else re-encrypt
+	fromEmail: string;
+	fromName: string;
+	replyToEmail?: string | null;
+	region?: string | null;
+	sandboxMode?: boolean;
+	connectionTimeoutMs?: number;
+	readTimeoutMs?: number;
+}
+
+export interface TestGatewayRequest {
+	provider: string;
+	transport?: string;
+	host: string;
+	port: number;
+	encryption: 'starttls' | 'tls' | 'none';
+	skipTlsVerify?: boolean;
+	username?: string | null;
+	password?: string | null;
+	fromEmail: string;
+	fromName: string;
+	testRecipient?: string | null;
+	connectionTimeoutMs?: number;
+	readTimeoutMs?: number;
+}
+
+export interface GatewayTestResult {
+	success: boolean;
+	message: string;
+	detail: string | null;
+}
+
+export interface ProviderPreset {
+	key: string;
+	label: string;
+	description: string;
+	transport: string;
+	defaultHost: string | null;
+	defaultPort: number;
+	defaultEncryption: 'starttls' | 'tls' | 'none';
+	fixedUsername: string | null;
+	showUsername: boolean;
+	showPassword: boolean;
+	showRegion: boolean;
+	regions: RegionOption[];
+	showSkipTlsVerify: boolean;
+	warning: string | null;
+	hostHint: string | null;
+	devOnly: boolean;
+}
+
+export interface RegionOption {
+	key: string;
+	label: string;
+	host: string;
+}
+
+// --- Workflow definition ---
+
+export type WorkflowType = 'LINEAR' | 'PARALLEL';
+export type ActionType = 'REVIEW' | 'APPROVE' | 'SIGN_OFF';
+
+export interface WorkflowStep {
+	id: string;
+	stepOrder: number;
+	name: string;
+	actionType: ActionType;
+	assigneeId: string | null;
+	assigneeName: string | null;
+	assigneeStatus: string | null;
+	escalationId: string | null;
+	escalationName: string | null;
+	escalationStatus: string | null;
+	timeLimitDays: number;
+}
+
+export interface WorkflowDefinition {
+	id: string;
+	departmentId: string;
+	departmentName: string;
+	name: string;
+	description: string | null;
+	workflowType: WorkflowType;
+	isDefault: boolean;
+	steps: WorkflowStep[];
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface UpdateWorkflowStepRequest {
+	name: string;
+	actionType: ActionType;
+	assigneeId: string;
+	escalationId: string;
+	timeLimitDays: number;
+}
+
+export interface UpdateWorkflowRequest {
+	name?: string;
+	description?: string | null;
+	workflowType: WorkflowType;
+	steps: UpdateWorkflowStepRequest[];
+}
+
+export interface WorkflowValidationResponse {
+	ready: boolean;
+	problems: string[];
+}
+
+// --- User Provisioning ---
+
+export interface ProvisionUserRequest {
+	displayName: string;
+	email: string;
+	departmentId: string;
+	role: 'GLOBAL_ADMIN' | 'DEPT_ADMIN' | 'EDITOR' | 'CONTRIBUTOR';
+	temporaryPassword?: string | null;
+}
+
+export interface ProvisionedUserResponse {
+	user: UserProfile;
+	temporaryPassword: string;
+	mustChangePasswordOnFirstLogin: boolean;
+}
+
+export interface PasswordResetResponse {
+	user: UserProfile;
+	temporaryPassword: string;
+	emailDispatched: boolean;
+}
+
+// --- Workflow Escalation Settings ---
+
+export interface WorkflowEscalationSettings {
+	scanIntervalMinutes: number;
+	lastScanAt: string | null;
+	updatedAt: string;
+	validIntervals: Array<{ minutes: number; label: string }>;
+}
+
+// --- Notification Settings ---
+
+export interface IntervalOption {
+	hours: number;
+	label: string;
+}
+
+export interface NotificationSettings {
+	defaultScanIntervalHours: number;
+	minScanIntervalHours: number;
+	validIntervals: IntervalOption[];
+	updatedAt: string;
+}
+
+export interface UpdateNotificationSettingsRequest {
+	defaultScanIntervalHours: number;
+}
+
+export interface DepartmentScanSettings {
+	departmentId: string;
+	departmentName: string;
+	scanIntervalHours: number | null;
+	effectiveIntervalHours: number;
+	inheritsDefault: boolean;
+	lastScanAt: string | null;
+	validIntervals: IntervalOption[];
+}
+
+export interface UpdateDepartmentScanSettingsRequest {
+	scanIntervalHours: number | null;
 }
 
 // --- AI Config ---

@@ -20,7 +20,7 @@ export const userManager = typeof window !== 'undefined' ? new UserManager(setti
 
 export interface KoshaUser {
 	id: string;          // Keycloak sub
-	profileId: string;   // Kosha user_profile.id
+	profileId: string;   // internal user_profile.id
 	name: string;
 	email: string;
 	roles: string[];
@@ -95,7 +95,7 @@ async function setUser(oidcUser: any) {
 	const roles = oidcUser.profile.roles ?? [];
 	const keycloakId = oidcUser.profile.sub ?? '';
 
-	// Fetch the Kosha profile to get the internal user ID
+	// Fetch the user profile to get the internal user ID
 	let profileId = '';
 	try {
 		const controller = new AbortController();

@@ -61,7 +61,7 @@
 </script>
 
 <svelte:head>
-	<title>Document Aging Report - Kosha</title>
+	<title>Document Aging Report - Eòlas</title>
 </svelte:head>
 
 <PageHeader title="Document Aging" description="Age distribution and retention status across the document library" />

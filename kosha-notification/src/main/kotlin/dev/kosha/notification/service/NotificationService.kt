@@ -1,11 +1,12 @@
 package dev.kosha.notification.service
 
 import dev.kosha.notification.entity.NotificationLog
+import dev.kosha.notification.gateway.KoshaMailGateway
+import dev.kosha.notification.gateway.KoshaMailMessage
+import dev.kosha.notification.repository.MailGatewayConfigRepository
 import dev.kosha.notification.repository.NotificationLogRepository
 import dev.kosha.notification.repository.NotificationTemplateRepository
 import org.slf4j.LoggerFactory
-import org.springframework.mail.javamail.JavaMailSender
-import org.springframework.mail.javamail.MimeMessageHelper
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.OffsetDateTime
@@ -15,7 +16,8 @@ import java.util.UUID
 class NotificationService(
     private val templateRepo: NotificationTemplateRepository,
     private val logRepo: NotificationLogRepository,
-    private val mailSender: JavaMailSender,
+    private val gatewayConfigRepo: MailGatewayConfigRepository,
+    private val mailGateway: KoshaMailGateway,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -40,6 +42,12 @@ class NotificationService(
         val subject = renderTemplate(template.subjectTemplate ?: "", vars)
         val body = renderTemplate(template.bodyTemplate, vars)
 
+        // Resolve from address from current gateway config
+        val config = gatewayConfigRepo.findById("default").orElse(null)
+        val fromEmail = config?.fromEmail ?: "notifications@eolaskms.com"
+        val fromName = config?.fromName ?: "Eòlas"
+        val replyTo = config?.replyToEmail
+
         val entry = NotificationLog(
             templateId = template.id,
             recipientId = recipientId,
@@ -49,13 +57,14 @@ class NotificationService(
         )
 
         try {
-            val message = mailSender.createMimeMessage()
-            val helper = MimeMessageHelper(message, false, "UTF-8")
-            helper.setFrom("notifications@kosha.local")
-            helper.setTo(recipientEmail)
-            helper.setSubject(subject)
-            helper.setText(body, false)
-            mailSender.send(message)
+            mailGateway.send(KoshaMailMessage(
+                to = recipientEmail,
+                subject = subject,
+                body = body,
+                fromEmail = fromEmail,
+                fromName = fromName,
+                replyTo = replyTo,
+            ))
 
             entry.status = "SENT"
             entry.sentAt = OffsetDateTime.now()

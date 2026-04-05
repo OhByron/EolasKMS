@@ -57,7 +57,7 @@
 </script>
 
 <svelte:head>
-	<title>Taxonomy - Kosha</title>
+	<title>Taxonomy - Eòlas</title>
 </svelte:head>
 
 <PageHeader title="Taxonomy" description="Browse the knowledge taxonomy" />

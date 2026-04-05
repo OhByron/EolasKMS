@@ -34,7 +34,7 @@
 </script>
 
 <svelte:head>
-	<title>Create Retention Policy - Kosha</title>
+	<title>Create Retention Policy - Eòlas</title>
 </svelte:head>
 
 <PageHeader title="Create Retention Policy">

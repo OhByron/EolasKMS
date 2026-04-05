@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
@@ -32,12 +33,20 @@ class DocumentController(
 ) {
 
     @GetMapping
-    fun list(@PageableDefault(size = 20) pageable: Pageable) =
-        documentService.findAll(pageable).let { page ->
+    fun list(
+        @PageableDefault(size = 20) pageable: Pageable,
+        @RequestParam(required = false) departmentId: UUID?,
+    ) =
+        (if (departmentId != null) {
+            documentService.findByDepartment(departmentId, pageable)
+        } else {
+            documentService.findAll(pageable)
+        }).let { page ->
+            val deptSuffix = if (departmentId != null) "&departmentId=$departmentId" else ""
             ApiResponse(
                 data = page.content,
                 meta = PageMeta(page = page.number, size = page.size, total = page.totalElements),
-                links = Links(self = "/api/v1/documents?page=${page.number}&size=${page.size}"),
+                links = Links(self = "/api/v1/documents?page=${page.number}&size=${page.size}$deptSuffix"),
             )
         }
 

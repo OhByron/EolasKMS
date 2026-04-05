@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/api';
-	import type { Department, DocumentDetail, VersionDetail, UserProfile } from '$lib/types/api';
+	import type { Department, DocumentCategory, DocumentDetail, VersionDetail, UserProfile } from '$lib/types/api';
 	import { onMount } from 'svelte';
 	import { user as authUser } from '$lib/auth';
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
@@ -9,6 +9,8 @@
 	// --- State ---
 	let step = $state(1);
 	let departments = $state<Department[]>([]);
+	let categories = $state<DocumentCategory[]>([]);
+	let legalReviewers = $state<UserProfile[]>([]);
 	let loading = $state(false);
 	let error = $state('');
 
@@ -16,8 +18,17 @@
 	let title = $state('');
 	let description = $state('');
 	let departmentId = $state('');
+	let categoryId = $state('');
 	let storageMode = $state('VAULT');
 	let workflowType = $state('NONE');
+
+	// Legal review
+	let requiresLegalReview = $state(false);
+	let legalReviewerId = $state('');
+	// Tracks whether the user has manually overridden the category hint.
+	// Once they untick a suggested default we don't re-tick it when they
+	// switch categories (until they pick a fresh category that suggests it).
+	let legalReviewUserEdited = $state(false);
 
 	// Ownership
 	let ownerMode = $state<'self' | 'other'>('self');
@@ -51,12 +62,53 @@
 
 	onMount(async () => {
 		try {
-			const res = await api.departments.list(0, 100);
-			departments = res.data;
+			// Load reference data in parallel. Failures on categories or legal
+			// reviewers are non-blocking — the rest of the form still works.
+			// Departments are scoped to what the caller can actually upload into
+			// (their home department, or everything for GLOBAL_ADMIN). The
+			// server re-enforces this on POST so the picker is advisory only.
+			const [deptRes, catRes, revRes] = await Promise.all([
+				api.me.uploadableDepartments(),
+				api.documentCategories.list().catch(() => ({ data: [] as DocumentCategory[] })),
+				api.legalReview.listReviewers().catch(() => ({ data: [] as UserProfile[] })),
+			]);
+			departments = deptRes.data;
+			// If the user has exactly one uploadable department, pre-select it —
+			// that's the 99% case for non-admin contributors and spares them a
+			// forced click on a dropdown with only one option.
+			if (departments.length === 1) {
+				departmentId = departments[0].id;
+			}
+			categories = catRes.data;
+			legalReviewers = revRes.data;
 		} catch (e: any) {
 			error = e.message;
 		}
 	});
+
+	/**
+	 * When the user picks a category that suggests legal review, auto-tick
+	 * the checkbox — but only if they haven't manually toggled it already.
+	 * If they've overridden the default once (either direction), we respect
+	 * their choice until they change categories to one where the hint
+	 * matches their current state again.
+	 */
+	function onCategoryChange(newCatId: string) {
+		categoryId = newCatId;
+		if (legalReviewUserEdited) return;
+		const cat = categories.find((c) => c.id === newCatId);
+		if (cat && cat.suggestsLegalReview && !requiresLegalReview) {
+			requiresLegalReview = true;
+		}
+	}
+
+	function onLegalReviewToggle(next: boolean) {
+		requiresLegalReview = next;
+		legalReviewUserEdited = true;
+		if (!next) {
+			legalReviewerId = '';
+		}
+	}
 
 	// --- Ownership ---
 	let ownerSearchTimeout: ReturnType<typeof setTimeout>;
@@ -91,7 +143,11 @@
 	}
 
 	// --- Step 1 validation ---
-	const step1Valid = $derived(title.trim().length > 0 && departmentId.length > 0);
+	const step1Valid = $derived(
+		title.trim().length > 0 &&
+		departmentId.length > 0 &&
+		(!requiresLegalReview || legalReviewerId.length > 0)
+	);
 
 	// --- Step 2: file handling ---
 	function handleFileDrop(e: DragEvent) {
@@ -163,9 +219,12 @@
 				title,
 				description: description || undefined,
 				departmentId,
+				categoryId: categoryId || undefined,
 				storageMode,
 				workflowType,
 				ownerId: ownerMode === 'other' && selectedOwner ? selectedOwner.id : undefined,
+				requiresLegalReview,
+				legalReviewerId: requiresLegalReview ? legalReviewerId : null,
 			});
 			createdDoc = docRes.data;
 
@@ -275,7 +334,7 @@
 </script>
 
 <svelte:head>
-	<title>Upload Document - Kosha</title>
+	<title>Upload Document - Eòlas</title>
 </svelte:head>
 
 <PageHeader title="Upload Document" />
@@ -356,6 +415,74 @@
 					{/each}
 				</select>
 			</div>
+
+			<div>
+				<label for="doc-category" class="block text-sm font-medium">Category</label>
+				<select
+					id="doc-category"
+					value={categoryId}
+					onchange={(e) => onCategoryChange((e.target as HTMLSelectElement).value)}
+					class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
+				>
+					<option value="">— uncategorised —</option>
+					{#each categories as cat}
+						<option value={cat.id}>
+							{cat.name}{cat.suggestsLegalReview ? ' (legal review suggested)' : ''}
+						</option>
+					{/each}
+				</select>
+				<p class="mt-1 text-xs text-muted-foreground">
+					Categorising a document helps with search and may suggest legal review.
+				</p>
+			</div>
+
+			<fieldset class="rounded-md border border-border bg-muted/20 p-3">
+				<legend class="px-1 text-sm font-medium">Legal Review</legend>
+				<label class="flex items-start gap-2 text-sm">
+					<input
+						type="checkbox"
+						checked={requiresLegalReview}
+						onchange={(e) => onLegalReviewToggle((e.target as HTMLInputElement).checked)}
+						class="mt-0.5 focus:ring-ring"
+					/>
+					<span>
+						Requires legal review
+						<span class="block text-xs text-muted-foreground">
+							A legal reviewer will approve this document in parallel with the department workflow. Pick the person from the list below.
+						</span>
+					</span>
+				</label>
+
+				{#if requiresLegalReview}
+					{#if legalReviewers.length === 0}
+						<p class="mt-2 rounded-md border border-warning bg-warning/10 p-2 text-xs" role="alert">
+							No legal reviewers are available. A global admin must flag at least one department as a legal review provider (Department detail → "Handles legal review") before you can use this option.
+						</p>
+					{:else}
+						<div class="mt-3">
+							<label for="legal-reviewer" class="block text-xs font-medium">
+								Legal reviewer <span class="text-destructive">*</span>
+							</label>
+							<select
+								id="legal-reviewer"
+								bind:value={legalReviewerId}
+								required={requiresLegalReview}
+								class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
+							>
+								<option value="">Select a legal reviewer</option>
+								{#each legalReviewers as reviewer}
+									<option value={reviewer.id}>
+										{reviewer.displayName} — {reviewer.departmentName}
+									</option>
+								{/each}
+							</select>
+							<p class="mt-1 text-xs text-muted-foreground">
+								They will receive a heads-up email immediately and an action request when you submit the document for review.
+							</p>
+						</div>
+					{/if}
+				{/if}
+			</fieldset>
 
 			<fieldset>
 				<legend class="text-sm font-medium">Storage Mode</legend>

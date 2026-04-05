@@ -28,6 +28,16 @@
 	let editTitle = $state('');
 	let editDesc = $state('');
 
+	// New version upload state. Kept separate from the title/description edit
+	// flow because it's a fundamentally different operation (file upload + AI
+	// re-processing) and users should be able to do either without stepping
+	// through the other.
+	let addingVersion = $state(false);
+	let newVersionFile = $state<File | null>(null);
+	let newVersionSummary = $state('');
+	let versionUploading = $state(false);
+	let versionError = $state('');
+
 	const docId = $derived(page.params.id ?? '');
 
 	const statusTransitions: Record<string, { label: string; to: string; color: string }[]> = {
@@ -111,6 +121,83 @@
 		}
 	}
 
+	function openVersionUpload() {
+		addingVersion = true;
+		newVersionFile = null;
+		newVersionSummary = '';
+		versionError = '';
+	}
+
+	function cancelVersionUpload() {
+		addingVersion = false;
+		newVersionFile = null;
+		newVersionSummary = '';
+		versionError = '';
+	}
+
+	function onVersionFileSelected(ev: Event) {
+		const input = ev.target as HTMLInputElement;
+		newVersionFile = input.files?.[0] ?? null;
+	}
+
+	/**
+	 * Upload a new version for the current document. Mirrors the 3-step
+	 * pipeline used by the initial upload form:
+	 *   1. POST /documents/{id}/versions       — create the version row
+	 *   2. POST .../versions/{verId}/upload    — stream the file bytes
+	 *   3. reloadDocument()                    — pick up new currentVersion
+	 * AI processing is kicked off by the backend on (2) and runs async; the
+	 * version detail page can be used to monitor it. We intentionally do not
+	 * block the detail page on AI completion.
+	 */
+	async function uploadNewVersion() {
+		if (!doc || !newVersionFile) return;
+		versionUploading = true;
+		versionError = '';
+		try {
+			const verRes = await api.documents.createVersion(doc.id, {
+				fileName: newVersionFile.name,
+				fileSizeBytes: newVersionFile.size,
+				changeSummary: newVersionSummary.trim() || undefined,
+			});
+			const newVersion = verRes.data;
+
+			const formData = new FormData();
+			formData.append('file', newVersionFile);
+
+			// Reuse the same bearer-token pattern the initial upload uses —
+			// the /versions/{id}/upload endpoint is JWT-authenticated and
+			// multipart, so we can't go through the generic api.request wrapper.
+			let token = '';
+			const unsub = user.subscribe((u) => { token = u?.accessToken ?? ''; });
+			unsub();
+
+			const uploadRes = await fetch(
+				`/api/v1/documents/${doc.id}/versions/${newVersion.id}/upload`,
+				{
+					method: 'POST',
+					headers: { Authorization: `Bearer ${token}` },
+					body: formData,
+				},
+			);
+			if (!uploadRes.ok) {
+				const err = await uploadRes.json().catch(() => ({ detail: 'Upload failed' }));
+				throw new Error(err.detail ?? `Upload failed: HTTP ${uploadRes.status}`);
+			}
+
+			await loadDocument();
+			addingVersion = false;
+			newVersionFile = null;
+			newVersionSummary = '';
+			successMsg = `New version v${newVersion.versionNumber} uploaded. AI processing will run in the background.`;
+			setTimeout(() => (successMsg = ''), 4000);
+		} catch (e: any) {
+			versionError = e.message ?? 'Failed to upload new version';
+		} finally {
+			versionUploading = false;
+		}
+	}
+
 	async function changeStatus(newStatus: string) {
 		if (!doc) return;
 		actionLoading = true;
@@ -180,7 +267,7 @@
 </script>
 
 <svelte:head>
-	<title>{doc?.title ?? 'Document'} - Kosha</title>
+	<title>{doc?.title ?? 'Document'} - Eòlas</title>
 </svelte:head>
 
 {#if loading}
@@ -309,13 +396,84 @@
 
 			<!-- Recent Versions -->
 			<section class="rounded-lg border border-border bg-card p-5">
-				<div class="flex items-center justify-between">
+				<div class="flex items-center justify-between gap-3">
 					<h2 class="text-sm font-semibold text-muted-foreground">Recent Versions</h2>
-					<a href="/documents/{docId}/versions"
-						class="text-xs text-primary hover:underline focus:outline-2 focus:outline-ring">
-						View all
-					</a>
+					<div class="flex items-center gap-3">
+						{#if canEdit && !addingVersion}
+							<button
+								type="button"
+								onclick={openVersionUpload}
+								class="rounded-md border border-border px-3 py-1 text-xs font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring"
+							>
+								+ Upload New Version
+							</button>
+						{/if}
+						<a href="/documents/{docId}/versions"
+							class="text-xs text-primary hover:underline focus:outline-2 focus:outline-ring">
+							View all
+						</a>
+					</div>
 				</div>
+
+				{#if addingVersion}
+					<form
+						onsubmit={(e) => { e.preventDefault(); uploadNewVersion(); }}
+						class="mt-3 space-y-3 rounded-md border border-primary/20 bg-muted/30 p-3"
+					>
+						<div>
+							<label for="new-version-file" class="block text-xs font-medium text-muted-foreground">
+								File <span class="text-destructive">*</span>
+							</label>
+							<input
+								id="new-version-file"
+								type="file"
+								onchange={onVersionFileSelected}
+								disabled={versionUploading}
+								required
+								class="mt-1 w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1 file:text-xs file:font-medium file:text-primary-foreground hover:file:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
+							/>
+							{#if newVersionFile}
+								<p class="mt-1 text-xs text-muted-foreground">
+									{newVersionFile.name} ({formatSize(newVersionFile.size)})
+								</p>
+							{/if}
+						</div>
+						<div>
+							<label for="new-version-summary" class="block text-xs font-medium text-muted-foreground">
+								Change summary <span class="font-normal">(optional)</span>
+							</label>
+							<textarea
+								id="new-version-summary"
+								bind:value={newVersionSummary}
+								disabled={versionUploading}
+								rows="2"
+								maxlength="1000"
+								placeholder="What changed in this version?"
+								class="mt-1 w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
+							></textarea>
+						</div>
+						{#if versionError}
+							<p role="alert" class="text-xs text-destructive">{versionError}</p>
+						{/if}
+						<div class="flex justify-end gap-2">
+							<button
+								type="button"
+								onclick={cancelVersionUpload}
+								disabled={versionUploading}
+								class="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
+							>
+								Cancel
+							</button>
+							<button
+								type="submit"
+								disabled={versionUploading || !newVersionFile}
+								class="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed"
+							>
+								{versionUploading ? 'Uploading...' : 'Upload version'}
+							</button>
+						</div>
+					</form>
+				{/if}
 				{#if versions.length === 0}
 					<p class="mt-2 text-sm text-muted-foreground">No versions uploaded yet.</p>
 				{:else}

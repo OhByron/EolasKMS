@@ -50,7 +50,7 @@
 </script>
 
 <svelte:head>
-	<title>Review Inbox - Kosha</title>
+	<title>Review Inbox - Eòlas</title>
 </svelte:head>
 
 <PageHeader title="Review Inbox" description="{total} task{total !== 1 ? 's' : ''}" />
@@ -112,7 +112,7 @@
 					<tr class="border-b border-border transition hover:bg-muted/30">
 						<td class="px-4 py-3">
 							<a
-								href="/documents/{task.documentId}/review"
+								href="/documents/{task.documentId}/review?workflow={task.workflowInstanceId}&step={task.stepInstanceId}"
 								class="font-medium text-primary hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 							>
 								{task.documentTitle}

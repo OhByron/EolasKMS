@@ -68,6 +68,19 @@
       "protocol": "openid-connect"
     },
     {
+      "clientId": "kosha-backend",
+      "name": "Kosha Backend Service Account",
+      "description": "Used by the Kosha API to provision and manage users in Keycloak via the admin REST API.",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "kosha-backend-dev-secret",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "publicClient": false,
+      "protocol": "openid-connect"
+    },
+    {
       "clientId": "kosha-web",
       "name": "Kosha Web Frontend",
       "enabled": true,

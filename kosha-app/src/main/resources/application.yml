@@ -63,3 +63,16 @@ kosha:
     url: ${NATS_URL:nats://localhost:4222}
   opensearch:
     url: ${OPENSEARCH_URL:https://localhost:9200}
+  keycloak:
+    # Base URL Keycloak is running at (no /realms suffix).
+    server-url: ${KEYCLOAK_SERVER_URL:http://localhost:8180}
+    # The realm Kosha users live in.
+    realm: ${KEYCLOAK_REALM:kosha}
+    # Service account client used by the backend to manage users.
+    admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:kosha-backend}
+    admin-client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:kosha-backend-dev-secret}
+    # Master realm admin credentials — used ONLY by the bootstrap step to
+    # grant realm-admin role to the service account if it's not already set up.
+    # Safe to omit in production after first boot.
+    master-username: ${KEYCLOAK_MASTER_USERNAME:admin}
+    master-password: ${KEYCLOAK_MASTER_PASSWORD:admin}

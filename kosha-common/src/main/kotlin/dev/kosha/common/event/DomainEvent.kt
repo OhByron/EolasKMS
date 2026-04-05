@@ -73,7 +73,133 @@ data class DocumentLegalHoldApplied(
     override val aggregateType = "document"
 }
 
+/**
+ * Fired when a document is created with `requiresLegalReview=true` and a
+ * specific legal reviewer is selected. This is a pre-selection heads-up —
+ * the document is still in DRAFT and no workflow step instance exists yet.
+ * The actual review task is created when the workflow engine picks up the
+ * document (Pass 3). This event triggers a courtesy email so the reviewer
+ * knows they'll be on the hook soon.
+ */
+data class LegalReviewerPreSelected(
+    override val aggregateId: UUID,      // document id
+    val documentTitle: String,
+    val submitterId: UUID,
+    val submitterName: String,
+    val departmentId: UUID,
+    val departmentName: String,
+    val legalReviewerId: UUID,
+    val timeLimitDays: Int,
+    override val actorId: UUID?,
+) : DomainEvent() {
+    override val eventType = "doc.legal-review.pre-selected"
+    override val aggregateType = "document"
+}
+
+// --- User events ---
+
+/**
+ * Fired when an admin resets a user's password. The listener in the
+ * notification module emails the new temporary password to the affected
+ * user. The event is intentionally in-process only — it is not relayed to
+ * NATS, so the `temporaryPassword` field never leaves the JVM that fires it.
+ * If that changes, switch to an opaque token and have the listener fetch
+ * the password from a short-lived store.
+ */
+data class UserPasswordReset(
+    override val aggregateId: UUID,     // user_profile.id
+    val userEmail: String,
+    val userDisplayName: String,
+    val departmentName: String,
+    val temporaryPassword: String,
+    override val actorId: UUID?,
+) : DomainEvent() {
+    override val eventType = "user.password.reset"
+    override val aggregateType = "user_profile"
+}
+
+/**
+ * Fired when a document transitions from DRAFT to IN_REVIEW. This is the
+ * primary trigger for the workflow engine: it consumes the event
+ * synchronously, creates a `workflow_instance` with the right set of
+ * `workflow_step_instance` rows, and injects a legal review step if
+ * requested. If the engine throws (broken workflow, missing assignees,
+ * etc.) the publisher's transaction rolls back and the document stays in
+ * DRAFT, so the UI never sees a half-submitted state.
+ *
+ * Separate from [DocumentStatusChanged] because the engine needs richer
+ * context (version, legal review flags) that the general-purpose status
+ * event does not carry. `DocumentStatusChanged` still fires alongside this
+ * event so notification/audit listeners can react to the state change.
+ */
+data class DocumentSubmittedForReview(
+    override val aggregateId: UUID,      // document id
+    val versionId: UUID,                 // version being reviewed (usually the latest)
+    val departmentId: UUID,
+    val submitterId: UUID,
+    val requiresLegalReview: Boolean,
+    val legalReviewerId: UUID?,
+    override val actorId: UUID?,
+) : DomainEvent() {
+    override val eventType = "doc.submitted-for-review"
+    override val aggregateType = "document"
+}
+
 // --- Workflow events ---
+
+/**
+ * Fired when a workflow step instance transitions to IN_PROGRESS and the
+ * assigned user needs to be notified. Published in three situations:
+ *
+ *   1. Initial creation of a PARALLEL workflow (all steps fire at once)
+ *   2. Initial creation of a LINEAR workflow (only the first step)
+ *   3. LINEAR advancement when an earlier step approves
+ *   4. Legal-review synthetic step injection
+ *
+ * The listener in `kosha-notification` looks up document/submitter/dept
+ * details via repositories rather than receiving them in the payload so
+ * the event stays stable as display templates evolve.
+ */
+data class WorkflowStepAssigned(
+    override val aggregateId: UUID,        // workflow_step_instance id
+    val workflowInstanceId: UUID,
+    val documentId: UUID,
+    val assigneeId: UUID,
+    val stepName: String,
+    val dueAt: OffsetDateTime?,
+    override val actorId: UUID?,
+) : DomainEvent() {
+    override val eventType = "wf.step.assigned"
+    override val aggregateType = "workflow_step_instance"
+}
+
+/**
+ * Fired when an overdue workflow step is reassigned from the primary
+ * assignee to the escalation contact. The notification listener emails
+ * the new assignee and (optionally) the original assignee so both know
+ * the handoff happened. [reason] distinguishes the common escalation
+ * triggers so templates can word themselves appropriately:
+ *
+ *   - `DEADLINE_MISSED` — primary assignee failed to act by the due date
+ *   - `NO_DEPT_ADMIN`   — synthetic fallback workflow could not find a
+ *     dept admin at submission time; escalation was global admin from
+ *     the start. This is fired for audit symmetry only; there is no
+ *     actual reassignment because the step was already owned by global
+ *     admin. May be omitted from v1 if not needed.
+ */
+data class WorkflowStepEscalated(
+    override val aggregateId: UUID,      // workflow_step_instance id
+    val workflowInstanceId: UUID,
+    val documentId: UUID,
+    val previousAssigneeId: UUID?,
+    val newAssigneeId: UUID,
+    val stepName: String,
+    val reason: String,                  // DEADLINE_MISSED | NO_DEPT_ADMIN
+    override val actorId: UUID? = null,  // null = system/scheduler
+) : DomainEvent() {
+    override val eventType = "wf.step.escalated"
+    override val aggregateType = "workflow_step_instance"
+}
 
 data class WorkflowStepCompleted(
     override val aggregateId: UUID,

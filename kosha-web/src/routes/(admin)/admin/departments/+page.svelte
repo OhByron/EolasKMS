@@ -55,7 +55,7 @@
 </script>
 
 <svelte:head>
-	<title>Departments - Administration - Kosha</title>
+	<title>Departments - Administration - Eòlas</title>
 </svelte:head>
 
 <PageHeader title="Departments" description="Manage departments and teams">

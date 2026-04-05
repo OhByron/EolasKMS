@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 @theme {
-	/* Kosha brand: navy primary, warm gold accent, slate neutrals */
-	--color-primary: oklch(0.28 0.06 265);
+	/* Eòlas brand: forest green primary, warm heather accent */
+	--color-primary: oklch(0.32 0.055 145);
 	--color-primary-foreground: oklch(0.98 0 0);
-	--color-accent: oklch(0.75 0.15 75);
-	--color-accent-foreground: oklch(0.20 0.03 75);
+	--color-accent: oklch(0.55 0.09 320);
+	--color-accent-foreground: oklch(0.98 0 0);
 	--color-destructive: oklch(0.55 0.2 25);
 	--color-destructive-foreground: oklch(0.98 0 0);
 	--color-muted: oklch(0.93 0.005 265);

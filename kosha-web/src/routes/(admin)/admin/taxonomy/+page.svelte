@@ -252,7 +252,7 @@
 </script>
 
 <svelte:head>
-	<title>Taxonomy Management - Administration - Kosha</title>
+	<title>Taxonomy Management - Administration - Eòlas</title>
 </svelte:head>
 
 <PageHeader title="Taxonomy Management" description="Edit taxonomy tree and import seeds">

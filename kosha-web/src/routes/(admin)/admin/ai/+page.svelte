@@ -123,7 +123,7 @@
 </script>
 
 <svelte:head>
-	<title>AI Configuration - Administration - Kosha</title>
+	<title>AI Configuration - Administration - Eòlas</title>
 </svelte:head>
 
 <PageHeader title="AI Configuration" description="Model settings and prompt tuning" />

@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-	<title>Dashboard - Kosha</title>
+	<title>Dashboard - Eòlas</title>
 </svelte:head>
 
 <h1 class="text-2xl font-bold">Dashboard</h1>

@@ -50,7 +50,7 @@
 </script>
 
 <svelte:head>
-	<title>Legal Holds - Kosha</title>
+	<title>Legal Holds - Eòlas</title>
 </svelte:head>
 
 <PageHeader title="Legal Holds" description="Documents currently under legal hold with suspended retention" />

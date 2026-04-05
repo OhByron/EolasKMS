@@ -71,6 +71,19 @@ class Document(
     @JoinColumn(name = "proxy_owner_id")
     var proxyOwner: UserProfile? = null,
 
+    /**
+     * Set by the submitter at upload time. When true, the workflow engine
+     * (Pass 3) adds a parallel legal review step to the workflow instance
+     * assigned to [legalReviewer]. The submitter picks a specific user from
+     * a department flagged as handles_legal_review.
+     */
+    @Column(name = "requires_legal_review", nullable = false)
+    var requiresLegalReview: Boolean = false,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "legal_reviewer_id")
+    var legalReviewer: UserProfile? = null,
+
     @OneToMany(mappedBy = "document", fetch = FetchType.LAZY)
     @OrderBy("createdAt DESC")
     var versions: MutableList<DocumentVersion> = mutableListOf(),

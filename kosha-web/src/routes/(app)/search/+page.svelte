@@ -102,7 +102,7 @@
 </script>
 
 <svelte:head>
-	<title>Search - Kosha</title>
+	<title>Search - Eòlas</title>
 </svelte:head>
 
 <PageHeader title="Search" />

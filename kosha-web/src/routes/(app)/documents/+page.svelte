@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api } from '$lib/api';
-	import type { DocumentListItem } from '$lib/types/api';
+	import type { Department, DocumentListItem } from '$lib/types/api';
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 	import StatusBadge from '$lib/components/kosha/StatusBadge.svelte';
 
@@ -12,13 +12,31 @@
 	let currentPage = $state(0);
 	const pageSize = 20;
 
-	onMount(() => loadDocuments());
+	// Department filter state. Empty string = all departments; bound directly
+	// to the <select> and converted to undefined when calling the API.
+	let departments = $state<Department[]>([]);
+	let departmentFilter = $state('');
+
+	onMount(async () => {
+		// Load departments for the filter dropdown; failure is non-blocking.
+		try {
+			const res = await api.departments.list(0, 200);
+			departments = res.data;
+		} catch {
+			// Filter just won't populate — main list still works.
+		}
+		await loadDocuments();
+	});
 
 	async function loadDocuments() {
 		loading = true;
 		error = '';
 		try {
-			const res = await api.documents.list(currentPage, pageSize);
+			const res = await api.documents.list(
+				currentPage,
+				pageSize,
+				departmentFilter || undefined,
+			);
 			documents = res.data;
 			total = res.meta?.total ?? 0;
 		} catch (e: any) {
@@ -26,6 +44,13 @@
 		} finally {
 			loading = false;
 		}
+	}
+
+	function onDepartmentChange() {
+		// Reset to first page whenever the filter changes so we don't land
+		// on an empty page past the new total.
+		currentPage = 0;
+		loadDocuments();
 	}
 
 	function prevPage() {
@@ -44,7 +69,7 @@
 </script>
 
 <svelte:head>
-	<title>Documents - Kosha</title>
+	<title>Documents - Eòlas</title>
 </svelte:head>
 
 <PageHeader title="Documents" description="{total} document{total !== 1 ? 's' : ''}">
@@ -55,6 +80,34 @@
 		+ Upload Document
 	</a>
 </PageHeader>
+
+<div class="mt-4 flex flex-wrap items-end gap-3">
+	<div class="flex flex-col gap-1">
+		<label for="doc-dept-filter" class="text-xs font-medium text-muted-foreground">
+			Filter by department
+		</label>
+		<select
+			id="doc-dept-filter"
+			bind:value={departmentFilter}
+			onchange={onDepartmentChange}
+			class="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
+		>
+			<option value="">All departments</option>
+			{#each departments as d (d.id)}
+				<option value={d.id}>{d.name}</option>
+			{/each}
+		</select>
+	</div>
+	{#if departmentFilter}
+		<button
+			type="button"
+			onclick={() => { departmentFilter = ''; onDepartmentChange(); }}
+			class="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring"
+		>
+			Clear filter
+		</button>
+	{/if}
+</div>
 
 {#if loading}
 	<p aria-live="polite" class="mt-4 text-muted-foreground">Loading documents...</p>

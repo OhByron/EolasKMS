@@ -22,6 +22,30 @@ class DepartmentService(
     fun findAll(pageable: Pageable): Page<DepartmentResponse> =
         departmentRepo.findAll(pageable).map { it.toResponse() }
 
+    /**
+     * Departments the given user can upload documents into.
+     *
+     * Today the rule is simple: GLOBAL_ADMIN can upload into any active
+     * department, and every other role can only upload into their own home
+     * department. There is no cross-department ACL table yet; when one is
+     * added this method becomes the single place to extend.
+     *
+     * Returns an empty list if the user's profile or department is missing
+     * or inactive — the upload form will render this as "you have nowhere
+     * to file a document" which is the correct UX for a deactivated account.
+     */
+    fun findUploadableFor(keycloakId: UUID): List<DepartmentResponse> {
+        val user = userProfileRepo.findByKeycloakId(keycloakId) ?: return emptyList()
+        if (user.status != "ACTIVE") return emptyList()
+
+        return if (user.role == "GLOBAL_ADMIN") {
+            departmentRepo.findByStatusOrderByNameAsc("ACTIVE").map { it.toResponse() }
+        } else {
+            val home = user.department
+            if (home.status == "ACTIVE") listOf(home.toResponse()) else emptyList()
+        }
+    }
+
     fun findById(id: UUID): DepartmentResponse =
         departmentRepo.findById(id)
             .orElseThrow { NoSuchElementException("Department not found: $id") }
@@ -59,7 +83,26 @@ class DepartmentService(
                 .orElseThrow { NoSuchElementException("Manager user not found: $managerId") }
         }
 
+        // handles_legal_review toggle — only GLOBAL_ADMIN should be able to
+        // set this (company-wide concern). Authority enforcement is stubbed
+        // in dev; see the workflow user management service for the pattern
+        // that will replace it when JWT roles are wired up.
+        request.handlesLegalReview?.let {
+            checkGlobalAdminAuthority()
+            department.handlesLegalReview = it
+        }
+
         return departmentRepo.save(department).toResponse()
+    }
+
+    /**
+     * Stubbed authority check — in production this inspects the current JWT
+     * and throws [org.springframework.security.access.AccessDeniedException]
+     * if the caller is not a GLOBAL_ADMIN. Currently a no-op in dev.
+     */
+    private fun checkGlobalAdminAuthority() {
+        // TODO: when JWT roles are wired up, read SecurityContextHolder and
+        //       enforce hasRole('GLOBAL_ADMIN'). See session memory.
     }
 
     private fun Department.toResponse() = DepartmentResponse(
@@ -69,6 +112,7 @@ class DepartmentService(
         managerUserId = manager?.id,
         parentDeptId = parent?.id,
         status = status,
+        handlesLegalReview = handlesLegalReview,
         createdAt = createdAt,
         updatedAt = updatedAt,
     )

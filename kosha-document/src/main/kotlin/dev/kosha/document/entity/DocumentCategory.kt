@@ -23,4 +23,12 @@ class DocumentCategory(
 
     @Column(nullable = false, length = 20)
     var status: String = "ACTIVE",
+
+    /**
+     * When true, the upload form pre-ticks the "requires legal review"
+     * checkbox if this category is selected. Advisory only — the submitter
+     * can always override. Set by GLOBAL_ADMIN.
+     */
+    @Column(name = "suggests_legal_review", nullable = false)
+    var suggestsLegalReview: Boolean = false,
 ) : BaseEntity()

@@ -28,7 +28,7 @@
 </script>
 
 <svelte:head>
-	<title>Retention Policies - Administration - Kosha</title>
+	<title>Retention Policies - Administration - Eòlas</title>
 </svelte:head>
 
 <PageHeader title="Retention Policies" description="Document lifecycle and compliance">

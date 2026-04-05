@@ -16,8 +16,16 @@
 	let comments = $state('');
 	let showHistory = $state(false);
 
-	const docId = $derived(page.params.id);
+	const docId = $derived(page.params.id ?? '');
 	const latestVersion = $derived(versions[0] ?? null);
+
+	// The inbox deep-links into this page with ?workflow=<id>&step=<id> so
+	// the review actions know which step instance to act on. Without those
+	// params the page falls back to read-only view since we can't tell the
+	// engine which step the reviewer is deciding on.
+	const workflowInstanceId = $derived(page.url.searchParams.get('workflow') ?? '');
+	const stepInstanceId = $derived(page.url.searchParams.get('step') ?? '');
+	const canAct = $derived(workflowInstanceId.length > 0 && stepInstanceId.length > 0);
 
 	onMount(() => loadDocument());
 
@@ -39,25 +47,11 @@
 	}
 
 	async function approve() {
-		if (!doc) return;
+		if (!doc || !canAct) return;
 		actionLoading = true;
 		error = '';
 		try {
-			await api.documents.update(docId, { status: 'PUBLISHED' });
-			goto('/inbox');
-		} catch (e: any) {
-			error = e.message;
-		} finally {
-			actionLoading = false;
-		}
-	}
-
-	async function requestChanges() {
-		if (!doc) return;
-		actionLoading = true;
-		error = '';
-		try {
-			await api.documents.update(docId, { status: 'DRAFT' });
+			await api.workflows.approve(workflowInstanceId, stepInstanceId, comments || undefined);
 			goto('/inbox');
 		} catch (e: any) {
 			error = e.message;
@@ -67,11 +61,15 @@
 	}
 
 	async function reject() {
-		if (!doc) return;
+		if (!doc || !canAct) return;
+		if (!comments.trim()) {
+			error = 'Rejection requires a comment explaining what needs to change.';
+			return;
+		}
 		actionLoading = true;
 		error = '';
 		try {
-			await api.documents.update(docId, { status: 'REJECTED' });
+			await api.workflows.reject(workflowInstanceId, stepInstanceId, comments);
 			goto('/inbox');
 		} catch (e: any) {
 			error = e.message;
@@ -94,7 +92,7 @@
 </script>
 
 <svelte:head>
-	<title>Review{doc ? ` - ${doc.title}` : ''} - Kosha</title>
+	<title>Review{doc ? ` - ${doc.title}` : ''} - Eòlas</title>
 </svelte:head>
 
 {#if loading}
@@ -210,28 +208,31 @@
 					></textarea>
 				</div>
 
+				{#if !canAct}
+					<p class="mt-3 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
+						Open this document from your <a href="/inbox" class="text-primary underline">review inbox</a>
+						to take action. The engine needs the workflow and step id to record your decision.
+					</p>
+				{/if}
+
 				<div class="mt-4 flex flex-col gap-2">
 					<button
 						onclick={approve}
-						disabled={actionLoading}
+						disabled={actionLoading || !canAct}
 						class="w-full rounded-md bg-success px-4 py-2 text-sm font-medium text-white hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 					>
-						Approve & Publish
-					</button>
-					<button
-						onclick={requestChanges}
-						disabled={actionLoading}
-						class="w-full rounded-md border border-warning bg-warning/10 px-4 py-2 text-sm font-medium text-warning hover:bg-warning/20 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
-					>
-						Request Changes
+						Approve
 					</button>
 					<button
 						onclick={reject}
-						disabled={actionLoading}
+						disabled={actionLoading || !canAct}
 						class="w-full rounded-md border border-destructive bg-destructive/10 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/20 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 					>
-						Reject
+						Reject — Return to Submitter
 					</button>
+					<p class="text-xs text-muted-foreground">
+						Rejecting returns the document to the submitter as a draft. Comments are mandatory on reject.
+					</p>
 				</div>
 			</section>
 
