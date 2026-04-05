@@ -61,6 +61,18 @@ data class DocumentStatusChanged(
     override val aggregateType = "document"
 }
 
+data class DocumentLegalHoldApplied(
+    override val aggregateId: UUID,
+    val title: String,
+    val primaryOwnerId: UUID,
+    val proxyOwnerId: UUID?,
+    val departmentId: UUID,
+    override val actorId: UUID?,
+) : DomainEvent() {
+    override val eventType = "doc.legal-hold.applied"
+    override val aggregateType = "document"
+}
+
 // --- Workflow events ---
 
 data class WorkflowStepCompleted(
@@ -114,6 +126,36 @@ data class RetentionReviewDue(
     override val actorId: UUID? = null,
 ) : DomainEvent() {
     override val eventType = "retention.review.due"
+    override val aggregateType = "retention_review"
+}
+
+data class RetentionReviewCritical(
+    override val aggregateId: UUID,
+    val documentId: UUID,
+    val documentTitle: String,
+    val policyId: UUID,
+    val primaryOwnerId: UUID,
+    val proxyOwnerId: UUID?,
+    val daysOverdue: Long,
+    override val actorId: UUID? = null,
+) : DomainEvent() {
+    override val eventType = "retention.review.critical"
+    override val aggregateType = "retention_review"
+}
+
+data class RetentionReviewApproaching(
+    override val aggregateId: UUID,
+    val documentId: UUID,
+    val documentTitle: String,
+    val policyId: UUID,
+    val policyName: String,
+    val primaryOwnerId: UUID,
+    val proxyOwnerId: UUID?,
+    val daysUntilDue: Long,
+    val dueAt: OffsetDateTime,
+    override val actorId: UUID? = null,
+) : DomainEvent() {
+    override val eventType = "retention.review.approaching"
     override val aggregateType = "retention_review"
 }
 

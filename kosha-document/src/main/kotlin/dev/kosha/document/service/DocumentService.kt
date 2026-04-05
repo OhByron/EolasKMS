@@ -3,6 +3,7 @@ package dev.kosha.document.service
 import dev.kosha.common.event.DocumentCheckedIn
 import dev.kosha.common.event.DocumentCheckedOut
 import dev.kosha.common.event.DocumentCreated
+import dev.kosha.common.event.DocumentLegalHoldApplied
 import dev.kosha.common.event.DocumentStatusChanged
 import dev.kosha.common.event.DocumentVersionCreated
 import dev.kosha.document.dto.CreateDocumentRequest
@@ -62,6 +63,16 @@ class DocumentService(
         val creator = userProfileRepo.findById(actorId)
             .orElseThrow { NoSuchElementException("User not found: $actorId") }
 
+        // Ownership: if ownerId provided and differs from uploader,
+        // that person is the primary owner and the uploader becomes proxy.
+        val primaryOwner = request.ownerId?.let { oid ->
+            if (oid == actorId) creator
+            else userProfileRepo.findById(oid)
+                .orElseThrow { NoSuchElementException("Owner not found: $oid") }
+        } ?: creator
+
+        val proxyOwner = if (primaryOwner.id != actorId) creator else null
+
         val doc = Document(
             title = request.title,
             description = request.description,
@@ -70,8 +81,11 @@ class DocumentService(
             storageMode = request.storageMode,
             workflowType = request.workflowType,
             createdBy = creator,
+            primaryOwner = primaryOwner,
+            proxyOwner = proxyOwner,
         )
-        doc.owners.add(creator)
+        doc.owners.add(primaryOwner)
+        if (proxyOwner != null) doc.owners.add(proxyOwner)
         val saved = documentRepo.save(doc)
 
         events.publishEvent(DocumentCreated(
@@ -96,6 +110,15 @@ class DocumentService(
             doc.category = categoryRepo.findById(catId)
                 .orElseThrow { NoSuchElementException("Category not found: $catId") }
         }
+        request.primaryOwnerId?.let { ownerId ->
+            doc.primaryOwner = userProfileRepo.findById(ownerId)
+                .orElseThrow { NoSuchElementException("Owner not found: $ownerId") }
+        }
+        request.proxyOwnerId?.let { proxyId ->
+            doc.proxyOwner = userProfileRepo.findById(proxyId)
+                .orElseThrow { NoSuchElementException("Proxy owner not found: $proxyId") }
+        }
+
         request.status?.let { newStatus ->
             doc.status = newStatus
             if (oldStatus != newStatus) {
@@ -105,6 +128,17 @@ class DocumentService(
                     newStatus = newStatus,
                     actorId = actorId,
                 ))
+                // Fire legal hold event so notification module can email the owner
+                if (newStatus == "LEGAL_HOLD") {
+                    events.publishEvent(DocumentLegalHoldApplied(
+                        aggregateId = doc.id!!,
+                        title = doc.title,
+                        primaryOwnerId = doc.primaryOwner.id!!,
+                        proxyOwnerId = doc.proxyOwner?.id,
+                        departmentId = doc.department.id!!,
+                        actorId = actorId,
+                    ))
+                }
             }
         }
 
@@ -221,6 +255,7 @@ class DocumentService(
             status = status,
             checkedOut = checkedOut,
             currentVersion = latest?.versionNumber,
+            primaryOwnerName = primaryOwner.displayName,
             createdAt = createdAt,
         )
     }
@@ -251,6 +286,10 @@ class DocumentService(
                 )
             },
             createdBy = createdBy.id!!,
+            primaryOwnerId = primaryOwner.id!!,
+            primaryOwnerName = primaryOwner.displayName,
+            proxyOwnerId = proxyOwner?.id,
+            proxyOwnerName = proxyOwner?.displayName,
             createdAt = createdAt,
             updatedAt = updatedAt,
         )

@@ -13,7 +13,10 @@
 		{ href: '/admin/retention', title: 'Retention Policies', desc: 'Document lifecycle and compliance' },
 		{ href: '/admin/ai', title: 'AI Configuration', desc: 'Model settings and prompt tuning' },
 		{ href: '/admin/audit', title: 'Audit Log', desc: 'System-wide activity log' },
-		{ href: '/admin/taxonomy', title: 'Taxonomy Management', desc: 'Edit taxonomy tree and import seeds' }
+		{ href: '/admin/taxonomy', title: 'Taxonomy Management', desc: 'Edit taxonomy tree and import seeds' },
+		{ href: '/reports/aging', title: 'Document Aging', desc: 'Age distribution and retention status' },
+		{ href: '/reports/critical-items', title: 'Critical Items', desc: 'Overdue retention reviews by severity' },
+		{ href: '/reports/legal-holds', title: 'Legal Holds', desc: 'Documents under legal hold' }
 	] as card}
 		<a
 			href={card.href}

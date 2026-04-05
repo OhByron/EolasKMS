@@ -60,6 +60,7 @@ export interface DocumentListItem {
 	status: string;
 	checkedOut: boolean;
 	currentVersion: string | null;
+	primaryOwnerName: string;
 	createdAt: string;
 }
 
@@ -79,6 +80,10 @@ export interface DocumentDetail {
 	lockedBy: string | null;
 	currentVersion: VersionSummary | null;
 	createdBy: string;
+	primaryOwnerId: string;
+	primaryOwnerName: string;
+	proxyOwnerId: string | null;
+	proxyOwnerName: string | null;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -251,6 +256,109 @@ export interface RetentionReview {
 	outcome: string | null;
 	notes: string | null;
 	createdAt: string;
+}
+
+// --- Reports ---
+
+export interface AgingReportRow {
+	documentId: string;
+	docNumber: string;
+	title: string;
+	departmentId: string;
+	departmentName: string;
+	status: string;
+	categoryName: string | null;
+	retentionPolicyName: string | null;
+	retentionPeriod: string | null;
+	actionOnExpiry: string | null;
+	createdAt: string;
+	ageDays: number;
+	ageBand: string;
+	latestVersionNumber: string | null;
+	nextReviewAt: string | null;
+	hasOverdueReview: boolean;
+}
+
+export interface AgingReportSummary {
+	totalDocuments: number;
+	byAgeBand: AgeBandCount[];
+	byDepartment: DepartmentAgingSummary[];
+}
+
+export interface AgeBandCount {
+	ageBand: string;
+	count: number;
+}
+
+export interface DepartmentAgingSummary {
+	departmentId: string;
+	departmentName: string;
+	totalDocuments: number;
+	avgAgeDays: number;
+	oldestDocumentDays: number;
+}
+
+export interface CriticalItemRow {
+	documentId: string;
+	docNumber: string;
+	title: string;
+	departmentId: string;
+	departmentName: string;
+	status: string;
+	retentionPolicyName: string;
+	retentionPeriod: string;
+	actionOnExpiry: string;
+	createdAt: string;
+	ageDays: number;
+	reviewDueAt: string;
+	daysOverdue: number;
+	severity: string;
+	reviewId: string;
+}
+
+export interface CriticalItemsSummary {
+	totalCriticalItems: number;
+	bySeverity: SeverityCount[];
+	byDepartment: DepartmentCriticalSummary[];
+}
+
+export interface SeverityCount {
+	severity: string;
+	count: number;
+}
+
+export interface DepartmentCriticalSummary {
+	departmentId: string;
+	departmentName: string;
+	criticalCount: number;
+	oldestOverdueDays: number;
+}
+
+export interface LegalHoldRow {
+	documentId: string;
+	docNumber: string;
+	title: string;
+	departmentId: string;
+	departmentName: string;
+	categoryName: string | null;
+	createdAt: string;
+	holdSinceDays: number;
+	latestVersionNumber: string | null;
+	createdByName: string | null;
+	retentionPolicyName: string | null;
+	originalRetentionPeriod: string | null;
+}
+
+export interface LegalHoldSummary {
+	totalOnHold: number;
+	byDepartment: DepartmentHoldSummary[];
+}
+
+export interface DepartmentHoldSummary {
+	departmentId: string;
+	departmentName: string;
+	holdCount: number;
+	avgHoldDays: number;
 }
 
 // --- AI Config ---

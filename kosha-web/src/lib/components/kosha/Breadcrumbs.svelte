@@ -15,6 +15,10 @@
 		retention: 'Retention Policies',
 		ai: 'AI Configuration',
 		audit: 'Audit Log',
+		reports: 'Reports',
+		aging: 'Document Aging',
+		'critical-items': 'Critical Items',
+		'legal-holds': 'Legal Holds',
 		review: 'Review',
 		new: 'Create'
 	};

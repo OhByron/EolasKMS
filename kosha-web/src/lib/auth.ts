@@ -37,18 +37,26 @@ export async function initAuth() {
 			await setUser(oidcUser);
 		}
 	} catch {
-		// not logged in
+		// Stale OIDC state — clear it so login can start fresh
+		await userManager.removeUser().catch(() => {});
 	}
 }
 
 export async function login() {
+	// Clear any stale state before starting a new login flow
+	await userManager?.removeUser().catch(() => {});
 	await userManager?.signinRedirect();
 }
 
 export async function handleCallback() {
 	if (!userManager) return;
-	const oidcUser = await userManager.signinRedirectCallback();
-	await setUser(oidcUser);
+	try {
+		const oidcUser = await userManager.signinRedirectCallback();
+		await setUser(oidcUser);
+	} catch (e) {
+		await userManager.removeUser().catch(() => {});
+		throw e;
+	}
 }
 
 export async function logout() {
@@ -90,15 +98,19 @@ async function setUser(oidcUser: any) {
 	// Fetch the Kosha profile to get the internal user ID
 	let profileId = '';
 	try {
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), 5000);
 		const res = await fetch('/api/v1/me', {
-			headers: { Authorization: `Bearer ${accessToken}` }
+			headers: { Authorization: `Bearer ${accessToken}` },
+			signal: controller.signal,
 		});
+		clearTimeout(timeout);
 		if (res.ok) {
 			const data = await res.json();
 			profileId = data.data?.id ?? '';
 		}
 	} catch {
-		// Profile fetch failed — user may not be provisioned yet
+		// Profile fetch failed or timed out — user may not be provisioned yet
 	}
 
 	user.set({ id: keycloakId, profileId, name, email, roles, accessToken });

@@ -17,7 +17,13 @@ import type {
 	RetentionPolicy,
 	RetentionReview,
 	AiConfig,
-	AiStats
+	AiStats,
+	AgingReportRow,
+	AgingReportSummary,
+	CriticalItemRow,
+	CriticalItemsSummary,
+	LegalHoldRow,
+	LegalHoldSummary
 } from './types/api';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
@@ -45,22 +51,23 @@ async function ensureFreshToken(): Promise<string | null> {
 	return get(user)?.accessToken ?? null;
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
-	const token = await ensureFreshToken();
+async function request<T>(path: string, options: RequestInit & { skipAuth?: boolean } = {}): Promise<ApiResponse<T>> {
+	const { skipAuth, ...fetchOptions } = options;
+	const token = skipAuth ? null : await ensureFreshToken();
 	const headers: Record<string, string> = {
 		'Content-Type': 'application/json',
-		...(options.headers as Record<string, string>)
+		...(fetchOptions.headers as Record<string, string>)
 	};
 
 	if (token) {
 		headers['Authorization'] = `Bearer ${token}`;
 	}
 
-	const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+	const res = await fetch(`${API_BASE}${path}`, { ...fetchOptions, headers });
 
 	if (!res.ok) {
 		// On 401, try to re-login
-		if (res.status === 401) {
+		if (res.status === 401 && !skipAuth) {
 			const { login } = await import('./auth');
 			await login();
 			throw new Error('Session expired. Redirecting to login...');
@@ -89,7 +96,7 @@ export const api = {
 
 		get: (id: string) => request<DocumentDetail>(`/api/v1/documents/${id}`),
 
-		create: (body: { title: string; description?: string; departmentId: string; categoryId?: string; storageMode?: string; workflowType?: string }) =>
+		create: (body: { title: string; description?: string; departmentId: string; categoryId?: string; storageMode?: string; workflowType?: string; ownerId?: string }) =>
 			request<DocumentDetail>('/api/v1/documents', { method: 'POST', body: JSON.stringify(body) }),
 
 		update: (id: string, body: Record<string, unknown>) =>
@@ -218,6 +225,57 @@ export const api = {
 
 		reprocess: (documentId: string) =>
 			request(`/api/v1/admin/ai/reprocess/${documentId}`, { method: 'POST' }),
+	},
+
+	// --- Reports ---
+
+	reports: {
+		aging: (page = 0, size = 50, departmentId?: string, status?: string) => {
+			const params = new URLSearchParams({ page: String(page), size: String(size) });
+			if (departmentId) params.set('departmentId', departmentId);
+			if (status) params.set('status', status);
+			return request<AgingReportRow[]>(`/api/v1/reports/aging?${params}`, { skipAuth: true });
+		},
+
+		agingSummary: (departmentId?: string) => {
+			const params = departmentId ? `?departmentId=${departmentId}` : '';
+			return request<AgingReportSummary>(`/api/v1/reports/aging/summary${params}`, { skipAuth: true });
+		},
+
+		criticalItems: (page = 0, size = 50, departmentId?: string, minDaysOverdue?: number) => {
+			const params = new URLSearchParams({ page: String(page), size: String(size) });
+			if (departmentId) params.set('departmentId', departmentId);
+			if (minDaysOverdue !== undefined) params.set('minDaysOverdue', String(minDaysOverdue));
+			return request<CriticalItemRow[]>(`/api/v1/reports/critical-items?${params}`, { skipAuth: true });
+		},
+
+		criticalItemsSummary: (departmentId?: string) => {
+			const params = departmentId ? `?departmentId=${departmentId}` : '';
+			return request<CriticalItemsSummary>(`/api/v1/reports/critical-items/summary${params}`, { skipAuth: true });
+		},
+
+		notifyCriticalSelected: (reviewIds: string[]) =>
+			request<{ notified: number }>('/api/v1/reports/critical-items/notify', {
+				method: 'POST', body: JSON.stringify({ reviewIds }), skipAuth: true,
+			}),
+
+		notifyCriticalAll: (departmentId?: string) => {
+			const params = departmentId ? `?departmentId=${departmentId}` : '';
+			return request<{ notified: number }>(`/api/v1/reports/critical-items/notify-all${params}`, {
+				method: 'POST', skipAuth: true,
+			});
+		},
+
+		legalHolds: (page = 0, size = 50, departmentId?: string) => {
+			const params = new URLSearchParams({ page: String(page), size: String(size) });
+			if (departmentId) params.set('departmentId', departmentId);
+			return request<LegalHoldRow[]>(`/api/v1/reports/legal-holds?${params}`, { skipAuth: true });
+		},
+
+		legalHoldSummary: (departmentId?: string) => {
+			const params = departmentId ? `?departmentId=${departmentId}` : '';
+			return request<LegalHoldSummary>(`/api/v1/reports/legal-holds/summary${params}`, { skipAuth: true });
+		},
 	},
 
 	// --- Audit ---

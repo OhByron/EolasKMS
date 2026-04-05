@@ -11,6 +11,7 @@
 	onMount(async () => {
 		await initAuth();
 		if (!$user) {
+			sessionStorage.setItem('kosha-return-to', window.location.pathname);
 			goto('/');
 		}
 	});

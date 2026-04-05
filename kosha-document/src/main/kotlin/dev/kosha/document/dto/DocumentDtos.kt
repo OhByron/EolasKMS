@@ -12,6 +12,7 @@ data class CreateDocumentRequest(
     val categoryId: UUID? = null,
     val storageMode: String = "VAULT",
     val workflowType: String = "NONE",
+    val ownerId: UUID? = null, // null = uploader becomes owner
 )
 
 data class UpdateDocumentRequest(
@@ -20,6 +21,8 @@ data class UpdateDocumentRequest(
     val categoryId: UUID? = null,
     val status: String? = null,
     val workflowType: String? = null,
+    val primaryOwnerId: UUID? = null,
+    val proxyOwnerId: UUID? = null,
 )
 
 data class DocumentResponse(
@@ -38,6 +41,10 @@ data class DocumentResponse(
     val lockedBy: UUID?,
     val currentVersion: VersionSummary?,
     val createdBy: UUID,
+    val primaryOwnerId: UUID,
+    val primaryOwnerName: String,
+    val proxyOwnerId: UUID?,
+    val proxyOwnerName: String?,
     val createdAt: OffsetDateTime,
     val updatedAt: OffsetDateTime,
 )
@@ -50,6 +57,7 @@ data class DocumentListResponse(
     val status: String,
     val checkedOut: Boolean,
     val currentVersion: String?,
+    val primaryOwnerName: String,
     val createdAt: OffsetDateTime,
 )
 

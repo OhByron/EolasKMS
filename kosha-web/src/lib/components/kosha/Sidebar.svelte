@@ -48,6 +48,15 @@
 						]
 					: [])
 			]
+		},
+		{
+			title: 'Reports',
+			visible: hasAnyRole('GLOBAL_ADMIN', 'DEPT_ADMIN'),
+			items: [
+				{ label: 'Document Aging', href: '/reports/aging', icon: '⏳' },
+				{ label: 'Critical Items', href: '/reports/critical-items', icon: '⚠' },
+				{ label: 'Legal Holds', href: '/reports/legal-holds', icon: '⚖' }
+			]
 		}
 	]);
 

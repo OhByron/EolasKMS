@@ -63,6 +63,14 @@ class Document(
     @JoinColumn(name = "created_by", nullable = false, updatable = false)
     var createdBy: UserProfile,
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "primary_owner_id", nullable = false)
+    var primaryOwner: UserProfile,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "proxy_owner_id")
+    var proxyOwner: UserProfile? = null,
+
     @OneToMany(mappedBy = "document", fetch = FetchType.LAZY)
     @OrderBy("createdAt DESC")
     var versions: MutableList<DocumentVersion> = mutableListOf(),

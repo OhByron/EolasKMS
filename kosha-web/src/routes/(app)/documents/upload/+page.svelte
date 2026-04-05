@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/api';
-	import type { Department, DocumentDetail, VersionDetail } from '$lib/types/api';
+	import type { Department, DocumentDetail, VersionDetail, UserProfile } from '$lib/types/api';
 	import { onMount } from 'svelte';
+	import { user as authUser } from '$lib/auth';
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 
 	// --- State ---
@@ -17,6 +18,13 @@
 	let departmentId = $state('');
 	let storageMode = $state('VAULT');
 	let workflowType = $state('NONE');
+
+	// Ownership
+	let ownerMode = $state<'self' | 'other'>('self');
+	let ownerSearch = $state('');
+	let ownerResults = $state<UserProfile[]>([]);
+	let selectedOwner = $state<UserProfile | null>(null);
+	let searchingOwner = $state(false);
 
 	// Step 2: File
 	let selectedFile = $state<File | null>(null);
@@ -49,6 +57,38 @@
 			error = e.message;
 		}
 	});
+
+	// --- Ownership ---
+	let ownerSearchTimeout: ReturnType<typeof setTimeout>;
+
+	async function searchOwners(query: string) {
+		ownerSearch = query;
+		clearTimeout(ownerSearchTimeout);
+		if (query.length < 2) { ownerResults = []; return; }
+		ownerSearchTimeout = setTimeout(async () => {
+			searchingOwner = true;
+			try {
+				const res = await api.users.list(0, 20);
+				// Client-side filter since we don't have a search endpoint yet
+				ownerResults = res.data.filter((u: UserProfile) =>
+					u.displayName.toLowerCase().includes(query.toLowerCase()) ||
+					u.email.toLowerCase().includes(query.toLowerCase())
+				);
+			} catch { ownerResults = []; }
+			finally { searchingOwner = false; }
+		}, 300);
+	}
+
+	function selectOwner(u: UserProfile) {
+		selectedOwner = u;
+		ownerSearch = '';
+		ownerResults = [];
+	}
+
+	function clearOwner() {
+		selectedOwner = null;
+		ownerMode = 'self';
+	}
 
 	// --- Step 1 validation ---
 	const step1Valid = $derived(title.trim().length > 0 && departmentId.length > 0);
@@ -124,7 +164,8 @@
 				description: description || undefined,
 				departmentId,
 				storageMode,
-				workflowType
+				workflowType,
+				ownerId: ownerMode === 'other' && selectedOwner ? selectedOwner.id : undefined,
 			});
 			createdDoc = docRes.data;
 
@@ -328,6 +369,75 @@
 						Connector (index in place)
 					</label>
 				</div>
+			</fieldset>
+
+			<!-- Document Owner -->
+			<fieldset>
+				<legend class="text-sm font-medium">Document Owner</legend>
+				<div class="mt-1 flex gap-4">
+					<label class="flex items-center gap-2 text-sm">
+						<input type="radio" bind:group={ownerMode} value="self" onchange={clearOwner} class="focus:ring-ring" />
+						Myself
+					</label>
+					<label class="flex items-center gap-2 text-sm">
+						<input type="radio" bind:group={ownerMode} value="other" class="focus:ring-ring" />
+						Someone else
+					</label>
+				</div>
+
+				{#if ownerMode === 'other'}
+					<div class="mt-2">
+						{#if selectedOwner}
+							<div class="flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2">
+								<span class="text-sm font-medium">{selectedOwner.displayName}</span>
+								<span class="text-xs text-muted-foreground">{selectedOwner.email}</span>
+								<button
+									type="button"
+									onclick={clearOwner}
+									class="ml-auto text-xs text-destructive hover:underline focus:outline-2 focus:outline-ring"
+								>Remove</button>
+							</div>
+							<p class="mt-1 text-xs text-muted-foreground">
+								You will be set as the proxy owner for this document.
+							</p>
+						{:else}
+							<label for="owner-search" class="sr-only">Search for a user</label>
+							<input
+								id="owner-search"
+								type="text"
+								placeholder="Search by name or email..."
+								value={ownerSearch}
+								oninput={(e) => searchOwners((e.target as HTMLInputElement).value)}
+								class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
+								autocomplete="off"
+							/>
+							{#if searchingOwner}
+								<p class="mt-1 text-xs text-muted-foreground">Searching...</p>
+							{/if}
+							{#if ownerResults.length > 0}
+								<ul class="mt-1 max-h-40 overflow-y-auto rounded-md border border-border bg-card" role="listbox" aria-label="User search results">
+									{#each ownerResults as u}
+										<li>
+											<button
+												type="button"
+												class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted focus:bg-muted focus:outline-2 focus:outline-offset-[-2px] focus:outline-ring"
+												onclick={() => selectOwner(u)}
+												role="option"
+												aria-selected="false"
+											>
+												<span class="font-medium">{u.displayName}</span>
+												<span class="text-xs text-muted-foreground">{u.email}</span>
+												<span class="ml-auto text-xs text-muted-foreground">{u.role}</span>
+											</button>
+										</li>
+									{/each}
+								</ul>
+							{:else if ownerSearch.length >= 2 && !searchingOwner}
+								<p class="mt-1 text-xs text-muted-foreground">No users found</p>
+							{/if}
+						{/if}
+					</div>
+				{/if}
 			</fieldset>
 
 			<div>
