@@ -5,6 +5,7 @@ import dev.kosha.identity.dto.DepartmentResponse
 import dev.kosha.identity.dto.UserProfileResponse
 import dev.kosha.identity.service.DepartmentService
 import dev.kosha.identity.service.UserProfileService
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.GetMapping
@@ -12,8 +13,15 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
+/**
+ * Self-service endpoints for the authenticated user. Everything here is
+ * open to any authenticated role since users always get to see their own
+ * profile and their own uploadable-department list — the JWT subject is
+ * the authority, no role gate needed.
+ */
 @RestController
 @RequestMapping("/api/v1/me")
+@PreAuthorize("isAuthenticated()")
 class MeController(
     private val userProfileService: UserProfileService,
     private val departmentService: DepartmentService,

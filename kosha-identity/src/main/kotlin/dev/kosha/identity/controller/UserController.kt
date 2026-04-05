@@ -50,7 +50,11 @@ class UserController(
         )
     }
 
+    // Looking up a single user by id is an admin primitive — user profile
+    // self-service goes through /api/v1/me. The dept-admin scoping is
+    // applied by canManageUser which also covers the same-dept rule.
     @GetMapping("/{id}")
+    @PreAuthorize("@authorityService.canManageUser(authentication, #id) or hasRole('GLOBAL_ADMIN')")
     fun getById(@PathVariable id: UUID) =
         ApiResponse(data = userProfileService.findById(id))
 
@@ -64,15 +68,23 @@ class UserController(
      * High-level user creation: provisions both the Keycloak account and the
      * local user_profile row in one atomic operation. Returns a temporary
      * password the admin can share with the new user.
+     *
+     * DEPT_ADMIN is allowed here but the service layer must enforce that
+     * they can only create users in their own department — otherwise a
+     * dept admin could stand up new users in any department by passing a
+     * foreign `departmentId` in the request body.
      */
     @PostMapping("/provision")
     @ResponseStatus(HttpStatus.CREATED)
-    // TODO: restore @PreAuthorize("hasAnyRole('GLOBAL_ADMIN', 'DEPT_ADMIN')") once Keycloak dev roles are wired up.
+    @PreAuthorize("hasAnyRole('GLOBAL_ADMIN', 'DEPT_ADMIN')")
     fun provision(@RequestBody request: ProvisionUserRequest) =
         ApiResponse(data = userCreationService.provision(request))
 
+    // Patching a user requires either global admin or dept admin of the
+    // target user's current department. Role escalation (promoting to
+    // GLOBAL_ADMIN/DEPT_ADMIN) is additionally gated inside the service.
     @PatchMapping("/{id}")
-    // TODO: restore @PreAuthorize("hasAnyRole('GLOBAL_ADMIN', 'DEPT_ADMIN')") once Keycloak dev roles are wired up.
+    @PreAuthorize("@authorityService.canManageUser(authentication, #id)")
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateUserProfileRequest) =
         ApiResponse(data = userProfileService.update(id, request))
 
@@ -84,7 +96,7 @@ class UserController(
      * cases where email delivery fails.
      */
     @PostMapping("/{id}/reset-password")
-    // TODO: restore @PreAuthorize("hasRole('GLOBAL_ADMIN')") once Keycloak dev roles are wired up.
+    @PreAuthorize("@authorityService.canManageUser(authentication, #id)")
     fun resetPassword(@PathVariable id: UUID) =
         ApiResponse(data = userCreationService.resetPassword(id, actorId = null))
 }

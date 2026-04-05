@@ -1,5 +1,6 @@
 package dev.kosha.app.config
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
@@ -14,15 +15,51 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import org.springframework.security.web.SecurityFilterChain
+import org.slf4j.LoggerFactory
+import jakarta.annotation.PostConstruct
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 class SecurityConfig {
 
-    // TODO: remove this chain once Keycloak dev tokens are working — these
-    //       endpoints should use the main chain with @PreAuthorize role checks.
+    /**
+     * Opt-in bypass chain that skips JWT parsing for a specific set of
+     * paths and permits them all unconditionally.
+     *
+     * ## Why this exists
+     *
+     * Before Pass 4.3 this bean was always active and caught a long list
+     * of mutating endpoints that hadn't been annotated with `@PreAuthorize`
+     * yet. Pass 4.3 added annotations to every one of those endpoints,
+     * which means in any normally-deployed environment this chain is no
+     * longer needed at all. The endpoints are protected by method-level
+     * security on the main chain (Order 10) from now on.
+     *
+     * ## Why it's still here
+     *
+     * Local development without a running Keycloak instance is painful
+     * without a bypass — every request has to carry a real bearer token.
+     * Developers who know what they are doing can still flip this on via
+     *
+     *   kosha.security.dev-bypass.enabled=true
+     *
+     * in `application-dev.yml` or a local env var, to get the old
+     * permissive behaviour for iteration. The default is `false` so
+     * production deployments never ship with it open by accident.
+     *
+     * ## Safety net
+     *
+     * A `@PostConstruct` logs a loud WARNING at startup whenever the
+     * bypass is enabled, so even if someone flips the flag and forgets,
+     * it shows up in every deployment log. Never remove that warning.
+     */
     @Bean
     @Order(0)
+    @ConditionalOnProperty(
+        name = ["kosha.security.dev-bypass.enabled"],
+        havingValue = "true",
+    )
     fun devBypassSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
             .securityMatcher(
@@ -57,6 +94,7 @@ class SecurityConfig {
                 auth
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     .requestMatchers("/actuator/health/**").permitAll()
+                    .requestMatchers("/actuator/prometheus").permitAll()
                     .requestMatchers("/api/v1/**").authenticated()
                     .anyRequest().denyAll()
             }
@@ -65,6 +103,32 @@ class SecurityConfig {
             }
 
         return http.build()
+    }
+}
+
+/**
+ * Logs a loud warning whenever the dev bypass chain is active. This lives
+ * as a separate bean so it is only instantiated when the bypass itself
+ * is — it piggybacks on the same conditional. Future-you will thank you
+ * for this when a production log surprises you with "DEV BYPASS ACTIVE".
+ */
+@Configuration
+@ConditionalOnProperty(
+    name = ["kosha.security.dev-bypass.enabled"],
+    havingValue = "true",
+)
+class DevBypassWarning {
+    private val log = LoggerFactory.getLogger(javaClass)
+
+    @PostConstruct
+    fun warn() {
+        log.warn("╔══════════════════════════════════════════════════════════════════╗")
+        log.warn("║ kosha.security.dev-bypass.enabled=true                           ║")
+        log.warn("║ A set of admin endpoints bypass JWT auth on this instance.       ║")
+        log.warn("║ This must NEVER be true in production.                           ║")
+        log.warn("║ Remove or flip kosha.security.dev-bypass.enabled to false in     ║")
+        log.warn("║ application.yml or the deployment environment to disable.       ║")
+        log.warn("╚══════════════════════════════════════════════════════════════════╝")
     }
 }
 

@@ -32,7 +32,10 @@ class DepartmentController(
     private val userCreationService: UserCreationService,
 ) {
 
+    // Department listing and read-by-id are open to any authenticated user
+    // (the upload form, admin hub, and every dropdown need them).
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     fun list(@PageableDefault(size = 20) pageable: Pageable): ApiResponse<List<DepartmentResponse>> {
         val page = departmentService.findAll(pageable)
         return ApiResponse(
@@ -43,21 +46,30 @@ class DepartmentController(
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     fun getById(@PathVariable id: UUID) =
         ApiResponse(data = departmentService.findById(id))
 
+    // Creating a department is global-admin-only. No department-level scoping
+    // possible because there is no pre-existing department to scope against.
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('GLOBAL_ADMIN')")
     fun create(@RequestBody request: CreateDepartmentRequest) =
         ApiResponse(data = departmentService.create(request))
 
+    // Updating is dept-scoped. Note that the `handlesLegalReview` flag in
+    // the request must additionally be global-admin-only — enforced in the
+    // service layer since @PreAuthorize can't inspect request body fields.
     @PatchMapping("/{id}")
-    @PreAuthorize("hasAnyRole('GLOBAL_ADMIN', 'DEPT_ADMIN')")
+    @PreAuthorize("@authorityService.canEditDepartment(authentication, #id)")
     fun update(@PathVariable id: UUID, @RequestBody request: UpdateDepartmentRequest) =
         ApiResponse(data = departmentService.update(id, request))
 
+    // Listing department members is dept-scoped so dept admins don't get a
+    // peek at other departments' rosters.
     @GetMapping("/{id}/users")
+    @PreAuthorize("@authorityService.canEditDepartment(authentication, #id)")
     fun listUsers(@PathVariable id: UUID, @PageableDefault(size = 20) pageable: Pageable) =
         userProfileService.findByDepartment(id, pageable).let { page ->
             ApiResponse(
@@ -74,7 +86,7 @@ class DepartmentController(
      */
     @PostMapping("/{id}/users")
     @ResponseStatus(HttpStatus.CREATED)
-    // TODO: restore @PreAuthorize("hasAnyRole('GLOBAL_ADMIN', 'DEPT_ADMIN')") once Keycloak dev roles are wired up.
+    @PreAuthorize("@authorityService.canEditDepartment(authentication, #id)")
     fun provisionUserInDepartment(
         @PathVariable id: UUID,
         @RequestBody request: ProvisionUserRequest,

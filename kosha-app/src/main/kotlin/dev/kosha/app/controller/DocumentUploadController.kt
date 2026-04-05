@@ -9,6 +9,7 @@ import dev.kosha.document.repository.VersionMetadataRepository
 import org.apache.tika.Tika
 import org.slf4j.LoggerFactory
 import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.transaction.annotation.Transactional
@@ -37,6 +38,7 @@ class DocumentUploadController(
      * Returns matching document info if duplicate found.
      */
     @PostMapping("/check-duplicate")
+    @PreAuthorize("hasAnyRole('GLOBAL_ADMIN','DEPT_ADMIN','EDITOR','CONTRIBUTOR')")
     fun checkDuplicate(@RequestParam("file") file: MultipartFile): ApiResponse<Map<String, Any?>> {
         val bytes = file.bytes
         val hash = computeSha256(bytes)
@@ -72,6 +74,7 @@ class DocumentUploadController(
     }
 
     @PostMapping("/{docId}/versions/{versionId}/upload")
+    @PreAuthorize("hasAnyRole('GLOBAL_ADMIN','DEPT_ADMIN','EDITOR','CONTRIBUTOR')")
     @Transactional
     fun uploadFile(
         @PathVariable docId: UUID,

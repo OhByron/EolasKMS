@@ -2,6 +2,7 @@ package dev.kosha.app.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import dev.kosha.common.api.ApiResponse
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -24,8 +25,15 @@ data class SuggestedTerm(
     val description: String,
 )
 
+/**
+ * AI-assisted taxonomy helpers. Used by the taxonomy management UI when
+ * an admin is authoring or browsing terms — the LLM generates a draft
+ * definition or suggests child subtypes. Available to admins with taxonomy
+ * authority (global or department admins).
+ */
 @RestController
 @RequestMapping("/api/v1/admin/ai")
+@PreAuthorize("hasAnyRole('GLOBAL_ADMIN', 'DEPT_ADMIN')")
 class AiAssistController(
     private val aiConfigRepo: AiConfigRepository,
     private val objectMapper: ObjectMapper,

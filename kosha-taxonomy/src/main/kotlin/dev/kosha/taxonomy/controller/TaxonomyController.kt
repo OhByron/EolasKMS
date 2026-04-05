@@ -24,6 +24,7 @@ class TaxonomyController(
 ) {
 
     @GetMapping("/terms")
+    @PreAuthorize("isAuthenticated()")
     fun listTerms(@RequestParam(required = false) format: String?): ApiResponse<Any> {
         return if (format == "tree") {
             ApiResponse(data = taxonomyService.buildTree())
@@ -33,6 +34,7 @@ class TaxonomyController(
     }
 
     @GetMapping("/terms/{id}")
+    @PreAuthorize("isAuthenticated()")
     fun getById(@PathVariable id: UUID) =
         ApiResponse(data = taxonomyService.findById(id))
 
@@ -48,10 +50,12 @@ class TaxonomyController(
         ApiResponse(data = taxonomyService.update(id, request))
 
     @GetMapping("/terms/check-duplicate")
+    @PreAuthorize("hasAnyRole('GLOBAL_ADMIN', 'DEPT_ADMIN')")
     fun checkDuplicate(@RequestParam label: String) =
         ApiResponse(data = taxonomyService.checkDuplicate(label))
 
     @GetMapping("/candidates")
+    @PreAuthorize("hasAnyRole('GLOBAL_ADMIN', 'DEPT_ADMIN')")
     fun listCandidates() =
         ApiResponse(data = taxonomyService.findCandidates())
 
@@ -66,6 +70,7 @@ class TaxonomyController(
         ApiResponse(data = taxonomyService.updateStatus(id, "DEPRECATED"))
 
     @GetMapping("/terms/{id}/documents")
+    @PreAuthorize("isAuthenticated()")
     fun termDocuments(
         @PathVariable id: UUID,
         @RequestParam(defaultValue = "0") page: Int,

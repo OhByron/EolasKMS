@@ -16,9 +16,18 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
+/**
+ * Reports are GLOBAL_ADMIN globally, or DEPT_ADMIN scoped to their own
+ * department. Class-level annotation keeps it simple — the dept-scope
+ * check is additional on methods that accept a departmentId. When a
+ * DEPT_ADMIN calls an endpoint without specifying their departmentId we
+ * could either (a) inject it server-side or (b) deny. Today the service
+ * layer doesn't filter by caller dept, so we take the conservative path:
+ * DEPT_ADMIN must supply their own departmentId via the query param and
+ * the annotation verifies it. Global admins may omit it to see all.
+ */
 @RestController
 @RequestMapping("/api/v1/reports")
-// TODO: restore @PreAuthorize("hasAnyRole('GLOBAL_ADMIN', 'DEPT_ADMIN')") after Keycloak dev setup
 class ReportController(
     private val reportingService: ReportingService,
     private val scannerRef: RetentionReviewScanner,
@@ -27,6 +36,7 @@ class ReportController(
     // ── Aging Report ─────────────────────────────────────────────
 
     @GetMapping("/aging")
+    @PreAuthorize("@authorityService.canReadReportsFor(authentication, #departmentId)")
     fun agingReport(
         @RequestParam(required = false) departmentId: UUID?,
         @RequestParam(required = false) status: String?,
@@ -40,6 +50,7 @@ class ReportController(
     }
 
     @GetMapping("/aging/summary")
+    @PreAuthorize("@authorityService.canReadReportsFor(authentication, #departmentId)")
     fun agingReportSummary(
         @RequestParam(required = false) departmentId: UUID?,
     ) = ApiResponse(data = reportingService.agingReportSummary(departmentId))
@@ -47,6 +58,7 @@ class ReportController(
     // ── Critical Items ───────────────────────────────────────────
 
     @GetMapping("/critical-items")
+    @PreAuthorize("@authorityService.canReadReportsFor(authentication, #departmentId)")
     fun criticalItems(
         @RequestParam(required = false) departmentId: UUID?,
         @RequestParam(required = false) minDaysOverdue: Int?,
@@ -60,16 +72,23 @@ class ReportController(
     }
 
     @GetMapping("/critical-items/summary")
+    @PreAuthorize("@authorityService.canReadReportsFor(authentication, #departmentId)")
     fun criticalItemsSummary(
         @RequestParam(required = false) departmentId: UUID?,
     ) = ApiResponse(data = reportingService.criticalItemsSummary(departmentId))
 
+    // Notifying specific reviews is GLOBAL_ADMIN only for v1 — the endpoint
+    // doesn't currently enforce that a DEPT_ADMIN's selected review IDs all
+    // belong to their own department, and we don't want a misconfigured
+    // dept admin spamming other departments' owners. Tighten later.
     @PostMapping("/critical-items/notify")
+    @PreAuthorize("hasRole('GLOBAL_ADMIN')")
     fun notifySelected(
         @RequestBody body: NotifyRequest,
     ) = ApiResponse(data = mapOf("notified" to reportingService.notifySelected(body.reviewIds)))
 
     @PostMapping("/critical-items/notify-all")
+    @PreAuthorize("@authorityService.canReadReportsFor(authentication, #departmentId)")
     fun notifyAll(
         @RequestParam(required = false) departmentId: UUID?,
     ) = ApiResponse(data = mapOf("notified" to reportingService.notifyAll(departmentId)))
@@ -81,6 +100,7 @@ class ReportController(
      * not elapsed will be skipped.
      */
     @PostMapping("/critical-items/scan-approaching")
+    @PreAuthorize("hasRole('GLOBAL_ADMIN')")
     fun triggerScan(): ApiResponse<Map<String, String>> {
         scannerRef.scanTick()
         return ApiResponse(data = mapOf("status" to "scan complete"))
@@ -89,6 +109,7 @@ class ReportController(
     // ── Legal Holds ──────────────────────────────────────────────
 
     @GetMapping("/legal-holds")
+    @PreAuthorize("@authorityService.canReadReportsFor(authentication, #departmentId)")
     fun legalHolds(
         @RequestParam(required = false) departmentId: UUID?,
         @PageableDefault(size = 50) pageable: Pageable,
@@ -101,6 +122,7 @@ class ReportController(
     }
 
     @GetMapping("/legal-holds/summary")
+    @PreAuthorize("@authorityService.canReadReportsFor(authentication, #departmentId)")
     fun legalHoldSummary(
         @RequestParam(required = false) departmentId: UUID?,
     ) = ApiResponse(data = reportingService.legalHoldSummary(departmentId))

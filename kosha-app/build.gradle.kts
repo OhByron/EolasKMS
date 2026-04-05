@@ -21,6 +21,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    // Micrometer → Prometheus registry. Ships /actuator/prometheus so feature
+    // work from Pass 4 onwards can register counters/timers at authoring time
+    // rather than retrofitting for Pass 6 dashboards. Bootstrapped per the
+    // "instrument as we go" policy locked in the roadmap.
+    implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("io.nats:jnats:2.20.5")

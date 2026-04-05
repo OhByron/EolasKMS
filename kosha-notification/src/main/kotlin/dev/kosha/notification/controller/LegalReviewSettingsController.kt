@@ -3,6 +3,7 @@ package dev.kosha.notification.controller
 import dev.kosha.common.api.ApiResponse
 import dev.kosha.notification.dto.UpdateLegalReviewSettingsRequest
 import dev.kosha.notification.service.LegalReviewSettingsService
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -17,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 @RequestMapping("/api/v1/admin/legal-review-settings")
-// TODO: restore @PreAuthorize("hasRole('GLOBAL_ADMIN')") once JWT roles are wired up.
+@PreAuthorize("hasRole('GLOBAL_ADMIN')")
 class LegalReviewSettingsController(
     private val service: LegalReviewSettingsService,
 ) {

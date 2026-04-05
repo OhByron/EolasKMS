@@ -5,6 +5,7 @@ import dev.kosha.document.dto.CategoryResponse
 import dev.kosha.document.dto.UpdateCategoryRequest
 import dev.kosha.document.entity.DocumentCategory
 import dev.kosha.document.repository.DocumentCategoryRepository
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -28,12 +29,14 @@ import java.util.UUID
  */
 @RestController
 @RequestMapping("/api/v1/document-categories")
-// TODO: restore @PreAuthorize where applicable once JWT roles are wired up.
 class DocumentCategoryController(
     private val categoryRepo: DocumentCategoryRepository,
 ) {
 
+    // Read endpoints are open to any authenticated user — the upload form
+    // needs them and so does any document edit view.
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     fun list(): ApiResponse<List<CategoryResponse>> {
         val categories = categoryRepo
             .findByStatus("ACTIVE")
@@ -43,13 +46,17 @@ class DocumentCategoryController(
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     fun getById(@PathVariable id: UUID): ApiResponse<CategoryResponse> {
         val category = categoryRepo.findById(id)
             .orElseThrow { NoSuchElementException("Category not found: $id") }
         return ApiResponse(data = category.toResponse())
     }
 
+    // Only GLOBAL_ADMIN can edit category metadata — particularly the
+    // suggests_legal_review flag, which is a compliance-grade choice.
     @PatchMapping("/{id}")
+    @PreAuthorize("hasRole('GLOBAL_ADMIN')")
     @Transactional
     fun update(
         @PathVariable id: UUID,

@@ -184,24 +184,21 @@ export const api = {
 			request<ProvisionedUserResponse>(`/api/v1/departments/${id}/users`, {
 				method: 'POST',
 				body: JSON.stringify(body),
-				skipAuth: true,
 			}),
 
 		// Workflow definition (Pass 1 of workflow engine)
 		getWorkflow: (id: string) =>
-			request<WorkflowDefinition>(`/api/v1/departments/${id}/workflow`, { skipAuth: true }),
+			request<WorkflowDefinition>(`/api/v1/departments/${id}/workflow`),
 
 		updateWorkflow: (id: string, body: UpdateWorkflowRequest) =>
 			request<WorkflowDefinition>(`/api/v1/departments/${id}/workflow`, {
 				method: 'PUT',
 				body: JSON.stringify(body),
-				skipAuth: true,
 			}),
 
 		validateWorkflow: (id: string) =>
 			request<WorkflowValidationResponse>(
-				`/api/v1/departments/${id}/workflow/validation`,
-				{ skipAuth: true }
+				`/api/v1/departments/${id}/workflow/validation`
 			),
 	},
 
@@ -219,20 +216,17 @@ export const api = {
 			request<ProvisionedUserResponse>('/api/v1/users/provision', {
 				method: 'POST',
 				body: JSON.stringify(body),
-				skipAuth: true,
 			}),
 
 		update: (id: string, body: { role?: string; status?: string; departmentId?: string; displayName?: string; email?: string }) =>
 			request<UserProfile>(`/api/v1/users/${id}`, {
 				method: 'PATCH',
 				body: JSON.stringify(body),
-				skipAuth: true,
 			}),
 
 		resetPassword: (id: string) =>
 			request<PasswordResetResponse>(`/api/v1/users/${id}/reset-password`, {
 				method: 'POST',
-				skipAuth: true,
 			}),
 	},
 
@@ -326,103 +320,96 @@ export const api = {
 			const params = new URLSearchParams({ page: String(page), size: String(size) });
 			if (departmentId) params.set('departmentId', departmentId);
 			if (status) params.set('status', status);
-			return request<AgingReportRow[]>(`/api/v1/reports/aging?${params}`, { skipAuth: true });
+			return request<AgingReportRow[]>(`/api/v1/reports/aging?${params}`);
 		},
 
 		agingSummary: (departmentId?: string) => {
 			const params = departmentId ? `?departmentId=${departmentId}` : '';
-			return request<AgingReportSummary>(`/api/v1/reports/aging/summary${params}`, { skipAuth: true });
+			return request<AgingReportSummary>(`/api/v1/reports/aging/summary${params}`);
 		},
 
 		criticalItems: (page = 0, size = 50, departmentId?: string, minDaysOverdue?: number) => {
 			const params = new URLSearchParams({ page: String(page), size: String(size) });
 			if (departmentId) params.set('departmentId', departmentId);
 			if (minDaysOverdue !== undefined) params.set('minDaysOverdue', String(minDaysOverdue));
-			return request<CriticalItemRow[]>(`/api/v1/reports/critical-items?${params}`, { skipAuth: true });
+			return request<CriticalItemRow[]>(`/api/v1/reports/critical-items?${params}`);
 		},
 
 		criticalItemsSummary: (departmentId?: string) => {
 			const params = departmentId ? `?departmentId=${departmentId}` : '';
-			return request<CriticalItemsSummary>(`/api/v1/reports/critical-items/summary${params}`, { skipAuth: true });
+			return request<CriticalItemsSummary>(`/api/v1/reports/critical-items/summary${params}`);
 		},
 
 		notifyCriticalSelected: (reviewIds: string[]) =>
 			request<{ notified: number }>('/api/v1/reports/critical-items/notify', {
-				method: 'POST', body: JSON.stringify({ reviewIds }), skipAuth: true,
+				method: 'POST', body: JSON.stringify({ reviewIds }),
 			}),
 
 		notifyCriticalAll: (departmentId?: string) => {
 			const params = departmentId ? `?departmentId=${departmentId}` : '';
 			return request<{ notified: number }>(`/api/v1/reports/critical-items/notify-all${params}`, {
-				method: 'POST', skipAuth: true,
+				method: 'POST',
 			});
 		},
 
 		legalHolds: (page = 0, size = 50, departmentId?: string) => {
 			const params = new URLSearchParams({ page: String(page), size: String(size) });
 			if (departmentId) params.set('departmentId', departmentId);
-			return request<LegalHoldRow[]>(`/api/v1/reports/legal-holds?${params}`, { skipAuth: true });
+			return request<LegalHoldRow[]>(`/api/v1/reports/legal-holds?${params}`);
 		},
 
 		legalHoldSummary: (departmentId?: string) => {
 			const params = departmentId ? `?departmentId=${departmentId}` : '';
-			return request<LegalHoldSummary>(`/api/v1/reports/legal-holds/summary${params}`, { skipAuth: true });
+			return request<LegalHoldSummary>(`/api/v1/reports/legal-holds/summary${params}`);
 		},
 	},
 
 	// --- Mail Gateway ---
 
 	mailGateway: {
-		get: () => request<MailGatewayConfig>('/api/v1/admin/mail-gateway', { skipAuth: true }),
+		get: () => request<MailGatewayConfig>('/api/v1/admin/mail-gateway'),
 
 		update: (body: UpdateMailGatewayRequest) =>
 			request<MailGatewayConfig>('/api/v1/admin/mail-gateway', {
 				method: 'PUT',
 				body: JSON.stringify(body),
-				skipAuth: true,
 			}),
 
 		testConnection: (body: TestGatewayRequest) =>
 			request<GatewayTestResult>('/api/v1/admin/mail-gateway/test-connection', {
 				method: 'POST',
 				body: JSON.stringify(body),
-				skipAuth: true,
 			}),
 
 		testSend: (body: TestGatewayRequest) =>
 			request<GatewayTestResult>('/api/v1/admin/mail-gateway/test-send', {
 				method: 'POST',
 				body: JSON.stringify(body),
-				skipAuth: true,
 			}),
 
 		presets: () =>
-			request<ProviderPreset[]>('/api/v1/admin/mail-gateway/presets', { skipAuth: true }),
+			request<ProviderPreset[]>('/api/v1/admin/mail-gateway/presets'),
 	},
 
 	// --- Notification Settings (scan intervals) ---
 
 	notificationSettings: {
 		getGlobal: () =>
-			request<NotificationSettings>('/api/v1/admin/notification-settings', { skipAuth: true }),
+			request<NotificationSettings>('/api/v1/admin/notification-settings'),
 
 		updateGlobal: (body: UpdateNotificationSettingsRequest) =>
 			request<NotificationSettings>('/api/v1/admin/notification-settings', {
 				method: 'PUT',
 				body: JSON.stringify(body),
-				skipAuth: true,
 			}),
 
 		getDepartmentScan: (departmentId: string) =>
-			request<DepartmentScanSettings>(`/api/v1/departments/${departmentId}/scan-settings`, {
-				skipAuth: true,
-			}),
+			request<DepartmentScanSettings>(`/api/v1/departments/${departmentId}/scan-settings`),
 
 		updateDepartmentScan: (departmentId: string, body: UpdateDepartmentScanSettingsRequest) =>
 			request<DepartmentScanSettings>(`/api/v1/departments/${departmentId}/scan-settings`, {
 				method: 'PUT',
 				body: JSON.stringify(body),
-				skipAuth: true,
 			}),
 	},
 
@@ -430,13 +417,12 @@ export const api = {
 
 	documentCategories: {
 		list: () =>
-			request<DocumentCategory[]>('/api/v1/document-categories', { skipAuth: true }),
+			request<DocumentCategory[]>('/api/v1/document-categories'),
 
 		update: (id: string, body: Partial<{ name: string; description: string | null; status: string; suggestsLegalReview: boolean }>) =>
 			request<DocumentCategory>(`/api/v1/document-categories/${id}`, {
 				method: 'PATCH',
 				body: JSON.stringify(body),
-				skipAuth: true,
 			}),
 	},
 
@@ -444,16 +430,15 @@ export const api = {
 
 	legalReview: {
 		listReviewers: () =>
-			request<UserProfile[]>('/api/v1/legal-reviewers', { skipAuth: true }),
+			request<UserProfile[]>('/api/v1/legal-reviewers'),
 
 		getSettings: () =>
-			request<LegalReviewSettings>('/api/v1/admin/legal-review-settings', { skipAuth: true }),
+			request<LegalReviewSettings>('/api/v1/admin/legal-review-settings'),
 
 		updateSettings: (body: { defaultTimeLimitDays: number }) =>
 			request<LegalReviewSettings>('/api/v1/admin/legal-review-settings', {
 				method: 'PUT',
 				body: JSON.stringify(body),
-				skipAuth: true,
 			}),
 	},
 
@@ -461,15 +446,12 @@ export const api = {
 
 	workflowEscalation: {
 		getSettings: () =>
-			request<WorkflowEscalationSettings>('/api/v1/admin/workflow-escalation-settings', {
-				skipAuth: true,
-			}),
+			request<WorkflowEscalationSettings>('/api/v1/admin/workflow-escalation-settings'),
 
 		updateSettings: (body: { scanIntervalMinutes: number }) =>
 			request<WorkflowEscalationSettings>('/api/v1/admin/workflow-escalation-settings', {
 				method: 'PUT',
 				body: JSON.stringify(body),
-				skipAuth: true,
 			}),
 	},
 

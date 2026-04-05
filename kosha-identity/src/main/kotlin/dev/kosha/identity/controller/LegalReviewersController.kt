@@ -2,6 +2,7 @@ package dev.kosha.identity.controller
 
 import dev.kosha.common.api.ApiResponse
 import dev.kosha.identity.service.UserProfileService
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -19,11 +20,13 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 @RequestMapping("/api/v1/legal-reviewers")
-// TODO: restore @PreAuthorize once Keycloak dev roles are wired up.
 class LegalReviewersController(
     private val userProfileService: UserProfileService,
 ) {
 
+    // Any authenticated user who might submit a document needs to read the
+    // legal reviewer list (it populates the upload form dropdown).
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     fun list() = ApiResponse(data = userProfileService.findLegalReviewers())
 }

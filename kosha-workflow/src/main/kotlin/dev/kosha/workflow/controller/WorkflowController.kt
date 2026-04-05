@@ -3,6 +3,7 @@ package dev.kosha.workflow.controller
 import dev.kosha.common.api.ApiResponse
 import dev.kosha.workflow.dto.UpdateWorkflowRequest
 import dev.kosha.workflow.service.WorkflowDefinitionService
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
@@ -30,12 +31,15 @@ import java.util.UUID
  */
 @RestController
 @RequestMapping("/api/v1/departments/{departmentId}/workflow")
-// TODO: restore method-level @PreAuthorize once Keycloak dev roles are wired up
 class WorkflowController(
     private val workflowService: WorkflowDefinitionService,
 ) {
 
+    // Reading a department workflow is open to any authenticated user so
+    // the upload form can show submitters which assignees their document
+    // will touch.
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     fun getDepartmentWorkflow(@PathVariable departmentId: UUID): ApiResponse<Any> {
         val workflow = workflowService.findByDepartment(departmentId)
             ?: throw NoSuchElementException(
@@ -44,7 +48,10 @@ class WorkflowController(
         return ApiResponse(data = workflow)
     }
 
+    // Editing is dept-scoped: GLOBAL_ADMIN can touch any department,
+    // DEPT_ADMIN can only touch their own. Delegated to AuthorityService.
     @PutMapping
+    @PreAuthorize("@authorityService.canEditDepartment(authentication, #departmentId)")
     fun updateDepartmentWorkflow(
         @PathVariable departmentId: UUID,
         @RequestBody request: UpdateWorkflowRequest,
@@ -53,6 +60,7 @@ class WorkflowController(
     )
 
     @GetMapping("/validation")
+    @PreAuthorize("isAuthenticated()")
     fun validateWorkflow(@PathVariable departmentId: UUID) =
         ApiResponse(data = workflowService.validateForSubmission(departmentId))
 }

@@ -2,6 +2,7 @@ package dev.kosha.app.controller
 
 import dev.kosha.common.api.ApiResponse
 import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -21,6 +22,7 @@ class KeywordsController(
 ) {
 
     @GetMapping("/{docId}/keywords")
+    @PreAuthorize("isAuthenticated()")
     fun getKeywords(@PathVariable docId: UUID): ApiResponse<List<ExtractedKeywordResponse>> {
         val keywords = jdbcTemplate.query(
             """

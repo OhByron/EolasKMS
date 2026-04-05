@@ -5,6 +5,7 @@ import dev.kosha.identity.repository.UserProfileRepository
 import dev.kosha.workflow.service.ActionResult
 import dev.kosha.workflow.service.WorkflowActionService
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.PathVariable
@@ -35,8 +36,14 @@ class WorkflowActionController(
     private val userProfileRepo: UserProfileRepository,
 ) {
 
+    // Any authenticated role can attempt approve/reject. The service layer
+    // (`loadActiveStep`) is responsible for the real check — the caller must
+    // be the currently assigned user on the step instance. That check cannot
+    // be expressed in SpEL because it requires loading the step entity, so
+    // it stays in the service and throws AccessDeniedException on mismatch.
     @PostMapping("/{workflowInstanceId}/steps/{stepInstanceId}/approve")
     @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasAnyRole('GLOBAL_ADMIN','DEPT_ADMIN','EDITOR','CONTRIBUTOR')")
     fun approve(
         @PathVariable workflowInstanceId: UUID,
         @PathVariable stepInstanceId: UUID,
@@ -56,6 +63,7 @@ class WorkflowActionController(
 
     @PostMapping("/{workflowInstanceId}/steps/{stepInstanceId}/reject")
     @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasAnyRole('GLOBAL_ADMIN','DEPT_ADMIN','EDITOR','CONTRIBUTOR')")
     fun reject(
         @PathVariable workflowInstanceId: UUID,
         @PathVariable stepInstanceId: UUID,
