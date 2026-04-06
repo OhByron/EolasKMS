@@ -113,6 +113,20 @@ This brings up:
 | NATS monitoring | http://localhost:8222 |
 | Mailpit (captured emails) | http://localhost:8025 |
 
+### First login
+
+Three accounts are seeded automatically on first startup:
+
+| Email | Password | Role |
+|---|---|---|
+| `admin@kosha.dev` | `admin` | Global Admin |
+| `editor@kosha.dev` | `editor` | Editor |
+| `contributor@kosha.dev` | `contributor` | Contributor |
+
+Log in at http://localhost:5175 with `admin@kosha.dev` / `admin` to access the full admin panel.
+
+**Before going to production:** create your own admin account via Administration > Users > Add User, then delete or deactivate the seeded dev accounts. Change the Keycloak admin password (default: `admin` / `admin`) at http://localhost:8180.
+
 To include a local Ollama instance for AI:
 
 ```bash
