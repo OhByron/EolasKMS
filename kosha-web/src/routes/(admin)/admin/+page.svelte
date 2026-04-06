@@ -16,6 +16,7 @@
 		{ href: '/admin/import', title: m.import_title(), desc: m.admin_card_import_desc() },
 		{ href: '/admin/mail-gateway', title: m.page_title_mail_gateway(), desc: m.admin_card_mail_desc() },
 		{ href: '/admin/notification-settings', title: m.settings_page_title(), desc: m.admin_card_notifications_desc() },
+		{ href: '/admin/licence', title: 'Licence', desc: 'View and manage your Eòlas licence' },
 		{ href: '/reports/aging', title: m.nav_sidebar_document_aging(), desc: m.admin_card_aging_desc() },
 		{ href: '/reports/critical-items', title: m.nav_sidebar_critical_items(), desc: m.admin_card_critical_desc() },
 		{ href: '/reports/legal-holds', title: m.nav_sidebar_legal_holds(), desc: m.admin_card_legal_holds_desc() },

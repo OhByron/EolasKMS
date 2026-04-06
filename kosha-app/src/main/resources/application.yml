@@ -66,6 +66,11 @@ management:
         enabled: true
 
 kosha:
+  # Licence key. Set via environment variable or paste the key string.
+  # Blank or missing = Community tier (full features, no support).
+  licence:
+    key: ${EOLAS_LICENCE_KEY:}
+
   # Optional Office document preview sidecar (Pass 4.1).
   # Leave blank or unset to disable — Office docs will render as
   # download buttons in the frontend instead of inline previews.

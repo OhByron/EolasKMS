@@ -1,5 +1,5 @@
 # Eòlas vs the market
-### How Eòlas compares to leading document & knowledge management systems
+### How Eòlas compares to leading document and knowledge management systems
 
 ---
 
@@ -16,7 +16,7 @@
 | **Retention policies + alerts** | ✅ 90/60/30-day + escalation | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
 | **Document preview (PDF/Office)** | ✅ pdf.js + LibreOffice | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **OCR for scanned documents** | ✅ Tesseract + OCRmyPDF | ⚠️ Add-on | ✅ | ✅ | ✅ Best-in-class | ✅ | ⚠️ |
-| **AI-powered summaries & metadata** | ✅ spaCy + LLM | ⚠️ Copilot (paid) | ⚠️ Add-on | ❌ | ⚠️ ML classifier | ❌ | ❌ |
+| **AI summaries and metadata** | ✅ spaCy + LLM | ⚠️ Copilot (paid) | ⚠️ Add-on | ❌ | ⚠️ ML classifier | ❌ | ❌ |
 | **Electronic signatures** | ✅ Click-to-sign audit | ❌ DocuSign needed | ✅ | ✅ | ❌ | ❌ | ❌ |
 | **Public share links** | ✅ Expiry + password + revoke | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
 | **Bulk import with CSV** | ✅ CLI + browser validator | ⚠️ Migration tool | ✅ Consulting | ✅ Consulting | ✅ | ⚠️ | ⚠️ |
@@ -31,13 +31,13 @@
 
 ## Why Eòlas exists
 
-Most document management systems fall into one of two camps:
+Most document management systems fall into one of two camps.
 
-**Enterprise behemoths** (SharePoint, Alfresco, Nuxeo) that require dedicated IT teams, complex infrastructure, and six-figure licencing. They do everything — but at a cost that excludes small and medium businesses.
+**Enterprise systems** (SharePoint, Alfresco, Nuxeo) require dedicated IT teams, complex infrastructure, and six-figure licensing. They cover every use case, but at a cost that puts them out of reach for small and medium businesses.
 
-**Lightweight scanners** (Paperless-ngx, Teedy) that excel at digitising paper but stop short of governance. No workflows, no retention, no legal hold, no compliance reporting. Great for a home office; inadequate for a business with regulatory obligations.
+**Lightweight scanners** (Paperless-ngx, Teedy) handle digitising paper well but stop short of governance. No workflows, no retention, no legal hold, no compliance reporting. Fine for a home office. Not enough for a business with regulatory obligations.
 
-**Eòlas occupies the gap between these two worlds.** It delivers governance-grade document management — the kind of workflow, retention, and compliance tooling that regulated SMBs actually need — in an open-source, self-hosted package that deploys with a single `docker compose up` command.
+**Eòlas sits in the gap between these two.** It provides the workflow, retention, and compliance tooling that regulated SMBs need, packaged as open-source software that deploys with a single `docker compose up` command.
 
 ---
 
@@ -47,39 +47,39 @@ Most document management systems fall into one of two camps:
 
 Eòlas ships with per-department configurable workflows (linear or parallel), conditional step routing via JSON Logic, mandatory escalation contacts with configurable deadlines, legal hold that blocks deletion and archiving, and retention policies with approaching-review notifications at 90, 60, and 30 days.
 
-This is the M-Files / DocuWare feature set — delivered as open source. No per-user licence fees. No annual renewal negotiations. No vendor lock-in.
+This is the M-Files / DocuWare feature set, delivered as open source. No per-user licence fees. No annual renewal negotiations. No vendor lock-in.
 
-**Who this matters to:** Any SMB that handles contracts, policies, HR documentation, financial records, or regulatory filings and needs an audit trail that satisfies ISO 9001, GDPR Article 30, or sector-specific compliance requirements.
+**Who this matters to:** SMBs that handle contracts, policies, HR documentation, financial records, or regulatory filings and need an audit trail that satisfies ISO 9001, GDPR Article 30, or sector-specific compliance requirements.
 
-### 2. AI assistance out of the box
+### 2. AI assistance included
 
 Every document uploaded to Eòlas is automatically processed by the AI sidecar:
 
-- **Summaries** generated via configurable LLM (Ollama for privacy-first on-prem, or Anthropic/OpenAI for quality)
+- **Summaries** generated via configurable LLM (Ollama for on-prem privacy, or Anthropic/OpenAI)
 - **Keyword extraction** via spaCy NER
 - **Structured metadata** extraction (monetary amounts, dates, parties, jurisdictions, document numbers)
 - **Taxonomy classification** against the organisation's own term hierarchy
 - **OCR** for scanned documents via Tesseract + OCRmyPDF with 10 language packs
 
-Competitors charge extra for AI features (M-Files Aino, Microsoft Copilot) or don't offer them at all. Eòlas includes them in the base deployment.
+Competitors charge extra for AI features (M-Files Aino, Microsoft Copilot) or don't offer them. Eòlas includes them in the base deployment.
 
-### 3. Accessibility as a first principle
+### 3. Accessibility as architecture
 
-Eòlas was designed for WCAG 2.2 AA compliance from the first line of code. Every interactive element has keyboard navigation, focus indicators, and ARIA attributes. Screen reader users (JAWS, NVDA, VoiceOver) can navigate the full workflow: upload a document, submit it for review, approve it, sign it.
+Eòlas was designed for WCAG 2.2 AA compliance from the start. Every interactive element has keyboard navigation, focus indicators, and ARIA attributes. Screen reader users (JAWS, NVDA, VoiceOver) can navigate the full workflow: upload a document, submit it for review, approve it, sign it.
 
-This isn't a checkbox exercise — it's a procurement gate. Public-sector organisations in the EU, UK, Canada, and Australia are required to use accessible software. Most DMS vendors treat accessibility as a retrofit; Eòlas treats it as architecture.
+This is not a retrofit. Public-sector organisations in the EU, UK, Canada, and Australia are required to use accessible software. Most DMS vendors bolt accessibility on after the fact. Eòlas was built with it from day one.
 
 ### 4. 23 languages, zero configuration
 
-The UI is fully translated into 23 languages spanning Latin, Cyrillic, Greek, Arabic, CJK, Nordic, Baltic, and Finnic scripts. Language switching is instant — users pick from a dropdown and the entire interface updates without a page reload.
+The UI is translated into 23 languages covering Latin, Cyrillic, Greek, Arabic, CJK, Nordic, Baltic, and Finnic scripts. Language switching is instant. Users pick from a dropdown and the interface updates without a page reload.
 
 Languages: English, German, French, Spanish, Italian, Portuguese, Dutch, Polish, Danish, Norwegian Bokmål, Icelandic, Swedish, Greek, Turkish, Ukrainian, Latvian, Lithuanian, Estonian, Finnish, Arabic, Simplified Chinese, Japanese, Korean.
 
-**Who this matters to:** Any organisation operating across borders. An EU company with offices in Berlin, Paris, and Warsaw can give each team the UI in their native language against a single shared document repository.
+**Who this matters to:** Organisations operating across borders. An EU company with offices in Berlin, Paris, and Warsaw can give each team the UI in their language against a single shared document repository.
 
 ### 5. Deploy in minutes, not months
 
-The entire Eòlas stack — application, database, search, storage, messaging, authentication, email, AI processing — starts with one command:
+The full Eòlas stack (application, database, search, storage, messaging, authentication, email, AI processing) starts with one command:
 
 ```bash
 docker compose up -d
@@ -95,14 +95,14 @@ Compare this to SharePoint (requires Microsoft 365 tenancy, Azure AD, and typica
 
 ### vs SharePoint / Microsoft 365
 
-SharePoint is the default choice for organisations already invested in Microsoft 365. Its strength is integration with the Office ecosystem — co-authoring, Teams, Outlook.
+SharePoint is the default choice for organisations already on Microsoft 365. Its strength is integration with the Office ecosystem: co-authoring, Teams, Outlook.
 
 **Choose Eòlas when:**
 - You want to own your data on-premises or in your own cloud tenancy
 - You don't want per-user Microsoft 365 licensing costs
 - You need configurable approval workflows without learning Power Automate
 - You need retention policies with proactive notifications (SharePoint's retention is label-based and passive)
-- Your team is not already embedded in the Microsoft ecosystem
+- Your team is not already in the Microsoft ecosystem
 - You serve EU public-sector clients who require open-source or vendor-neutral solutions
 
 **Choose SharePoint when:**
@@ -113,24 +113,24 @@ SharePoint is the default choice for organisations already invested in Microsoft
 
 ### vs M-Files
 
-M-Files is the closest commercial competitor to Eòlas in the governance space. It offers metadata-driven DMS with strong compliance features, intelligent classification, and workflow automation.
+M-Files is the closest commercial competitor in the governance space. It offers metadata-driven DMS with compliance features, intelligent classification, and workflow automation.
 
 **Choose Eòlas when:**
-- You want zero licensing cost (M-Files charges per named user, typically €40–80/user/month)
+- You want zero licensing cost (M-Files charges per named user, typically €40-80/user/month)
 - You prefer to self-host rather than depend on M-Files Cloud
 - You want to inspect, modify, and extend the source code
 - You need a system that deploys in hours, not weeks
-- Your AI requirements are served by the included sidecar (M-Files' AI features are add-on priced)
+- Your AI requirements are served by the included sidecar (M-Files AI features are add-on priced)
 
 **Choose M-Files when:**
-- You need enterprise-grade support contracts with SLAs
+- You need enterprise support contracts with SLAs
 - You require integration with SAP, Salesforce, or other enterprise platforms
-- You need M-Files' unique "metadata-only" architecture (views instead of folders)
+- You need M-Files' "metadata-only" architecture (views instead of folders)
 - Your organisation has 500+ users and an established procurement process for commercial software
 
 ### vs Paperless-ngx
 
-Paperless-ngx is the most popular open-source DMS for individuals and small offices. It excels at scanning, OCR, and tagging paper documents.
+Paperless-ngx is the most popular open-source DMS for individuals and small offices. It is excellent at scanning, OCR, and tagging paper documents.
 
 **Choose Eòlas when:**
 - You need approval workflows (Paperless has none)
@@ -142,20 +142,20 @@ Paperless-ngx is the most popular open-source DMS for individuals and small offi
 - You have more than one department and need per-department governance
 
 **Choose Paperless-ngx when:**
-- Your primary use case is digitising physical paper (scan → OCR → tag → search)
+- Your primary use case is digitising physical paper (scan, OCR, tag, search)
 - You have a single user or a small household
 - You don't need approval workflows or retention compliance
 - You want the simplest possible setup for personal document archiving
 
 ### vs DocuWare
 
-DocuWare is a mid-market commercial DMS with strong workflow automation and electronic signature integration.
+DocuWare is a mid-market commercial DMS with workflow automation and electronic signature integration.
 
 **Choose Eòlas when:**
 - You want open-source with zero licence fees
 - You want to self-host with full control over your data
-- You prefer a modern tech stack (Kotlin/Spring Boot, SvelteKit) to DocuWare's legacy architecture
-- You want AI-powered summaries and metadata extraction included, not as a paid add-on
+- You prefer a modern tech stack (Kotlin/Spring Boot, SvelteKit) over DocuWare's legacy architecture
+- You want AI summaries and metadata extraction included, not as a paid add-on
 - You need 23-language support without purchasing a language pack
 
 **Choose DocuWare when:**
@@ -168,17 +168,17 @@ DocuWare is a mid-market commercial DMS with strong workflow automation and elec
 
 ## What Eòlas doesn't do (yet)
 
-We believe in honest positioning. These are capabilities that some competitors offer and Eòlas does not — along with our roadmap status:
+These are capabilities that some competitors offer and Eòlas does not, along with current roadmap status:
 
 | Capability | Status | Notes |
 |---|---|---|
 | Real-time co-authoring | Not planned | Use Office Online or Google Docs for co-authoring; Eòlas manages the lifecycle |
 | Native mobile apps | Not started | The web UI is responsive but not a PWA or native app |
-| Commercial signature integration (DocuSign, Adobe Sign) | Roadmap | Click-to-sign audit records are shipped; commercial provider integration is a future pass |
+| Commercial signature integration (DocuSign, Adobe Sign) | Roadmap | Click-to-sign audit records are shipped; commercial provider integration is planned |
 | Advanced electronic form builder | Not started | Workflow conditions handle routing logic; a visual form builder is a future consideration |
-| Multi-tenancy | Not started | Current architecture is single-tenant; hosting Eòlas-as-a-service for multiple customers requires one deployment per tenant |
+| Multi-tenancy | Not started | Current architecture is single-tenant; hosting for multiple customers requires one deployment per tenant |
 | LDAP / Active Directory integration | Designed, not wired | Keycloak supports LDAP federation natively; the connection configuration is a deployment task, not a code task |
-| Email template management UI | Roadmap (Pass 7) | Email notifications currently send in English; per-locale template editing is planned |
+| Email template management UI | Roadmap | Email notifications currently send in English; per-locale template editing is planned |
 
 ---
 
@@ -186,12 +186,12 @@ We believe in honest positioning. These are capabilities that some competitors o
 
 | Layer | Technology | Why |
 |---|---|---|
-| Backend | Kotlin + Spring Boot 3.4 | Type-safe, mature ecosystem, excellent JPA and security support |
+| Backend | Kotlin + Spring Boot 3.4 | Type-safe, mature ecosystem, strong JPA and security support |
 | Frontend | SvelteKit 5 + Tailwind CSS | Fast, accessible, runes-based reactivity, server-side rendering |
-| Database | PostgreSQL 16 | Battle-tested, JSONB for flexible metadata, Flyway for migrations |
+| Database | PostgreSQL 16 | Proven, JSONB for flexible metadata, Flyway for migrations |
 | Search | OpenSearch | Full-text search with relevance scoring, compatible with Elasticsearch clients |
 | Storage | MinIO (S3-compatible) | Self-hosted object storage, API-compatible with AWS S3 |
-| Auth | Keycloak 24 | OpenID Connect, LDAP federation, SSO, MFA — all configurable via admin console |
+| Auth | Keycloak 24 | OpenID Connect, LDAP federation, SSO, MFA, all configurable via admin console |
 | Messaging | NATS JetStream | Lightweight pub/sub for AI task queue, event-driven architecture |
 | AI | Python sidecar (spaCy, LangChain, Tesseract, OCRmyPDF) | Pluggable LLM provider, on-prem inference with Ollama or cloud with Anthropic/OpenAI |
 | Email | SMTP via configurable gateway (12 provider presets) | Works with any provider; Mailpit for development |
@@ -241,27 +241,27 @@ The total cost of running Eòlas is the infrastructure it runs on:
 | Hetzner Cloud CX31 | ~€15/month |
 
 Compare this to:
-- **M-Files**: €40–80/user/month (20 users = €800–1,600/month)
-- **DocuWare**: €30–60/user/month (20 users = €600–1,200/month)
+- **M-Files**: €40-80/user/month (20 users = €800-1,600/month)
+- **DocuWare**: €30-60/user/month (20 users = €600-1,200/month)
 - **SharePoint Online**: included in M365 E3 at €36/user/month, but requires the full M365 stack
 
-For a 20-person SMB, Eòlas saves **€7,000–19,000 per year** in software licensing alone.
+For a 20-person SMB, Eòlas saves €7,000-19,000 per year in software licensing alone.
 
 ---
 
 ## Getting started
 
-1. **Try it locally** — `docker compose up -d` and open `http://localhost:5173`
-2. **Import your documents** — use the bulk import CLI with a CSV manifest
-3. **Configure your departments** — set up teams, workflows, and retention policies
-4. **Invite your users** — provision via the admin UI or bulk import CSV
-5. **Go live** — switch to the production profile and point your domain at the deployment
+1. **Try it locally** - `docker compose up -d` and open `http://localhost:5173`
+2. **Import your documents** - use the bulk import CLI with a CSV manifest
+3. **Configure your departments** - set up teams, workflows, and retention policies
+4. **Invite your users** - provision via the admin UI or bulk import CSV
+5. **Go live** - switch to the production profile and point your domain at the deployment
 
-Documentation: `docs/` directory in the repository  
-Monitoring setup: `docs/monitoring-setup.md`  
-Backup/restore: `docs/backup-restore.md`  
+Documentation: `docs/` directory in the repository
+Monitoring setup: `docs/monitoring-setup.md`
+Backup/restore: `docs/backup-restore.md`
 Environment reference: `docs/environment-reference.md`
 
 ---
 
-*Eòlas (əʊləs) — Scottish Gaelic for "knowledge." Built for organisations that take their documents seriously.*
+*Eòlas (/əʊləs/) - Scottish Gaelic for "knowledge."*
