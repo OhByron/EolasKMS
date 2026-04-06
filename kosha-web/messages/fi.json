@@ -654,5 +654,18 @@
 	"status_skipped": "Ohitettu",
 	"settings_page_title": "Ilmoitusasetukset",
 	"settings_page_desc": "Yleiset oletusarvot säilytysilmoitusten tiheydelle ja oikeudellisen tarkistuksen aikarajoille.",
-	"retention_desc": "Asiakirjan elinkaari ja vaatimustenmukaisuus"
+	"retention_desc": "Asiakirjan elinkaari ja vaatimustenmukaisuus",
+	"admin_card_departments_desc": "Osastojen ja tiimien hallinta",
+	"admin_card_users_desc": "Käyttäjähallinta kaikissa osastoissa",
+	"admin_card_retention_desc": "Asiakirjan elinkaari ja vaatimustenmukaisuus",
+	"admin_card_ai_desc": "Mallin asetukset ja kehotteiden hienosäätö",
+	"admin_card_audit_desc": "Järjestelmänlaajuinen tapahtumaloki",
+	"admin_card_taxonomy_desc": "Muokkaa taksonomipuuta ja tuo siemeniä",
+	"admin_card_categories_desc": "Muokkaa luokkia ja merkitse ne, jotka edellyttävät oikeudellista tarkistusta",
+	"admin_card_import_desc": "Vahvista CSV-manifestit kosha-import CLI -työkalulle",
+	"admin_card_mail_desc": "Määritä lähtevän sähköpostin palveluntarjoaja ja tunnistetiedot",
+	"admin_card_notifications_desc": "Säilytyksen skannaustaajuus ja oikeudellisen tarkistuksen aikaraja",
+	"admin_card_aging_desc": "Ikäjakauma ja säilytyksen tila",
+	"admin_card_critical_desc": "Myöhästyneet säilytystarkistukset vakavuuden mukaan",
+	"admin_card_legal_holds_desc": "Oikeudellisessa pidossa olevat asiakirjat"
 }

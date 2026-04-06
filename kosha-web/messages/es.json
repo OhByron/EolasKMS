@@ -654,5 +654,18 @@
 	"status_skipped": "Omitido",
 	"settings_page_title": "Configuración de notificaciones",
 	"settings_page_desc": "Valores predeterminados globales para la cadencia de análisis de retención y los plazos de revisión legal.",
-	"retention_desc": "Ciclo de vida de documentos y cumplimiento"
+	"retention_desc": "Ciclo de vida de documentos y cumplimiento",
+	"admin_card_departments_desc": "Gestionar departamentos y equipos",
+	"admin_card_users_desc": "Gestión de usuarios en todos los departamentos",
+	"admin_card_retention_desc": "Ciclo de vida documental y cumplimiento normativo",
+	"admin_card_ai_desc": "Configuración de modelos y ajuste de indicaciones",
+	"admin_card_audit_desc": "Registro de actividad de todo el sistema",
+	"admin_card_taxonomy_desc": "Editar el árbol de taxonomía e importar semillas",
+	"admin_card_categories_desc": "Editar categorías y marcar aquellas que sugieran revisión legal",
+	"admin_card_import_desc": "Validar manifiestos CSV para el CLI kosha-import",
+	"admin_card_mail_desc": "Configurar el proveedor de correo saliente y las credenciales",
+	"admin_card_notifications_desc": "Cadencia de análisis de retención y plazo de revisión legal",
+	"admin_card_aging_desc": "Distribución por antigüedad y estado de retención",
+	"admin_card_critical_desc": "Revisiones de retención vencidas por gravedad",
+	"admin_card_legal_holds_desc": "Documentos bajo retención legal"
 }

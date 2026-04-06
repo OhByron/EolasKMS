@@ -654,5 +654,18 @@
 	"status_skipped": "Saltato",
 	"settings_page_title": "Impostazioni notifiche",
 	"settings_page_desc": "Valori predefiniti globali per la cadenza di scansione della conservazione e i termini di revisione legale.",
-	"retention_desc": "Ciclo di vita dei documenti e conformità"
+	"retention_desc": "Ciclo di vita dei documenti e conformità",
+	"admin_card_departments_desc": "Gestire reparti e gruppi di lavoro",
+	"admin_card_users_desc": "Gestione utenti in tutti i reparti",
+	"admin_card_retention_desc": "Ciclo di vita dei documenti e conformità",
+	"admin_card_ai_desc": "Impostazioni del modello e regolazione dei prompt",
+	"admin_card_audit_desc": "Registro delle attività a livello di sistema",
+	"admin_card_taxonomy_desc": "Modificare l'albero tassonomico e importare i seed",
+	"admin_card_categories_desc": "Modificare le categorie e contrassegnare quelle che richiedono revisione legale",
+	"admin_card_import_desc": "Convalidare i manifesti CSV per il CLI kosha-import",
+	"admin_card_mail_desc": "Configurare il provider di posta in uscita e le credenziali",
+	"admin_card_notifications_desc": "Cadenza di scansione della conservazione e limite di tempo per la revisione legale",
+	"admin_card_aging_desc": "Distribuzione per età e stato di conservazione",
+	"admin_card_critical_desc": "Revisioni di conservazione scadute per gravità",
+	"admin_card_legal_holds_desc": "Documenti sotto blocco legale"
 }

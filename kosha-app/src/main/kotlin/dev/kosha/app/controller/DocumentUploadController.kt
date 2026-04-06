@@ -6,6 +6,8 @@ import dev.kosha.common.api.ApiResponse
 import dev.kosha.document.entity.VersionMetadata
 import dev.kosha.document.repository.DocumentVersionRepository
 import dev.kosha.document.repository.VersionMetadataRepository
+import dev.kosha.search.DocumentIndexData
+import dev.kosha.search.OpenSearchService
 import dev.kosha.storage.MinioStorageService
 import io.micrometer.core.instrument.MeterRegistry
 import org.apache.tika.Tika
@@ -32,6 +34,7 @@ class DocumentUploadController(
     private val natsService: NatsService,
     private val jdbcTemplate: JdbcTemplate,
     private val storage: MinioStorageService,
+    private val searchService: OpenSearchService,
     meterRegistry: MeterRegistry,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -172,6 +175,47 @@ class DocumentUploadController(
             )
             natsService.publishAiTask(task)
             log.info("AI task published for version {} with {} chars", versionId, extractedText.length)
+        }
+
+        // Index in OpenSearch for full-text search. Uses a native query
+        // to grab the document metadata without importing the Document
+        // entity (which would create a circular dep through the event
+        // listeners). Failure to index is non-fatal — search is degraded
+        // but uploads still succeed.
+        try {
+            @Suppress("UNCHECKED_CAST")
+            val docRow = jdbcTemplate.queryForMap(
+                """
+                SELECT d.title, d.description, d.status, d.doc_number,
+                       dept.name AS dept_name, dept.id AS dept_id,
+                       cat.name AS cat_name,
+                       owner.display_name AS owner_name,
+                       d.created_at
+                FROM doc.document d
+                JOIN ident.department dept ON dept.id = d.department_id
+                LEFT JOIN doc.document_category cat ON cat.id = d.category_id
+                LEFT JOIN ident.user_profile owner ON owner.id = d.primary_owner_id
+                WHERE d.id = ?
+                """,
+                docId,
+            )
+            searchService.indexDocument(
+                DocumentIndexData(
+                    id = docId.toString(),
+                    title = docRow["title"] as? String ?: "",
+                    description = docRow["description"] as? String,
+                    content = extractedText.take(100_000), // cap at 100k chars for indexing
+                    departmentName = docRow["dept_name"] as? String ?: "",
+                    departmentId = (docRow["dept_id"] as? java.util.UUID)?.toString() ?: "",
+                    status = docRow["status"] as? String ?: "",
+                    docNumber = docRow["doc_number"] as? String,
+                    categoryName = docRow["cat_name"] as? String,
+                    primaryOwnerName = docRow["owner_name"] as? String,
+                    createdAt = (docRow["created_at"] as? java.time.OffsetDateTime)?.toString(),
+                ),
+            )
+        } catch (ex: Exception) {
+            log.warn("Failed to index document {} in OpenSearch: {}", docId, ex.message)
         }
 
         return ApiResponse(

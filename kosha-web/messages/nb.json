@@ -654,5 +654,18 @@
 	"status_skipped": "Hoppet over",
 	"settings_page_title": "Varslingsinnstillinger",
 	"settings_page_desc": "Globale standarder for kadense for oppbevaringsvarsler og tidsfrister for juridisk gjennomgang.",
-	"retention_desc": "Dokumentlivssyklus og samsvar"
+	"retention_desc": "Dokumentlivssyklus og samsvar",
+	"admin_card_departments_desc": "Administrer avdelinger og team",
+	"admin_card_users_desc": "Brukeradministrasjon på tvers av avdelinger",
+	"admin_card_retention_desc": "Dokumentlivssyklus og samsvar",
+	"admin_card_ai_desc": "Modellinnstillinger og promptjustering",
+	"admin_card_audit_desc": "Systemomfattende aktivitetslogg",
+	"admin_card_taxonomy_desc": "Rediger taksonomitre og importer frø",
+	"admin_card_categories_desc": "Rediger kategorier og merk de som krever juridisk gjennomgang",
+	"admin_card_import_desc": "Valider CSV-manifester for kosha-import CLI",
+	"admin_card_mail_desc": "Konfigurer utgående e-postleverandør og legitimasjon",
+	"admin_card_notifications_desc": "Kadense for oppbevaringsskanning og tidsfrist for juridisk gjennomgang",
+	"admin_card_aging_desc": "Aldersfordeling og oppbevaringsstatus",
+	"admin_card_critical_desc": "Forfalte oppbevaringsgjennomganger etter alvorlighetsgrad",
+	"admin_card_legal_holds_desc": "Dokumenter under juridisk sperring"
 }

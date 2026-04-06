@@ -654,5 +654,18 @@
 	"status_skipped": "Skipped",
 	"settings_page_title": "Notification Settings",
 	"settings_page_desc": "Global defaults for retention notification cadence and legal review time limits.",
-	"retention_desc": "Document lifecycle and compliance"
+	"retention_desc": "Document lifecycle and compliance",
+	"admin_card_departments_desc": "Manage departments and teams",
+	"admin_card_users_desc": "User management across departments",
+	"admin_card_retention_desc": "Document lifecycle and compliance",
+	"admin_card_ai_desc": "Model settings and prompt tuning",
+	"admin_card_audit_desc": "System-wide activity log",
+	"admin_card_taxonomy_desc": "Edit taxonomy tree and import seeds",
+	"admin_card_categories_desc": "Edit categories and flag those that suggest legal review",
+	"admin_card_import_desc": "Validate CSV manifests for the kosha-import CLI",
+	"admin_card_mail_desc": "Configure outbound email provider and credentials",
+	"admin_card_notifications_desc": "Retention scan cadence and legal review time limit",
+	"admin_card_aging_desc": "Age distribution and retention status",
+	"admin_card_critical_desc": "Overdue retention reviews by severity",
+	"admin_card_legal_holds_desc": "Documents under legal hold"
 }

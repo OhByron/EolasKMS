@@ -654,5 +654,18 @@
 	"status_skipped": "已跳过",
 	"settings_page_title": "通知设置",
 	"settings_page_desc": "保留扫描频率和法律审核期限的全局默认值。",
-	"retention_desc": "文档生命周期与合规"
+	"retention_desc": "文档生命周期与合规",
+	"admin_card_departments_desc": "管理部门和团队",
+	"admin_card_users_desc": "跨部门用户管理",
+	"admin_card_retention_desc": "文档生命周期与合规性",
+	"admin_card_ai_desc": "模型设置与提示词调优",
+	"admin_card_audit_desc": "全系统活动日志",
+	"admin_card_taxonomy_desc": "编辑分类树并导入种子数据",
+	"admin_card_categories_desc": "编辑分类并标记需要法律审查的类别",
+	"admin_card_import_desc": "验证 kosha-import CLI 的 CSV 清单",
+	"admin_card_mail_desc": "配置外发电子邮件提供商及凭据",
+	"admin_card_notifications_desc": "保留扫描频率与法律审查时限",
+	"admin_card_aging_desc": "年龄分布与保留状态",
+	"admin_card_critical_desc": "按严重程度排列的逾期保留审查",
+	"admin_card_legal_holds_desc": "处于法律保留状态的文档"
 }

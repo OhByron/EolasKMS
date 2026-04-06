@@ -654,5 +654,18 @@
 	"status_skipped": "Ignoré",
 	"settings_page_title": "Paramètres de notification",
 	"settings_page_desc": "Valeurs par défaut globales pour la fréquence d'analyse de conservation et les délais de révision juridique.",
-	"retention_desc": "Cycle de vie des documents et conformité"
+	"retention_desc": "Cycle de vie des documents et conformité",
+	"admin_card_departments_desc": "Gérer les départements et les équipes",
+	"admin_card_users_desc": "Gestion des utilisateurs entre départements",
+	"admin_card_retention_desc": "Cycle de vie des documents et conformité",
+	"admin_card_ai_desc": "Paramètres du modèle et réglage des prompts",
+	"admin_card_audit_desc": "Journal d activité à l échelle du système",
+	"admin_card_taxonomy_desc": "Modifier l arbre taxonomique et importer des seeds",
+	"admin_card_categories_desc": "Modifier les catégories et signaler la révision juridique",
+	"admin_card_import_desc": "Valider les manifestes CSV pour le CLI kosha-import",
+	"admin_card_mail_desc": "Configurer le fournisseur de messagerie sortante et les identifiants",
+	"admin_card_notifications_desc": "Fréquence d analyse de conservation et délai de révision juridique",
+	"admin_card_aging_desc": "Répartition par ancienneté et état de conservation",
+	"admin_card_critical_desc": "Révisions de conservation en retard par gravité",
+	"admin_card_legal_holds_desc": "Documents sous blocage juridique"
 }

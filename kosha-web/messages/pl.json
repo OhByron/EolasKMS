@@ -654,5 +654,18 @@
 	"status_skipped": "Pominięty",
 	"settings_page_title": "Ustawienia powiadomień",
 	"settings_page_desc": "Globalne wartości domyślne dla częstotliwości skanowania retencji i terminów przeglądu prawnego.",
-	"retention_desc": "Cykl życia dokumentów i zgodność"
+	"retention_desc": "Cykl życia dokumentów i zgodność",
+	"admin_card_departments_desc": "Zarządzanie działami i zespołami",
+	"admin_card_users_desc": "Zarządzanie użytkownikami we wszystkich działach",
+	"admin_card_retention_desc": "Cykl życia dokumentów i zgodność z przepisami",
+	"admin_card_ai_desc": "Ustawienia modelu i dostrajanie promptów",
+	"admin_card_audit_desc": "Dziennik aktywności całego systemu",
+	"admin_card_taxonomy_desc": "Edycja drzewa taksonomii i import nasion",
+	"admin_card_categories_desc": "Edycja kategorii i oznaczanie tych wymagających przeglądu prawnego",
+	"admin_card_import_desc": "Walidacja manifestów CSV dla CLI kosha-import",
+	"admin_card_mail_desc": "Konfiguracja dostawcy poczty wychodzącej i danych uwierzytelniających",
+	"admin_card_notifications_desc": "Częstotliwość skanowania retencji i termin przeglądu prawnego",
+	"admin_card_aging_desc": "Rozkład według wieku i status retencji",
+	"admin_card_critical_desc": "Zaległe przeglądy retencji według ważności",
+	"admin_card_legal_holds_desc": "Dokumenty objęte blokadą prawną"
 }

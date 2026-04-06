@@ -654,5 +654,18 @@
 	"status_skipped": "Übersprungen",
 	"settings_page_title": "Benachrichtigungseinstellungen",
 	"settings_page_desc": "Globale Standardwerte für Aufbewahrungsprüfungs-Kadenz und Fristen für rechtliche Prüfung.",
-	"retention_desc": "Dokumenten-Lebenszyklus und Compliance"
+	"retention_desc": "Dokumenten-Lebenszyklus und Compliance",
+	"admin_card_departments_desc": "Abteilungen und Teams verwalten",
+	"admin_card_users_desc": "Benutzerverwaltung über alle Abteilungen",
+	"admin_card_retention_desc": "Dokumenten-Lebenszyklus und Compliance",
+	"admin_card_ai_desc": "Modelleinstellungen und Prompt-Tuning",
+	"admin_card_audit_desc": "Systemweites Aktivitätsprotokoll",
+	"admin_card_taxonomy_desc": "Taxonomiebaum bearbeiten und Seeds importieren",
+	"admin_card_categories_desc": "Kategorien bearbeiten und rechtliche Prüfung markieren",
+	"admin_card_import_desc": "CSV-Manifeste für den kosha-import CLI validieren",
+	"admin_card_mail_desc": "Ausgehenden E-Mail-Anbieter und Zugangsdaten konfigurieren",
+	"admin_card_notifications_desc": "Aufbewahrungsprüfungs-Kadenz und Frist für rechtliche Prüfung",
+	"admin_card_aging_desc": "Altersverteilung und Aufbewahrungsstatus",
+	"admin_card_critical_desc": "Überfällige Aufbewahrungsprüfungen nach Schweregrad",
+	"admin_card_legal_holds_desc": "Dokumente unter rechtlicher Sperre"
 }

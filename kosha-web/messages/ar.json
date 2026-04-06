@@ -654,5 +654,18 @@
 	"status_skipped": "تم التخطي",
 	"settings_page_title": "إعدادات الإشعارات",
 	"settings_page_desc": "القيم الافتراضية العامة لوتيرة فحص الاحتفاظ والمواعيد النهائية للمراجعة القانونية.",
-	"retention_desc": "دورة حياة المستندات والامتثال"
+	"retention_desc": "دورة حياة المستندات والامتثال",
+	"admin_card_departments_desc": "إدارة الأقسام والفرق",
+	"admin_card_users_desc": "إدارة المستخدمين عبر جميع الأقسام",
+	"admin_card_retention_desc": "دورة حياة المستندات والامتثال",
+	"admin_card_ai_desc": "إعدادات النموذج وضبط المطالبات",
+	"admin_card_audit_desc": "سجل النشاط على مستوى النظام",
+	"admin_card_taxonomy_desc": "تحرير شجرة التصنيف واستيراد البذور",
+	"admin_card_categories_desc": "تحرير الفئات ووضع علامة على تلك التي تستلزم مراجعة قانونية",
+	"admin_card_import_desc": "التحقق من بيانات CSV لأداة kosha-import CLI",
+	"admin_card_mail_desc": "تكوين مزود البريد الإلكتروني الصادر وبيانات الاعتماد",
+	"admin_card_notifications_desc": "وتيرة فحص الاحتفاظ والمهلة الزمنية للمراجعة القانونية",
+	"admin_card_aging_desc": "توزيع العمر وحالة الاحتفاظ",
+	"admin_card_critical_desc": "مراجعات الاحتفاظ المتأخرة حسب الخطورة",
+	"admin_card_legal_holds_desc": "المستندات الخاضعة للحجز القانوني"
 }

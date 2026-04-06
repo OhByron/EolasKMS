@@ -654,5 +654,18 @@
 	"status_skipped": "Ignorado",
 	"settings_page_title": "Configurações de notificação",
 	"settings_page_desc": "Valores padrão globais para a cadência de verificação de retenção e os prazos de revisão jurídica.",
-	"retention_desc": "Ciclo de vida de documentos e conformidade"
+	"retention_desc": "Ciclo de vida de documentos e conformidade",
+	"admin_card_departments_desc": "Gerir departamentos e equipas",
+	"admin_card_users_desc": "Gestão de utilizadores em todos os departamentos",
+	"admin_card_retention_desc": "Ciclo de vida documental e conformidade",
+	"admin_card_ai_desc": "Definições do modelo e ajuste de prompts",
+	"admin_card_audit_desc": "Registo de atividade de todo o sistema",
+	"admin_card_taxonomy_desc": "Editar a árvore de taxonomia e importar sementes",
+	"admin_card_categories_desc": "Editar categorias e sinalizar aquelas que sugerem revisão jurídica",
+	"admin_card_import_desc": "Validar manifestos CSV para o CLI kosha-import",
+	"admin_card_mail_desc": "Configurar o fornecedor de correio de saída e as credenciais",
+	"admin_card_notifications_desc": "Cadência de análise de retenção e prazo de revisão jurídica",
+	"admin_card_aging_desc": "Distribuição por antiguidade e estado de retenção",
+	"admin_card_critical_desc": "Revisões de retenção em atraso por gravidade",
+	"admin_card_legal_holds_desc": "Documentos sob retenção legal"
 }

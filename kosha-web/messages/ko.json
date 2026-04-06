@@ -654,5 +654,18 @@
 	"status_skipped": "건너뜀",
 	"settings_page_title": "알림 설정",
 	"settings_page_desc": "보존 스캔 주기 및 법적 검토 기한에 대한 글로벌 기본값.",
-	"retention_desc": "문서 수명 주기 및 규정 준수"
+	"retention_desc": "문서 수명 주기 및 규정 준수",
+	"admin_card_departments_desc": "부서 및 팀 관리",
+	"admin_card_users_desc": "전체 부서의 사용자 관리",
+	"admin_card_retention_desc": "문서 수명 주기 및 규정 준수",
+	"admin_card_ai_desc": "모델 설정 및 프롬프트 조정",
+	"admin_card_audit_desc": "시스템 전체 활동 로그",
+	"admin_card_taxonomy_desc": "분류 트리 편집 및 시드 가져오기",
+	"admin_card_categories_desc": "카테고리 편집 및 법적 검토가 필요한 항목 표시",
+	"admin_card_import_desc": "kosha-import CLI용 CSV 매니페스트 검증",
+	"admin_card_mail_desc": "발신 이메일 공급자 및 자격 증명 구성",
+	"admin_card_notifications_desc": "보존 스캔 주기 및 법적 검토 기한",
+	"admin_card_aging_desc": "연령 분포 및 보존 상태",
+	"admin_card_critical_desc": "심각도별 기한 초과 보존 검토",
+	"admin_card_legal_holds_desc": "법적 보존 중인 문서"
 }

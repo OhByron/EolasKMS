@@ -654,5 +654,18 @@
 	"status_skipped": "Sleppt",
 	"settings_page_title": "Tilkynningastillingar",
 	"settings_page_desc": "Almenn sjálfgildi fyrir tíðni varðveislutilkynninga og tímamörk lagalegrar yfirferðar.",
-	"retention_desc": "Lífsferill skjala og samræmi"
+	"retention_desc": "Lífsferill skjala og samræmi",
+	"admin_card_departments_desc": "Stjórna deildum og teymum",
+	"admin_card_users_desc": "Notendastjórnun þvert á deildir",
+	"admin_card_retention_desc": "Lífsferill skjala og samræmi",
+	"admin_card_ai_desc": "Stillingar líkans og fínstilling leiðbeininga",
+	"admin_card_audit_desc": "Aðgerðarskrá á kerfisvísu",
+	"admin_card_taxonomy_desc": "Breyta flokkunartré og flytja inn fræ",
+	"admin_card_categories_desc": "Breyta flokkum og merkja þá sem krefjast lagalegrar yfirferðar",
+	"admin_card_import_desc": "Staðfesta CSV-skrár fyrir kosha-import CLI",
+	"admin_card_mail_desc": "Stilla þjónustuaðila fyrir útsendan tölvupóst og auðkenni",
+	"admin_card_notifications_desc": "Tíðni varðveisluskönnunar og tímamörk lagalegrar yfirferðar",
+	"admin_card_aging_desc": "Aldursdreifing og varðveislustaða",
+	"admin_card_critical_desc": "Tímabærar varðveisluyfirferðir eftir alvarleika",
+	"admin_card_legal_holds_desc": "Skjöl undir lagalegri stöðvun"
 }

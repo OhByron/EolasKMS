@@ -654,5 +654,18 @@
 	"status_skipped": "Overgeslagen",
 	"settings_page_title": "Meldingsinstellingen",
 	"settings_page_desc": "Globale standaardwaarden voor de retentiescanfrequentie en juridische beoordelingstermijnen.",
-	"retention_desc": "Documentlevenscyclus en compliance"
+	"retention_desc": "Documentlevenscyclus en compliance",
+	"admin_card_departments_desc": "Afdelingen en teams beheren",
+	"admin_card_users_desc": "Gebruikersbeheer over alle afdelingen",
+	"admin_card_retention_desc": "Documentlevenscyclus en compliance",
+	"admin_card_ai_desc": "Modelinstellingen en promptafstemming",
+	"admin_card_audit_desc": "Systeembreed activiteitenlogboek",
+	"admin_card_taxonomy_desc": "Taxonomieboom bewerken en seeds importeren",
+	"admin_card_categories_desc": "Categorieën bewerken en markeren die juridische beoordeling vereisen",
+	"admin_card_import_desc": "CSV-manifesten valideren voor de kosha-import CLI",
+	"admin_card_mail_desc": "Uitgaande e-mailprovider en inloggegevens configureren",
+	"admin_card_notifications_desc": "Scanfrequentie voor bewaring en tijdslimiet voor juridische beoordeling",
+	"admin_card_aging_desc": "Leeftijdsverdeling en bewaringsstatus",
+	"admin_card_critical_desc": "Achterstallige bewaringsbeoordelingen op ernst",
+	"admin_card_legal_holds_desc": "Documenten onder juridische bewaring"
 }

@@ -654,5 +654,18 @@
 	"status_skipped": "スキップ",
 	"settings_page_title": "通知設定",
 	"settings_page_desc": "保持スキャン頻度と法的レビュー期限のグローバルデフォルト値。",
-	"retention_desc": "文書ライフサイクルとコンプライアンス"
+	"retention_desc": "文書ライフサイクルとコンプライアンス",
+	"admin_card_departments_desc": "部門とチームの管理",
+	"admin_card_users_desc": "部門横断のユーザー管理",
+	"admin_card_retention_desc": "文書ライフサイクルとコンプライアンス",
+	"admin_card_ai_desc": "モデル設定とプロンプト調整",
+	"admin_card_audit_desc": "システム全体のアクティビティログ",
+	"admin_card_taxonomy_desc": "分類ツリーの編集とシードのインポート",
+	"admin_card_categories_desc": "カテゴリの編集と法的レビューが必要なものへのフラグ付け",
+	"admin_card_import_desc": "kosha-import CLI 用の CSV マニフェストの検証",
+	"admin_card_mail_desc": "送信メールプロバイダーと認証情報の設定",
+	"admin_card_notifications_desc": "保持スキャンの頻度と法的レビューの期限",
+	"admin_card_aging_desc": "経過年数の分布と保持状況",
+	"admin_card_critical_desc": "重大度別の期限超過保持レビュー",
+	"admin_card_legal_holds_desc": "法的保留中の文書"
 }

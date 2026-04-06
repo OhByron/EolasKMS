@@ -654,5 +654,18 @@
 	"status_skipped": "Sprunget over",
 	"settings_page_title": "Notifikationsindstillinger",
 	"settings_page_desc": "Globale standarder for opbevaringsnotifikationskadence og tidsfrister for juridisk gennemgang.",
-	"retention_desc": "Dokumentlivscyklus og overholdelse"
+	"retention_desc": "Dokumentlivscyklus og overholdelse",
+	"admin_card_departments_desc": "Administrer afdelinger og teams",
+	"admin_card_users_desc": "Brugeradministration på tværs af afdelinger",
+	"admin_card_retention_desc": "Dokumentlivscyklus og overholdelse",
+	"admin_card_ai_desc": "Modelindstillinger og promptjustering",
+	"admin_card_audit_desc": "Systemdækkende aktivitetslog",
+	"admin_card_taxonomy_desc": "Rediger taksonomi-træ og importer frø",
+	"admin_card_categories_desc": "Rediger kategorier og markér dem der kræver juridisk gennemgang",
+	"admin_card_import_desc": "Valider CSV-manifester til kosha-import CLI",
+	"admin_card_mail_desc": "Konfigurer udgående e-mailudbyder og legitimationsoplysninger",
+	"admin_card_notifications_desc": "Kadence for opbevaringsscanning og tidsfrist for juridisk gennemgang",
+	"admin_card_aging_desc": "Aldersfordeling og opbevaringsstatus",
+	"admin_card_critical_desc": "Forfaldne opbevaringsgennemgange efter alvorlighed",
+	"admin_card_legal_holds_desc": "Dokumenter under juridisk tilbageholdelse"
 }

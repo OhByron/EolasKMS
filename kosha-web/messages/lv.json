@@ -654,5 +654,18 @@
 	"status_skipped": "Izlaists",
 	"settings_page_title": "Paziņojumu iestatījumi",
 	"settings_page_desc": "Globālie noklusējumi glabāšanas paziņojumu biežumam un juridiskās pārskatīšanas laika ierobežojumiem.",
-	"retention_desc": "Dokumenta dzīves cikls un atbilstība"
+	"retention_desc": "Dokumenta dzīves cikls un atbilstība",
+	"admin_card_departments_desc": "Pārvaldīt nodaļas un komandas",
+	"admin_card_users_desc": "Lietotāju pārvaldība visās nodaļās",
+	"admin_card_retention_desc": "Dokumentu dzīves cikls un atbilstība",
+	"admin_card_ai_desc": "Modeļa iestatījumi un uzvedņu pielāgošana",
+	"admin_card_audit_desc": "Sistēmas mēroga darbību žurnāls",
+	"admin_card_taxonomy_desc": "Rediģēt taksonomijas koku un importēt sēklas",
+	"admin_card_categories_desc": "Rediģēt kategorijas un atzīmēt tās, kas prasa juridisku pārskatīšanu",
+	"admin_card_import_desc": "Validēt CSV manifestus kosha-import CLI rīkam",
+	"admin_card_mail_desc": "Konfigurēt izejošā e-pasta pakalpojumu sniedzēju un akreditācijas datus",
+	"admin_card_notifications_desc": "Glabāšanas skenēšanas biežums un juridiskās pārskatīšanas termiņš",
+	"admin_card_aging_desc": "Vecuma sadalījums un glabāšanas statuss",
+	"admin_card_critical_desc": "Nokavētas glabāšanas pārskatīšanas pēc nopietnības",
+	"admin_card_legal_holds_desc": "Dokumenti juridiskā aizturēšanā"
 }

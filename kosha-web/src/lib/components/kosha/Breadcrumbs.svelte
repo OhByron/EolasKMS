@@ -31,7 +31,9 @@
 			'critical-items': m.nav_sidebar_critical_items(),
 			'legal-holds': m.nav_sidebar_legal_holds(),
 			review: m.review_title(),
-			new: m.btn_create()
+			new: m.btn_create(),
+			about: 'About',
+			versions: m.btn_version_history(),
 		};
 
 		const pathname = page.url?.pathname ?? '/';

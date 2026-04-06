@@ -654,5 +654,18 @@
 	"status_skipped": "Överhoppad",
 	"settings_page_title": "Aviseringsinställningar",
 	"settings_page_desc": "Globala standardvärden för gallringsaviseringskadens och tidsgränser för juridisk granskning.",
-	"retention_desc": "Dokumentlivscykel och efterlevnad"
+	"retention_desc": "Dokumentlivscykel och efterlevnad",
+	"admin_card_departments_desc": "Hantera avdelningar och team",
+	"admin_card_users_desc": "Användarhantering över alla avdelningar",
+	"admin_card_retention_desc": "Dokumentlivscykel och efterlevnad",
+	"admin_card_ai_desc": "Modellinställningar och promptjustering",
+	"admin_card_audit_desc": "Systemövergripande aktivitetslogg",
+	"admin_card_taxonomy_desc": "Redigera taxonomiträd och importera frön",
+	"admin_card_categories_desc": "Redigera kategorier och markera de som kräver juridisk granskning",
+	"admin_card_import_desc": "Validera CSV-manifest för kosha-import CLI",
+	"admin_card_mail_desc": "Konfigurera utgående e-postleverantör och autentiseringsuppgifter",
+	"admin_card_notifications_desc": "Gallringsskanningsfrekvens och tidsgräns för juridisk granskning",
+	"admin_card_aging_desc": "Åldersfördelning och gallringsstatus",
+	"admin_card_critical_desc": "Försenade gallringsgranskningar efter allvarlighetsgrad",
+	"admin_card_legal_holds_desc": "Dokument under juridiskt bevarande"
 }

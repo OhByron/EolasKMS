@@ -654,5 +654,18 @@
 	"status_skipped": "Praleista",
 	"settings_page_title": "Pranešimų nustatymai",
 	"settings_page_desc": "Globalūs numatytieji saugojimo pranešimų dažnumui ir teisinės peržiūros laiko riboms.",
-	"retention_desc": "Dokumento gyvavimo ciklas ir atitiktis"
+	"retention_desc": "Dokumento gyvavimo ciklas ir atitiktis",
+	"admin_card_departments_desc": "Valdyti skyrius ir komandas",
+	"admin_card_users_desc": "Naudotojų valdymas visuose skyriuose",
+	"admin_card_retention_desc": "Dokumentų gyvavimo ciklas ir atitiktis",
+	"admin_card_ai_desc": "Modelio nustatymai ir raginimų derinimas",
+	"admin_card_audit_desc": "Visos sistemos veiklos žurnalas",
+	"admin_card_taxonomy_desc": "Redaguoti taksonomijos medį ir importuoti sėklas",
+	"admin_card_categories_desc": "Redaguoti kategorijas ir pažymėti tas, kurioms reikia teisinio peržiūrėjimo",
+	"admin_card_import_desc": "Patikrinti CSV manifestus kosha-import CLI įrankiui",
+	"admin_card_mail_desc": "Konfigūruoti siunčiamo el. pašto teikėją ir prisijungimo duomenis",
+	"admin_card_notifications_desc": "Saugojimo nuskaitymo dažnumas ir teisinio peržiūrėjimo terminas",
+	"admin_card_aging_desc": "Amžiaus pasiskirstymas ir saugojimo būsena",
+	"admin_card_critical_desc": "Vėluojančios saugojimo peržiūros pagal rimtumą",
+	"admin_card_legal_holds_desc": "Dokumentai su teisiniu sulaikymu"
 }

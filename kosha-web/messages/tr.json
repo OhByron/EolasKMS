@@ -654,5 +654,18 @@
 	"status_skipped": "Atlandı",
 	"settings_page_title": "Bildirim Ayarları",
 	"settings_page_desc": "Saklama bildirim sıklığı ve yasal inceleme süreleri için genel varsayılanlar.",
-	"retention_desc": "Belge yaşam döngüsü ve uyumluluk"
+	"retention_desc": "Belge yaşam döngüsü ve uyumluluk",
+	"admin_card_departments_desc": "Departmanları ve ekipleri yönetin",
+	"admin_card_users_desc": "Departmanlar arası kullanıcı yönetimi",
+	"admin_card_retention_desc": "Belge yaşam döngüsü ve uyumluluk",
+	"admin_card_ai_desc": "Model ayarları ve istem ince ayarı",
+	"admin_card_audit_desc": "Sistem genelinde etkinlik günlüğü",
+	"admin_card_taxonomy_desc": "Taksonomi ağacını düzenleyin ve tohumları içe aktarın",
+	"admin_card_categories_desc": "Kategorileri düzenleyin ve hukuki inceleme gerektirebilecekleri işaretleyin",
+	"admin_card_import_desc": "kosha-import CLI için CSV manifestolarını doğrulayın",
+	"admin_card_mail_desc": "Giden e-posta sağlayıcısını ve kimlik bilgilerini yapılandırın",
+	"admin_card_notifications_desc": "Saklama tarama sıklığı ve hukuki inceleme süresi",
+	"admin_card_aging_desc": "Yaş dağılımı ve saklama durumu",
+	"admin_card_critical_desc": "Önem derecesine göre gecikmiş saklama incelemeleri",
+	"admin_card_legal_holds_desc": "Hukuki muhafaza altındaki belgeler"
 }

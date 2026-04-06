@@ -654,5 +654,18 @@
 	"status_skipped": "Vahele jäetud",
 	"settings_page_title": "Teavituste seaded",
 	"settings_page_desc": "Üldised vaikeväärtused säilitamise teavituste sagedusele ja õigusliku ülevaatuse ajalistele piirangutele.",
-	"retention_desc": "Dokumendi elutsükkel ja vastavus"
+	"retention_desc": "Dokumendi elutsükkel ja vastavus",
+	"admin_card_departments_desc": "Osakondade ja meeskondade haldamine",
+	"admin_card_users_desc": "Kasutajahaldus kõigis osakondades",
+	"admin_card_retention_desc": "Dokumendi elutsükkel ja vastavus",
+	"admin_card_ai_desc": "Mudeli seaded ja viipade häälestamine",
+	"admin_card_audit_desc": "Süsteemiülene tegevuslogi",
+	"admin_card_taxonomy_desc": "Taksonoomia puu redigeerimine ja seemnete importimine",
+	"admin_card_categories_desc": "Kategooriate redigeerimine ja õiguslikku ülevaadet nõudvate märgistamine",
+	"admin_card_import_desc": "CSV-manifestide valideerimine kosha-import CLI jaoks",
+	"admin_card_mail_desc": "Väljuva e-posti teenusepakkuja ja mandaatide seadistamine",
+	"admin_card_notifications_desc": "Säilitamise skannimise sagedus ja õigusliku ülevaate tähtaeg",
+	"admin_card_aging_desc": "Vanuseline jaotus ja säilitamise olek",
+	"admin_card_critical_desc": "Tähtaja ületanud säilitamise ülevaated tõsiduse järgi",
+	"admin_card_legal_holds_desc": "Õigusliku kinnipidamise all olevad dokumendid"
 }

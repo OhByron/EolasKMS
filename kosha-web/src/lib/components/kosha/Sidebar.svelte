@@ -142,10 +142,22 @@
 		{/each}
 	</div>
 
-	{#if $user && !collapsed}
-		<div class="border-t border-border px-4 py-3">
+	<div class="px-4 py-3">
+		{#if $user && !collapsed}
 			<p class="truncate text-sm font-medium text-sidebar-foreground">{$user.name}</p>
 			<p class="truncate text-xs text-muted-foreground">{$user.email}</p>
-		</div>
-	{/if}
+		{/if}
+		<a
+			href="/about"
+			class="mt-2 block text-xs text-muted-foreground hover:text-sidebar-foreground focus:outline-2 focus:outline-offset-2 focus:outline-ring"
+			class:text-center={collapsed}
+			class:mt-0={collapsed || !$user}
+		>
+			{#if collapsed}
+				<span title="About Eòlas">ℹ</span>
+			{:else}
+				About {m.nav_app_title()}
+			{/if}
+		</a>
+	</div>
 </nav>
