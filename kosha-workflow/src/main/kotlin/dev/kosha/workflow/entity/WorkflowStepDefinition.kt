@@ -72,6 +72,21 @@ class WorkflowStepDefinition(
     @Column(name = "timeout_hours")
     var timeoutHours: Int? = null,
 
+    /**
+     * Optional JSON Logic expression. When non-null and non-blank, the
+     * engine evaluates it against a context built from the document,
+     * version, and extracted metadata. A falsy result causes the step
+     * to be auto-skipped. Null/blank = always fires (backwards compat).
+     *
+     * Example: require CFO approval only when the document mentions
+     * amounts above £10,000:
+     * ```json
+     * {">": [{"var": "metadata.amounts.0"}, 10000]}
+     * ```
+     */
+    @Column(name = "condition_json", columnDefinition = "TEXT")
+    var conditionJson: String? = null,
+
     @Column(name = "deleted_at")
     var deletedAt: OffsetDateTime? = null,
 

@@ -33,6 +33,11 @@ services:
       KOSHA_STORAGE_MINIO_SECRET_KEY: minioadmin
       SPRING_MAIL_HOST: mailpit
       SPRING_MAIL_PORT: 1025
+      # Pass 4.1 optional preview sidecar. Unset (or blank) = disabled,
+      # in which case Office previews degrade to download buttons.
+      # Docker Compose interpolates ${KOSHA_PREVIEW_SIDECAR_URL:-} from
+      # the host env, allowing the `office-preview` profile to set it.
+      KOSHA_PREVIEW_SIDECAR_URL: ${KOSHA_PREVIEW_SIDECAR_URL:-}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
       interval: 10s
@@ -60,6 +65,42 @@ services:
       resources:
         limits:
           memory: 4G
+    restart: unless-stopped
+
+  # ── Optional: Office document preview sidecar ────────────────
+  # Opt-in via `docker compose --profile office-preview up`. Without
+  # this service running, Office documents fall back to a "Download
+  # original" button in the frontend — PDF, image, and text preview
+  # still work because they use client-side rendering. See Pass 4.1
+  # roadmap note for why this is split out (500MB LibreOffice base
+  # image is too much to require for every deployment).
+  # Note: setting KOSHA_PREVIEW_SIDECAR_URL to http://kosha-preview:9100
+  # in the host environment (e.g. via .env) is what actually activates
+  # the conversion path on the backend — the `--profile office-preview`
+  # flag only starts the sidecar container. Both are required.
+  kosha-preview:
+    build:
+      context: ./kosha-preview-sidecar
+    profiles: ["office-preview"]
+    environment:
+      EOLAS_PREVIEW_LOG_LEVEL: INFO
+    # Security hardening: read-only root FS, non-root user (in image),
+    # tmpfs for /tmp (LibreOffice's user profile + conversion workdirs
+    # live here). Keeps the blast radius of a LibreOffice CVE minimal.
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=256m
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.5"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9100/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 
   # ── Infrastructure ───────────────────────────────────────────

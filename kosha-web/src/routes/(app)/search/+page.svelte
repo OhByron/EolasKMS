@@ -6,6 +6,7 @@
 	import type { SearchResult, Department } from '$lib/types/api';
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 	import StatusBadge from '$lib/components/kosha/StatusBadge.svelte';
+	import * as m from '$paraglide/messages';
 
 	let query = $state('');
 	let results = $state<SearchResult[]>([]);
@@ -102,20 +103,20 @@
 </script>
 
 <svelte:head>
-	<title>Search - Eòlas</title>
+	<title>{m.page_title_search()} - {m.nav_app_title()}</title>
 </svelte:head>
 
-<PageHeader title="Search" />
+<PageHeader title={m.page_title_search()} />
 
 <!-- Search bar -->
 <form onsubmit={handleSubmit} role="search" class="mt-4">
 	<div class="flex gap-2">
-		<label for="search-input" class="sr-only">Search documents</label>
+		<label for="search-input" class="sr-only">{m.page_title_search()}</label>
 		<input
 			id="search-input"
 			type="search"
 			bind:value={query}
-			placeholder="Search documents, keywords, content..."
+			placeholder={m.search_placeholder()}
 			class="flex-1 rounded-lg border border-border bg-background px-4 py-3 text-base placeholder:text-muted-foreground focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 		/>
 		<button
@@ -123,7 +124,7 @@
 			disabled={loading || !query.trim()}
 			class="rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 		>
-			Search
+			{m.btn_search()}
 		</button>
 	</div>
 </form>
@@ -134,27 +135,27 @@
 		<aside class="lg:col-span-1" aria-label="Search filters">
 			<div class="space-y-5 rounded-lg border border-border bg-card p-4">
 				<div class="flex items-center justify-between">
-					<h2 class="text-sm font-semibold">Filters</h2>
+					<h2 class="text-sm font-semibold">{m.search_filters_heading()}</h2>
 					{#if hasFilters}
 						<button
 							onclick={clearFilters}
 							class="text-xs text-primary hover:underline focus:outline-2 focus:outline-ring"
 						>
-							Clear all
+							{m.search_clear_all()}
 						</button>
 					{/if}
 				</div>
 
 				<!-- Department filter -->
 				<fieldset>
-					<legend class="text-sm font-medium text-muted-foreground">Department</legend>
+					<legend class="text-sm font-medium text-muted-foreground">{m.search_filter_department()}</legend>
 					<select
 						bind:value={selectedDeptId}
 						onchange={() => { currentPage = 0; doSearch(); }}
 						class="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm focus:outline-2 focus:outline-ring"
-						aria-label="Filter by department"
+						aria-label={m.label_filter_by_department()}
 					>
-						<option value="">All departments</option>
+						<option value="">{m.label_all_departments()}</option>
 						{#each departments as dept}
 							<option value={dept.id}>{dept.name}</option>
 						{/each}
@@ -163,7 +164,7 @@
 
 				<!-- Status filter -->
 				<fieldset>
-					<legend class="text-sm font-medium text-muted-foreground">Status</legend>
+					<legend class="text-sm font-medium text-muted-foreground">{m.search_filter_status()}</legend>
 					<div class="mt-1 space-y-1">
 						{#each statuses as status}
 							<label class="flex items-center gap-2 text-sm">
@@ -181,10 +182,10 @@
 
 				<!-- Date range filter -->
 				<fieldset>
-					<legend class="text-sm font-medium text-muted-foreground">Date Range</legend>
+					<legend class="text-sm font-medium text-muted-foreground">{m.search_filter_date_range()}</legend>
 					<div class="mt-1 space-y-2">
 						<div>
-							<label for="date-from" class="text-xs text-muted-foreground">From</label>
+							<label for="date-from" class="text-xs text-muted-foreground">{m.search_filter_from()}</label>
 							<input
 								id="date-from"
 								type="date"
@@ -194,7 +195,7 @@
 							/>
 						</div>
 						<div>
-							<label for="date-to" class="text-xs text-muted-foreground">To</label>
+							<label for="date-to" class="text-xs text-muted-foreground">{m.search_filter_to()}</label>
 							<input
 								id="date-to"
 								type="date"
@@ -211,16 +212,16 @@
 		<!-- Results -->
 		<div class="lg:col-span-3">
 			{#if loading}
-				<p aria-live="polite" class="text-muted-foreground">Searching...</p>
+				<p aria-live="polite" class="text-muted-foreground">{m.search_searching()}</p>
 			{:else if error}
 				<div role="alert" class="rounded-md border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
 					{error}
 				</div>
 			{:else if results.length === 0}
-				<p class="text-muted-foreground">No results found for "{query}".</p>
+				<p class="text-muted-foreground">{m.search_no_results({ query })}</p>
 			{:else}
 				<p class="mb-4 text-sm text-muted-foreground" aria-live="polite">
-					{total} result{total !== 1 ? 's' : ''} for "{query}"
+					{m.search_result_count({ total: String(total), query })}
 				</p>
 
 				<div class="space-y-3">
@@ -273,7 +274,7 @@
 				{#if total > pageSize}
 					<nav aria-label="Search results pagination" class="mt-4 flex items-center justify-between text-sm">
 						<p class="text-muted-foreground">
-							Showing {currentPage * pageSize + 1}–{Math.min((currentPage + 1) * pageSize, total)} of {total}
+							{m.search_showing({ from: String(currentPage * pageSize + 1), to: String(Math.min((currentPage + 1) * pageSize, total)), total: String(total) })}
 						</p>
 						<div class="flex gap-2">
 							<button
@@ -281,14 +282,14 @@
 								disabled={currentPage === 0}
 								class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed"
 							>
-								Previous
+								{m.btn_previous()}
 							</button>
 							<button
 								onclick={() => { currentPage++; doSearch(); }}
 								disabled={(currentPage + 1) * pageSize >= total}
 								class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed"
 							>
-								Next
+								{m.btn_next()}
 							</button>
 						</div>
 					</nav>
@@ -297,5 +298,5 @@
 		</div>
 	</div>
 {:else}
-	<p class="mt-6 text-sm text-muted-foreground">Enter a search term to find documents across all departments.</p>
+	<p class="mt-6 text-sm text-muted-foreground">{m.search_empty_hint()}</p>
 {/if}

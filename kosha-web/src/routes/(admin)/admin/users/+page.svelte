@@ -6,6 +6,7 @@
 	import StatusBadge from '$lib/components/kosha/StatusBadge.svelte';
 	import ErrorBoundary from '$lib/components/kosha/ErrorBoundary.svelte';
 	import UserCreateModal from '$lib/components/kosha/UserCreateModal.svelte';
+	import * as m from '$paraglide/messages';
 
 	let users = $state<UserProfile[]>([]);
 	let total = $state(0);
@@ -66,16 +67,16 @@
 </script>
 
 <svelte:head>
-	<title>Users - Administration - Eòlas</title>
+	<title>{m.user_all_title()} - {m.nav_sidebar_administration()} - {m.nav_app_title()}</title>
 </svelte:head>
 
-<PageHeader title="All Users" description="{total} user{total !== 1 ? 's' : ''} across {filteredDeptName}">
+<PageHeader title={m.user_all_title()} description={m.user_list_desc({ count: total.toString(), dept: filteredDeptName })}>
 	<button
 		type="button"
 		onclick={() => (createModalOpen = true)}
 		class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 	>
-		+ Add User
+		{m.btn_add_user()}
 	</button>
 </PageHeader>
 
@@ -87,7 +88,7 @@
 <div class="mt-4 flex flex-wrap items-end gap-3">
 	<div class="flex flex-col gap-1">
 		<label for="dept-filter" class="text-xs font-medium text-muted-foreground">
-			Filter by department
+			{m.label_filter_by_department()}
 		</label>
 		<select
 			id="dept-filter"
@@ -95,7 +96,7 @@
 			onchange={onDepartmentChange}
 			class="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 		>
-			<option value="">All departments</option>
+			<option value="">{m.label_all_departments()}</option>
 			{#each departments as d (d.id)}
 				<option value={d.id}>{d.name}</option>
 			{/each}
@@ -107,13 +108,13 @@
 			onclick={() => { departmentFilter = ''; onDepartmentChange(); }}
 			class="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 		>
-			Clear filter
+			{m.btn_clear_filter()}
 		</button>
 	{/if}
 </div>
 
 {#if loading}
-	<p aria-live="polite" class="mt-6 text-muted-foreground">Loading users...</p>
+	<p aria-live="polite" class="mt-6 text-muted-foreground">{m.user_loading()}</p>
 {:else if error}
 	<div class="mt-6"><ErrorBoundary {error} onRetry={loadUsers} /></div>
 {:else}
@@ -121,11 +122,11 @@
 		<table class="w-full text-sm" aria-label="All users">
 			<thead>
 				<tr class="border-b border-border bg-muted/50">
-					<th scope="col" class="px-4 py-3 text-left font-semibold">Name</th>
-					<th scope="col" class="px-4 py-3 text-left font-semibold">Email</th>
-					<th scope="col" class="px-4 py-3 text-left font-semibold">Department</th>
-					<th scope="col" class="px-4 py-3 text-left font-semibold">Role</th>
-					<th scope="col" class="px-4 py-3 text-left font-semibold">Status</th>
+					<th scope="col" class="px-4 py-3 text-left font-semibold">{m.label_name()}</th>
+					<th scope="col" class="px-4 py-3 text-left font-semibold">{m.label_email()}</th>
+					<th scope="col" class="px-4 py-3 text-left font-semibold">{m.label_department()}</th>
+					<th scope="col" class="px-4 py-3 text-left font-semibold">{m.label_role()}</th>
+					<th scope="col" class="px-4 py-3 text-left font-semibold">{m.label_status()}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -144,7 +145,7 @@
 						<td class="px-4 py-3"><StatusBadge status={u.status} /></td>
 					</tr>
 				{:else}
-					<tr><td colspan="5" class="px-4 py-8 text-center text-muted-foreground">No users found.</td></tr>
+					<tr><td colspan="5" class="px-4 py-8 text-center text-muted-foreground">{m.user_no_users()}</td></tr>
 				{/each}
 			</tbody>
 		</table>
@@ -156,11 +157,11 @@
 			<div class="flex gap-2">
 				<button onclick={() => { currentPage--; loadUsers(); }} disabled={currentPage === 0}
 					class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed">
-					Previous
+					{m.btn_previous()}
 				</button>
 				<button onclick={() => { currentPage++; loadUsers(); }} disabled={(currentPage + 1) * pageSize >= total}
 					class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed">
-					Next
+					{m.btn_next()}
 				</button>
 			</div>
 		</nav>

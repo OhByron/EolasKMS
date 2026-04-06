@@ -6,6 +6,7 @@
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 	import StatusBadge from '$lib/components/kosha/StatusBadge.svelte';
 	import ErrorBoundary from '$lib/components/kosha/ErrorBoundary.svelte';
+	import * as m from '$paraglide/messages';
 
 	/**
 	 * Global-admin user detail / edit page.
@@ -108,9 +109,9 @@
 			const res = await api.users.update(userId, patch);
 			userProfile = res.data;
 			seedDrafts(res.data);
-			saveMessage = 'Saved';
+			saveMessage = m.user_detail_saved();
 			setTimeout(() => {
-				if (saveMessage === 'Saved') saveMessage = '';
+				if (saveMessage === m.user_detail_saved()) saveMessage = '';
 			}, 2500);
 		} catch (e: any) {
 			saveMessage = `Error: ${e.message ?? 'Save failed'}`;
@@ -180,26 +181,26 @@
 			href="/admin/users"
 			class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 		>
-			← All Users
+			{m.user_detail_all_users()}
 		</a>
 		<button
 			type="button"
 			onclick={openReset}
 			class="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 		>
-			Reset password
+			{m.btn_reset_password()}
 		</button>
 	</PageHeader>
 
 	<div class="mt-6 grid gap-6 lg:grid-cols-3">
 		<div class="space-y-4 lg:col-span-2">
 			<section class="rounded-lg border border-border bg-card p-5">
-				<h2 class="text-sm font-semibold text-muted-foreground">Profile</h2>
+				<h2 class="text-sm font-semibold text-muted-foreground">{m.label_profile()}</h2>
 
 				<div class="mt-4 space-y-4">
 					<div>
 						<label for="u-name" class="block text-xs font-medium text-muted-foreground">
-							Display name
+							{m.label_display_name()}
 						</label>
 						<input
 							id="u-name"
@@ -213,7 +214,7 @@
 
 					<div>
 						<label for="u-email" class="block text-xs font-medium text-muted-foreground">
-							Email <span class="font-normal">(read-only — change via Keycloak)</span>
+							{m.user_detail_email_readonly()}
 						</label>
 						<input
 							id="u-email"
@@ -227,7 +228,7 @@
 					<div class="grid gap-4 sm:grid-cols-2">
 						<div>
 							<label for="u-role" class="block text-xs font-medium text-muted-foreground">
-								Role
+								{m.label_role()}
 							</label>
 							<select
 								id="u-role"
@@ -235,16 +236,16 @@
 								disabled={savingProfile}
 								class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 							>
-								<option value="CONTRIBUTOR">Contributor</option>
-								<option value="EDITOR">Editor</option>
-								<option value="DEPT_ADMIN">Department Admin</option>
-								<option value="GLOBAL_ADMIN">Global Admin</option>
+								<option value="CONTRIBUTOR">{m.role_contributor()}</option>
+								<option value="EDITOR">{m.role_editor()}</option>
+								<option value="DEPT_ADMIN">{m.role_dept_admin()}</option>
+								<option value="GLOBAL_ADMIN">{m.role_global_admin()}</option>
 							</select>
 						</div>
 
 						<div>
 							<label for="u-status" class="block text-xs font-medium text-muted-foreground">
-								Status
+								{m.label_status()}
 							</label>
 							<select
 								id="u-status"
@@ -252,15 +253,15 @@
 								disabled={savingProfile}
 								class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 							>
-								<option value="ACTIVE">Active</option>
-								<option value="INACTIVE">Inactive</option>
+								<option value="ACTIVE">{m.status_active()}</option>
+								<option value="INACTIVE">{m.status_inactive()}</option>
 							</select>
 						</div>
 					</div>
 
 					<div>
 						<label for="u-dept" class="block text-xs font-medium text-muted-foreground">
-							Department
+							{m.label_department()}
 						</label>
 						<select
 							id="u-dept"
@@ -295,7 +296,7 @@
 							disabled={savingProfile || !isDirty}
 							class="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed"
 						>
-							Revert
+							{m.btn_revert()}
 						</button>
 						<button
 							type="button"
@@ -303,7 +304,7 @@
 							disabled={savingProfile || !isDirty}
 							class="rounded-md bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed"
 						>
-							{savingProfile ? 'Saving...' : 'Save changes'}
+							{savingProfile ? m.btn_saving() : m.btn_save_changes()}
 						</button>
 					</div>
 				</div>
@@ -312,14 +313,14 @@
 
 		<div class="space-y-4">
 			<section class="rounded-lg border border-border bg-card p-5">
-				<h2 class="mb-3 text-sm font-semibold text-muted-foreground">Current</h2>
+				<h2 class="mb-3 text-sm font-semibold text-muted-foreground">{m.label_current()}</h2>
 				<dl class="space-y-2 text-sm">
 					<div>
-						<dt class="text-muted-foreground">Department</dt>
+						<dt class="text-muted-foreground">{m.label_department()}</dt>
 						<dd class="font-medium">{userProfile.departmentName}</dd>
 					</div>
 					<div>
-						<dt class="text-muted-foreground">Role</dt>
+						<dt class="text-muted-foreground">{m.label_role()}</dt>
 						<dd>
 							<span
 								class="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
@@ -328,15 +329,15 @@
 						</dd>
 					</div>
 					<div>
-						<dt class="text-muted-foreground">Status</dt>
+						<dt class="text-muted-foreground">{m.label_status()}</dt>
 						<dd><StatusBadge status={userProfile.status} /></dd>
 					</div>
 					<div>
-						<dt class="text-muted-foreground">Joined</dt>
+						<dt class="text-muted-foreground">{m.label_joined()}</dt>
 						<dd class="font-medium">{new Date(userProfile.createdAt).toLocaleDateString()}</dd>
 					</div>
 					<div>
-						<dt class="text-muted-foreground">Last update</dt>
+						<dt class="text-muted-foreground">{m.label_last_update()}</dt>
 						<dd class="font-medium">{new Date(userProfile.updatedAt).toLocaleDateString()}</dd>
 					</div>
 				</dl>
@@ -354,13 +355,11 @@
 			aria-labelledby="reset-title"
 		>
 			<div class="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg">
-				<h2 id="reset-title" class="text-lg font-semibold">Reset password</h2>
+				<h2 id="reset-title" class="text-lg font-semibold">{m.user_reset_title()}</h2>
 
 				{#if !resetResult}
 					<p class="mt-2 text-sm text-muted-foreground">
-						This will generate a new temporary password for <strong>{userProfile.displayName}</strong
-						> ({userProfile.email}) and email it to them. They will be required to change it on next
-						sign-in.
+						{m.user_reset_confirm({ name: userProfile.displayName, email: userProfile.email })}
 					</p>
 					{#if resetError}
 						<p class="mt-3 text-sm text-destructive" role="alert">{resetError}</p>
@@ -372,7 +371,7 @@
 							disabled={resetting}
 							class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 						>
-							Cancel
+							{m.btn_cancel()}
 						</button>
 						<button
 							type="button"
@@ -380,14 +379,12 @@
 							disabled={resetting}
 							class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 						>
-							{resetting ? 'Resetting...' : 'Reset and email'}
+							{resetting ? m.user_reset_resetting() : m.user_reset_and_email()}
 						</button>
 					</div>
 				{:else}
 					<p class="mt-2 text-sm text-muted-foreground">
-						Password reset. An email has been queued to <strong>{resetResult.email}</strong>. As a
-						safety net, the new temporary password is shown below — share it through a secure
-						channel if email delivery fails.
+						{m.user_reset_done({ email: resetResult.email })}
 					</p>
 					<div class="mt-4 rounded-md border border-border bg-muted p-3">
 						<p class="font-mono text-sm break-all select-all">{resetResult.password}</p>
@@ -398,14 +395,14 @@
 							onclick={copyPassword}
 							class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 						>
-							Copy
+							{m.btn_copy()}
 						</button>
 						<button
 							type="button"
 							onclick={closeReset}
 							class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 						>
-							Done
+							{m.btn_done()}
 						</button>
 					</div>
 				{/if}

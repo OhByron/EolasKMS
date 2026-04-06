@@ -30,11 +30,12 @@ data class WorkflowStepResponse(
     val actionType: String,
     val assigneeId: UUID?,
     val assigneeName: String?,
-    val assigneeStatus: String?,  // lets the frontend flag inactive assignees
+    val assigneeStatus: String?,
     val escalationId: UUID?,
     val escalationName: String?,
     val escalationStatus: String?,
     val timeLimitDays: Int,
+    val conditionJson: String?,
 )
 
 /**
@@ -61,6 +62,7 @@ data class UpdateWorkflowStepRequest(
     val assigneeId: UUID,
     val escalationId: UUID,
     val timeLimitDays: Int,
+    val conditionJson: String? = null,
 )
 
 // ── Validation DTO ──────────────────────────────────────────────

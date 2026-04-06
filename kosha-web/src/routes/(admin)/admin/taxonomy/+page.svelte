@@ -6,6 +6,7 @@
 	import TreeView from '$lib/components/kosha/TreeView.svelte';
 	import StatusBadge from '$lib/components/kosha/StatusBadge.svelte';
 	import ErrorBoundary from '$lib/components/kosha/ErrorBoundary.svelte';
+	import * as m from '$paraglide/messages';
 
 	let treeNodes = $state<TaxonomyTreeNode[]>([]);
 	let selectedTermId = $state('');
@@ -217,7 +218,7 @@
 	}
 
 	async function deleteTerm(id: string) {
-		if (!confirm('Delete this taxonomy term?')) return;
+		if (!confirm(m.taxmgmt_delete_confirm())) return;
 		try {
 			await api.delete(`/api/v1/taxonomy/terms/${id}`);
 			selectedTermId = '';
@@ -252,17 +253,17 @@
 </script>
 
 <svelte:head>
-	<title>Taxonomy Management - Administration - Eòlas</title>
+	<title>{m.page_title_taxonomy_mgmt()} - {m.nav_sidebar_administration()} - {m.nav_app_title()}</title>
 </svelte:head>
 
-<PageHeader title="Taxonomy Management" description="Edit taxonomy tree and import seeds">
+<PageHeader title={m.taxmgmt_title()} description={m.taxmgmt_desc()}>
 	<button onclick={() => (showImport = true)}
 		class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-ring">
-		Import Seed
+		{m.taxmgmt_import_seed()}
 	</button>
 	<button onclick={() => (showCreate = true)}
 		class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring">
-		+ Add Term
+		{m.taxmgmt_add_term()}
 	</button>
 </PageHeader>
 
@@ -271,15 +272,15 @@
 {/if}
 
 {#if loading}
-	<p aria-live="polite" class="mt-6 text-muted-foreground">Loading taxonomy...</p>
+	<p aria-live="polite" class="mt-6 text-muted-foreground">{m.taxonomy_loading()}</p>
 {:else}
 	<div class="mt-6 grid gap-6 lg:grid-cols-3">
 		<!-- Tree -->
 		<div class="lg:col-span-1">
 			{#if treeNodes.length === 0}
 				<div class="rounded-lg border border-dashed border-border p-8 text-center">
-					<p class="text-muted-foreground">No taxonomy terms yet.</p>
-					<p class="mt-1 text-sm text-muted-foreground">Import a seed taxonomy or create terms manually.</p>
+					<p class="text-muted-foreground">{m.taxmgmt_no_terms()}</p>
+					<p class="mt-1 text-sm text-muted-foreground">{m.taxmgmt_no_terms_hint()}</p>
 				</div>
 			{:else}
 				<div class="rounded-lg border border-border bg-card p-3 max-h-[calc(100vh-220px)] overflow-y-auto">
@@ -292,32 +293,32 @@
 		<div class="lg:col-span-2">
 			{#if !selectedTermId}
 				<div class="flex h-full items-center justify-center rounded-lg border border-dashed border-border p-12">
-					<p class="text-muted-foreground">Select a term to view or edit.</p>
+					<p class="text-muted-foreground">{m.taxmgmt_select_hint()}</p>
 				</div>
 			{:else if detailLoading}
-				<p aria-live="polite" class="text-muted-foreground">Loading...</p>
+				<p aria-live="polite" class="text-muted-foreground">{m.app_loading()}</p>
 			{:else if selectedTerm}
 				<div class="space-y-4">
 					<section class="rounded-lg border border-border bg-card p-5">
 						{#if editing}
 							<!-- Edit mode -->
-							<h2 class="text-lg font-semibold">Edit Term</h2>
+							<h2 class="text-lg font-semibold">{m.taxmgmt_edit_term()}</h2>
 							<form onsubmit={(e) => { e.preventDefault(); saveEdit(); }} class="mt-3 space-y-4">
 								<div>
-									<label for="edit-label" class="block text-sm font-medium">Label</label>
+									<label for="edit-label" class="block text-sm font-medium">{m.taxmgmt_label()}</label>
 									<input id="edit-label" type="text" bind:value={editLabel} required maxlength="500"
 										class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-2 focus:outline-ring" />
 								</div>
 								<div>
 									<div class="flex items-center justify-between">
-										<label for="edit-desc" class="block text-sm font-medium">Description / Definition</label>
+										<label for="edit-desc" class="block text-sm font-medium">{m.taxmgmt_desc_definition()}</label>
 										<button type="button" onclick={() => aiDefine(editLabel, 'edit')} disabled={aiDefining || !editLabel.trim()}
 											class="text-xs font-medium text-primary hover:underline focus:outline-2 focus:outline-ring disabled:opacity-50">
-											{aiDefining ? 'Generating...' : 'AI Assist'}
+											{aiDefining ? m.taxmgmt_generating() : m.taxmgmt_ai_assist()}
 										</button>
 									</div>
 									<textarea id="edit-desc" bind:value={editDesc} rows="4" maxlength="2000"
-										placeholder="Provide a clear definition for this term..."
+										placeholder={m.taxmgmt_desc_placeholder()}
 										class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-2 focus:outline-ring"></textarea>
 								</div>
 								{#if duplicateWarning}
@@ -328,11 +329,11 @@
 								<div class="flex gap-3">
 									<button type="button" onclick={() => { editing = false; duplicateWarning = ''; }}
 										class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-ring">
-										Cancel
+										{m.btn_cancel()}
 									</button>
 									<button type="submit" disabled={saving || !editLabel.trim()}
 										class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring disabled:opacity-50">
-										{saving ? 'Saving...' : 'Save Changes'}
+										{saving ? m.btn_saving() : m.btn_save_changes()}
 									</button>
 								</div>
 							</form>
@@ -351,20 +352,20 @@
 								<div class="flex gap-2">
 									<button onclick={startEditing}
 										class="rounded-md border border-border px-3 py-1 text-sm hover:bg-muted focus:outline-2 focus:outline-ring">
-										Edit
+										{m.btn_edit()}
 									</button>
 									<button onclick={() => deleteTerm(selectedTerm!.id)}
 										class="rounded-md border border-destructive/50 px-3 py-1 text-sm text-destructive hover:bg-destructive/10 focus:outline-2 focus:outline-ring">
-										Delete
+										{m.btn_delete()}
 									</button>
 									{#if selectedTerm.status === 'CANDIDATE'}
 										<button onclick={() => approveTerm(selectedTerm!.id)}
 											class="rounded-md bg-success px-3 py-1 text-sm text-white hover:opacity-90 focus:outline-2 focus:outline-ring">
-											Approve
+											{m.btn_approve()}
 										</button>
 										<button onclick={() => rejectTerm(selectedTerm!.id)}
 											class="rounded-md bg-destructive px-3 py-1 text-sm text-white hover:opacity-90 focus:outline-2 focus:outline-ring">
-											Reject
+											{m.btn_reject()}
 										</button>
 									{/if}
 								</div>
@@ -372,22 +373,22 @@
 							{#if selectedTerm.description}
 								<p class="mt-3 text-sm leading-relaxed">{selectedTerm.description}</p>
 							{:else}
-								<p class="mt-3 text-sm italic text-muted-foreground">No description. Click Edit to add one.</p>
+								<p class="mt-3 text-sm italic text-muted-foreground">{m.taxmgmt_no_desc()}</p>
 							{/if}
 						{/if}
 						<dl class="mt-4 grid grid-cols-2 gap-2 text-sm">
 							<div>
-								<dt class="text-muted-foreground">Normalized</dt>
+								<dt class="text-muted-foreground">{m.taxmgmt_normalized()}</dt>
 								<dd class="font-mono text-xs">{selectedTerm.normalizedLabel}</dd>
 							</div>
 							{#if selectedTerm.sourceRef}
 								<div>
-									<dt class="text-muted-foreground">Source Ref</dt>
+									<dt class="text-muted-foreground">{m.taxmgmt_source_ref()}</dt>
 									<dd class="font-mono text-xs">{selectedTerm.sourceRef}</dd>
 								</div>
 							{/if}
 							<div>
-								<dt class="text-muted-foreground">Created</dt>
+								<dt class="text-muted-foreground">{m.label_created()}</dt>
 								<dd>{new Date(selectedTerm.createdAt).toLocaleDateString()}</dd>
 							</div>
 						</dl>
@@ -400,26 +401,26 @@
 								onclick={() => { showCreate = true; showSuggestions = false; }}
 								class="text-sm text-primary hover:underline focus:outline-2 focus:outline-ring"
 							>
-								+ Add child term manually
+								{m.taxmgmt_add_child()}
 							</button>
 							<button
 								onclick={suggestChildren}
 								disabled={suggesting}
 								class="text-sm font-medium text-accent-foreground bg-accent/20 rounded-md px-3 py-1 hover:bg-accent/30 focus:outline-2 focus:outline-ring disabled:opacity-50"
 							>
-								{suggesting ? 'Thinking...' : 'AI Suggest Children'}
+								{suggesting ? m.taxmgmt_thinking() : m.taxmgmt_ai_suggest()}
 							</button>
 						</div>
 
 						{#if showSuggestions}
 							<div class="mt-4">
 								{#if suggesting}
-									<p class="text-sm text-muted-foreground" aria-live="polite">Generating suggestions for "{selectedTerm.label}"...</p>
+									<p class="text-sm text-muted-foreground" aria-live="polite">{m.taxmgmt_suggesting({ label: selectedTerm.label })}</p>
 								{:else if suggestedChildren.length === 0}
-									<p class="text-sm text-muted-foreground">No suggestions generated.</p>
+									<p class="text-sm text-muted-foreground">{m.taxmgmt_no_suggestions()}</p>
 								{:else}
-									<h3 class="text-sm font-semibold text-muted-foreground">Suggested child terms</h3>
-									<p class="text-xs text-muted-foreground">Click Add to create the term under "{selectedTerm.label}"</p>
+									<h3 class="text-sm font-semibold text-muted-foreground">{m.taxmgmt_suggested_heading()}</h3>
+									<p class="text-xs text-muted-foreground">{m.taxmgmt_suggested_hint({ label: selectedTerm.label })}</p>
 									<ul class="mt-2 space-y-2">
 										{#each suggestedChildren as suggestion}
 											<li class="flex items-start justify-between gap-3 rounded-md border border-border p-3">
@@ -431,7 +432,7 @@
 													onclick={() => addSuggestedChild(suggestion)}
 													class="shrink-0 rounded-md bg-success px-3 py-1 text-xs font-medium text-white hover:opacity-90 focus:outline-2 focus:outline-ring"
 												>
-													Add
+													{m.taxmgmt_add()}
 												</button>
 											</li>
 										{/each}
@@ -452,14 +453,14 @@
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
 		onclick={(e) => { if (e.target === e.currentTarget) showCreate = false; }}
 		onkeydown={(e) => { if (e.key === 'Escape') showCreate = false; }}>
-		<div class="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg" role="dialog" aria-modal="true" aria-label="Add taxonomy term">
-			<h2 class="text-lg font-semibold">Add Taxonomy Term</h2>
+		<div class="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg" role="dialog" aria-modal="true" aria-label={m.taxmgmt_add_dialog_label()}>
+			<h2 class="text-lg font-semibold">{m.taxmgmt_add_dialog_title()}</h2>
 			{#if selectedTerm}
-				<p class="text-sm text-muted-foreground">Parent: {selectedTerm.label}</p>
+				<p class="text-sm text-muted-foreground">{m.taxmgmt_parent_label({ label: selectedTerm.label })}</p>
 			{/if}
 			<form onsubmit={createTerm} class="mt-4 space-y-4">
 				<div>
-					<label for="term-label" class="block text-sm font-medium">Label <span class="text-destructive">*</span></label>
+					<label for="term-label" class="block text-sm font-medium">{m.taxmgmt_label()} <span class="text-destructive">*</span></label>
 					<input id="term-label" type="text" bind:value={newLabel} required maxlength="500"
 						onblur={checkNewTermDuplicate}
 						class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-2 focus:outline-ring" />
@@ -471,22 +472,22 @@
 				{/if}
 				<div>
 					<div class="flex items-center justify-between">
-						<label for="term-desc" class="block text-sm font-medium">Description / Definition <span class="text-destructive">*</span></label>
+						<label for="term-desc" class="block text-sm font-medium">{m.taxmgmt_desc_definition()} <span class="text-destructive">*</span></label>
 						<button type="button" onclick={() => aiDefine(newLabel, 'create')} disabled={aiDefining || !newLabel.trim()}
 							class="text-xs font-medium text-primary hover:underline focus:outline-2 focus:outline-ring disabled:opacity-50">
-							{aiDefining ? 'Generating...' : 'AI Assist'}
+							{aiDefining ? m.taxmgmt_generating() : m.taxmgmt_ai_assist()}
 						</button>
 					</div>
 					<textarea id="term-desc" bind:value={newDesc} rows="3" required
-						placeholder="Provide a clear definition for this term..."
+						placeholder={m.taxmgmt_desc_placeholder()}
 						class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-2 focus:outline-ring"></textarea>
 				</div>
 				<div class="flex justify-end gap-3 pt-2">
 					<button type="button" onclick={() => { showCreate = false; duplicateWarning = ''; }}
-						class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-ring">Cancel</button>
+						class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-ring">{m.btn_cancel()}</button>
 					<button type="submit" disabled={!newLabel.trim() || !newDesc.trim() || creating || !!duplicateWarning}
 						class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring disabled:opacity-50">
-						{creating ? 'Creating...' : 'Add Term'}
+						{creating ? m.taxmgmt_creating() : m.taxmgmt_add_term_btn()}
 					</button>
 				</div>
 			</form>
@@ -500,21 +501,21 @@
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
 		onclick={(e) => { if (e.target === e.currentTarget) showImport = false; }}
 		onkeydown={(e) => { if (e.key === 'Escape') showImport = false; }}>
-		<div class="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg" role="dialog" aria-modal="true" aria-label="Import seed taxonomy">
-			<h2 class="text-lg font-semibold">Import Seed Taxonomy</h2>
-			<p class="mt-2 text-sm text-muted-foreground">Upload a taxonomy file (SKOS/RDF, CSV, or JSON) to seed the taxonomy tree.</p>
+		<div class="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg" role="dialog" aria-modal="true" aria-label={m.taxmgmt_import_dialog_label()}>
+			<h2 class="text-lg font-semibold">{m.taxmgmt_import_title()}</h2>
+			<p class="mt-2 text-sm text-muted-foreground">{m.taxmgmt_import_desc()}</p>
 			<div class="mt-4">
 				<label class="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center hover:border-primary">
-					<p class="text-sm font-medium">Choose taxonomy file</p>
-					<p class="text-xs text-muted-foreground">SKOS, CSV, or JSON format</p>
+					<p class="text-sm font-medium">{m.taxmgmt_choose_file()}</p>
+					<p class="text-xs text-muted-foreground">{m.taxmgmt_file_formats()}</p>
 					<input type="file" class="sr-only" accept=".json,.csv,.rdf,.xml" />
 				</label>
 			</div>
 			<div class="mt-4 flex justify-end gap-3">
 				<button onclick={() => (showImport = false)}
-					class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-ring">Cancel</button>
+					class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-ring">{m.btn_cancel()}</button>
 				<button disabled
-					class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">Import</button>
+					class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">{m.taxmgmt_import_btn()}</button>
 			</div>
 		</div>
 	</div>

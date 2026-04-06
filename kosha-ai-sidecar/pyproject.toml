@@ -13,6 +13,8 @@ dependencies = [
     "pydantic-settings>=2.6",
     "minio>=7.2",
     "httpx>=0.27",
+    "ocrmypdf>=16",
+    "python-dateutil>=2.9",
 ]
 
 [project.optional-dependencies]

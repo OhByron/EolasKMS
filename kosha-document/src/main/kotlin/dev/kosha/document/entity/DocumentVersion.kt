@@ -37,6 +37,27 @@ class DocumentVersion(
     @Column(name = "storage_key", length = 1000)
     var storageKey: String? = null,
 
+    @Column(name = "content_type", length = 200)
+    var contentType: String? = null,
+
+    @Column(name = "ocr_storage_key", length = 1000)
+    var ocrStorageKey: String? = null,
+
+    @Column(name = "ocr_applied", nullable = false)
+    var ocrApplied: Boolean = false,
+
+    @Column(name = "ocr_language", length = 50)
+    var ocrLanguage: String? = null,
+
+    /**
+     * Structured metadata extracted by the AI sidecar's spaCy NER pipeline.
+     * Stored as a JSONB column; Hibernate maps it to a String (the raw
+     * JSON text). The service layer deserialises it to a Map when needed
+     * for conditional workflow evaluation.
+     */
+    @Column(name = "extracted_metadata", columnDefinition = "jsonb")
+    var extractedMetadata: String? = null,
+
     @Column(name = "change_summary")
     var changeSummary: String? = null,
 

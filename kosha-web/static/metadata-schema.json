@@ -1,0 +1,43 @@
+{
+	"$schema": "https://eolaskms.com/schema/metadata-schema/v1",
+	"description": "Eòlas extracted metadata schema. Defines the named fields the AI extraction pipeline produces and the conditional workflow engine can evaluate. Fields may be absent on any given document — JSON Logic treats missing keys as null.",
+	"version": "1.0.0",
+	"fields": {
+		"amounts": {
+			"type": "number[]",
+			"source": "spacy:MONEY",
+			"description": "Numeric monetary amounts extracted from the document text, sorted descending. Currency symbols are stripped; see the 'currency' field.",
+			"example": [10000, 5000]
+		},
+		"currency": {
+			"type": "string",
+			"source": "spacy:MONEY",
+			"description": "ISO currency code of the most frequently occurring monetary amount (e.g. GBP, USD, EUR).",
+			"example": "GBP"
+		},
+		"effective_date": {
+			"type": "string (ISO 8601)",
+			"source": "spacy:DATE",
+			"description": "The earliest concrete date found in the document, normalised to YYYY-MM-DD. Relative dates ('next week', 'yesterday') are excluded.",
+			"example": "2026-01-15"
+		},
+		"parties": {
+			"type": "string[]",
+			"source": "spacy:ORG + spacy:PERSON",
+			"description": "Organisations and named individuals mentioned in the document. Deduplicated, title-cased, capped at 20 entries.",
+			"example": ["Acme Corp", "Widget Ltd", "Alice Adams"]
+		},
+		"jurisdiction": {
+			"type": "string",
+			"source": "spacy:GPE",
+			"description": "The most frequently mentioned geopolitical entity (country, state, city). Represents the likely legal or operational jurisdiction.",
+			"example": "England and Wales"
+		},
+		"document_number": {
+			"type": "string",
+			"source": "regex",
+			"description": "A structured document reference number matching common enterprise patterns (DOC-nnn, INV-nnn, PO-nnn, REF-nnn, CASE-nnn, CONTRACT-nnn).",
+			"example": "DOC-00042"
+		}
+	}
+}

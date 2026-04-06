@@ -201,6 +201,23 @@ data class WorkflowStepEscalated(
     override val aggregateType = "workflow_step_instance"
 }
 
+/**
+ * Fired when a workflow step with action_type=SIGN_OFF is approved.
+ * The document module listens for this and auto-creates a signature
+ * record so the approver doesn't need to sign separately.
+ */
+data class WorkflowSignOffApproved(
+    override val aggregateId: UUID,     // step instance id
+    val workflowInstanceId: UUID,
+    val documentId: UUID,
+    val versionId: UUID,
+    val signerId: UUID,
+    override val actorId: UUID?,
+) : DomainEvent() {
+    override val eventType = "wf.sign-off.approved"
+    override val aggregateType = "workflow_step_instance"
+}
+
 data class WorkflowStepCompleted(
     override val aggregateId: UUID,
     val workflowInstanceId: UUID,

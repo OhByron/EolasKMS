@@ -6,6 +6,8 @@ import dev.kosha.common.api.ApiResponse
 import dev.kosha.document.entity.VersionMetadata
 import dev.kosha.document.repository.DocumentVersionRepository
 import dev.kosha.document.repository.VersionMetadataRepository
+import dev.kosha.storage.MinioStorageService
+import io.micrometer.core.instrument.MeterRegistry
 import org.apache.tika.Tika
 import org.slf4j.LoggerFactory
 import org.springframework.jdbc.core.JdbcTemplate
@@ -29,9 +31,16 @@ class DocumentUploadController(
     private val metadataRepo: VersionMetadataRepository,
     private val natsService: NatsService,
     private val jdbcTemplate: JdbcTemplate,
+    private val storage: MinioStorageService,
+    meterRegistry: MeterRegistry,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
     private val tika = Tika()
+
+    // Pass 4 instrument-as-we-go: track storage-writes by outcome so
+    // Pass 6 dashboards don't need to retrofit this.
+    private val uploadsSucceeded = meterRegistry.counter("eolas.uploads.stored", "outcome", "success")
+    private val uploadsFailed = meterRegistry.counter("eolas.uploads.stored", "outcome", "failure")
 
     /**
      * Check if a file with this hash already exists before uploading.
@@ -89,8 +98,47 @@ class DocumentUploadController(
         val bytes = file.bytes
         val contentHash = computeSha256(bytes)
 
-        // Extract text with Tika
-        log.info("Extracting text from '{}' ({} bytes, type={})", file.originalFilename, file.size, file.contentType)
+        // Content type resolution: clients (including browsers and CLI
+        // tools) often send generic application/octet-stream for uploads,
+        // which defeats downstream preview routing that needs to know
+        // whether the file is a PDF, Office doc, or image. Use Tika to
+        // detect from magic bytes + filename when the claimed type is
+        // missing or generic; trust the client otherwise.
+        val claimedType = file.contentType
+        val contentType = if (claimedType.isNullOrBlank() || claimedType == "application/octet-stream") {
+            val detected = try {
+                tika.detect(bytes.inputStream(), file.originalFilename ?: "unknown")
+            } catch (ex: Exception) {
+                log.warn("Tika MIME detection failed for '{}': {}", file.originalFilename, ex.message)
+                "application/octet-stream"
+            }
+            log.debug("Client claimed {}, Tika detected {}", claimedType, detected)
+            detected
+        } else {
+            claimedType
+        }
+
+        // Persist the original bytes to MinIO. This is the first step —
+        // before Tika, before metadata — so that a successful storage write
+        // means the bytes are safe even if later steps (AI queue, DB write)
+        // throw. On failure we fail the request immediately: a document
+        // version row without its bytes is a broken state we refuse to
+        // create. The caller can retry the upload.
+        val storageKey = storage.originalKey(docId, versionId)
+        try {
+            storage.put(storageKey, bytes, contentType)
+            uploadsSucceeded.increment()
+        } catch (ex: Exception) {
+            uploadsFailed.increment()
+            log.error("Failed to store '{}' in MinIO at key {}: {}", file.originalFilename, storageKey, ex.message)
+            throw IllegalStateException("Storage write failed: ${ex.message}", ex)
+        }
+
+        // Extract text with Tika for full-text search and AI processing.
+        // Tika failures are non-fatal — we already have the bytes safely
+        // in MinIO, so the worst case is a doc that's previewable but
+        // not searchable until someone reruns extraction.
+        log.info("Extracting text from '{}' ({} bytes, type={})", file.originalFilename, file.size, contentType)
         val extractedText = try {
             tika.parseToString(bytes.inputStream())
         } catch (ex: Exception) {
@@ -104,9 +152,12 @@ class DocumentUploadController(
         metadata.extractedText = extractedText
         metadataRepo.save(metadata)
 
-        // Update version with file size and content hash
+        // Update version with file size, content hash, storage key, and mime type.
+        // storageKey + contentType are new in Pass 4.1 — they power preview.
         version.fileSizeBytes = file.size
         version.contentHash = contentHash
+        version.storageKey = storageKey
+        version.contentType = contentType
         versionRepo.save(version)
 
         // Publish AI task with the extracted text

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import * as m from '$paraglide/messages';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/api';
@@ -7,6 +8,7 @@
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 	import StatusBadge from '$lib/components/kosha/StatusBadge.svelte';
 	import ErrorBoundary from '$lib/components/kosha/ErrorBoundary.svelte';
+	import DocumentPreview from '$lib/components/kosha/DocumentPreview.svelte';
 
 	let doc = $state<DocumentDetail | null>(null);
 	let versions = $state<VersionDetail[]>([]);
@@ -63,7 +65,7 @@
 	async function reject() {
 		if (!doc || !canAct) return;
 		if (!comments.trim()) {
-			error = 'Rejection requires a comment explaining what needs to change.';
+			error = m.review_rejection_required();
 			return;
 		}
 		actionLoading = true;
@@ -100,12 +102,12 @@
 {:else if error && !doc}
 	<ErrorBoundary {error} onRetry={loadDocument} />
 {:else if doc}
-	<PageHeader title="Review Document">
+	<PageHeader title={m.review_title()}>
 		<a
 			href="/inbox"
 			class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 		>
-			← Back to Inbox
+			{m.review_back_inbox()}
 		</a>
 	</PageHeader>
 
@@ -126,22 +128,26 @@
 				{/if}
 
 				{#if latestVersion}
-					<div class="mt-4 flex items-center gap-4 rounded-md bg-muted/50 p-4">
-						<div class="flex-1">
-							<p class="font-medium">{latestVersion.fileName}</p>
-							<p class="text-sm text-muted-foreground">
-								Version {latestVersion.versionNumber} &middot; {formatSize(latestVersion.fileSizeBytes)}
-							</p>
-						</div>
-						<a
-							href="#download"
-							class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring"
-						>
-							Download
-						</a>
+					<div class="mt-4 rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
+						Reviewing <span class="font-medium text-foreground">{latestVersion.fileName}</span>
+						&middot; Version {latestVersion.versionNumber} &middot; {formatSize(latestVersion.fileSizeBytes)}
 					</div>
 				{/if}
 			</section>
+
+			<!-- Inline preview — reviewers decide by seeing the content,
+				 not by guessing from metadata. Same component used on the
+				 document detail page so behaviour is consistent across
+				 the review surface. -->
+			{#if latestVersion}
+				<DocumentPreview
+					documentId={doc.id}
+					versionId={latestVersion.id}
+					contentType={latestVersion.contentType}
+					fileName={latestVersion.fileName}
+					storageKey={latestVersion.storageKey}
+				/>
+			{/if}
 
 			<!-- AI Summary -->
 			{#if latestVersion?.metadata}
@@ -168,24 +174,24 @@
 		<div class="space-y-4">
 			<!-- Metadata card -->
 			<section class="rounded-lg border border-border bg-card p-5">
-				<h2 class="mb-3 text-sm font-semibold text-muted-foreground">Details</h2>
+				<h2 class="mb-3 text-sm font-semibold text-muted-foreground">{m.label_details()}</h2>
 				<dl class="space-y-2 text-sm">
 					<div>
-						<dt class="text-muted-foreground">Status</dt>
+						<dt class="text-muted-foreground">{m.label_status()}</dt>
 						<dd><StatusBadge status={doc.status} /></dd>
 					</div>
 					<div>
-						<dt class="text-muted-foreground">Department</dt>
+						<dt class="text-muted-foreground">{m.label_department()}</dt>
 						<dd class="font-medium">{doc.departmentName}</dd>
 					</div>
 					{#if doc.categoryName}
 						<div>
-							<dt class="text-muted-foreground">Category</dt>
+							<dt class="text-muted-foreground">{m.label_category()}</dt>
 							<dd class="font-medium">{doc.categoryName}</dd>
 						</div>
 					{/if}
 					<div>
-						<dt class="text-muted-foreground">Created</dt>
+						<dt class="text-muted-foreground">{m.label_created()}</dt>
 						<dd class="font-medium">{formatDate(doc.createdAt)}</dd>
 					</div>
 				</dl>
@@ -193,25 +199,24 @@
 
 			<!-- Review action card -->
 			<section class="rounded-lg border-2 border-primary/20 bg-card p-5">
-				<h2 class="mb-3 text-sm font-semibold">Review Decision</h2>
+				<h2 class="mb-3 text-sm font-semibold">{m.review_decision()}</h2>
 
 				<div>
 					<label for="review-comments" class="block text-sm font-medium text-muted-foreground">
-						Comments
+						{m.label_comments()}
 					</label>
 					<textarea
 						id="review-comments"
 						bind:value={comments}
 						rows="4"
-						placeholder="Add your review comments..."
+						placeholder={m.review_comments_placeholder()}
 						class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 					></textarea>
 				</div>
 
 				{#if !canAct}
 					<p class="mt-3 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
-						Open this document from your <a href="/inbox" class="text-primary underline">review inbox</a>
-						to take action. The engine needs the workflow and step id to record your decision.
+						{m.review_inbox_hint()}
 					</p>
 				{/if}
 
@@ -221,17 +226,17 @@
 						disabled={actionLoading || !canAct}
 						class="w-full rounded-md bg-success px-4 py-2 text-sm font-medium text-white hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 					>
-						Approve
+						{m.btn_approve()}
 					</button>
 					<button
 						onclick={reject}
 						disabled={actionLoading || !canAct}
 						class="w-full rounded-md border border-destructive bg-destructive/10 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/20 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 					>
-						Reject — Return to Submitter
+						{m.btn_reject()}
 					</button>
 					<p class="text-xs text-muted-foreground">
-						Rejecting returns the document to the submitter as a draft. Comments are mandatory on reject.
+						{m.review_reject_info()}
 					</p>
 				</div>
 			</section>

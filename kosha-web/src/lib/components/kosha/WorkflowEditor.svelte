@@ -51,6 +51,7 @@
 		assigneeId: string;
 		escalationId: string;
 		timeLimitDays: number;
+		conditionJson: string;
 	};
 
 	let draft = $state<Draft | null>(null);
@@ -107,6 +108,7 @@
 				assigneeId: s.assigneeId ?? '',
 				escalationId: s.escalationId ?? '',
 				timeLimitDays: s.timeLimitDays,
+				conditionJson: s.conditionJson ?? '',
 			})),
 		};
 	}
@@ -125,7 +127,8 @@
 				a.actionType !== b.actionType ||
 				a.assigneeId !== b.assigneeId ||
 				a.escalationId !== b.escalationId ||
-				a.timeLimitDays !== b.timeLimitDays
+				a.timeLimitDays !== b.timeLimitDays ||
+				a.conditionJson !== b.conditionJson
 			) {
 				return true;
 			}
@@ -163,6 +166,7 @@
 			assigneeId: defaultAssigneeId(),
 			escalationId: defaultEscalationId(),
 			timeLimitDays: 3,
+			conditionJson: '',
 		};
 	}
 
@@ -219,6 +223,7 @@
 						assigneeId: s.assigneeId,
 						escalationId: s.escalationId,
 						timeLimitDays: s.timeLimitDays,
+						conditionJson: s.conditionJson.trim() || null,
 					})
 				),
 			};
@@ -442,6 +447,29 @@
 											<option value={m.id}>{m.displayName} ({m.role})</option>
 										{/each}
 									</select>
+								</div>
+
+								<!-- Condition (Pass 5.3) -->
+								<div class="col-span-full">
+									<label
+										class="block text-xs font-medium text-muted-foreground"
+										for="step-{idx}-condition"
+									>
+										Condition <span class="font-normal">(optional JSON Logic)</span>
+									</label>
+									<textarea
+										id="step-{idx}-condition"
+										bind:value={step.conditionJson}
+										rows="2"
+										placeholder={`e.g. {">": [{"var": "metadata.amounts.0"}, 10000]}`}
+										class="mt-1 w-full rounded-md border border-border bg-background px-2 py-1 font-mono text-xs focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
+									></textarea>
+									{#if step.conditionJson.trim()}
+										<p class="mt-1 text-xs text-muted-foreground">
+											Step fires only when this expression is truthy.
+											<a href="/metadata-schema.json" target="_blank" class="text-primary underline">View fields</a>
+										</p>
+									{/if}
 								</div>
 							</div>
 						</div>

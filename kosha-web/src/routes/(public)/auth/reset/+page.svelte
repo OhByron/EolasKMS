@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import * as m from '$paraglide/messages';
 
 	onMount(() => {
 		// Clear everything OIDC-related
@@ -16,5 +17,5 @@
 </script>
 
 <div class="flex min-h-screen items-center justify-center">
-	<p class="text-muted-foreground">Clearing session...</p>
+	<p class="text-muted-foreground">{m.auth_clearing()}</p>
 </div>

@@ -50,7 +50,13 @@ management:
         include: health,info,metrics,prometheus
   endpoint:
     health:
-      show-details: when-authorized
+      show-details: always
+      show-components: always
+  health:
+    # Custom health indicators are registered as Spring beans — Spring
+    # Boot discovers them automatically. No explicit config needed.
+    defaults:
+      enabled: true
   metrics:
     tags:
       application: ${spring.application.name}
@@ -60,6 +66,13 @@ management:
         enabled: true
 
 kosha:
+  # Optional Office document preview sidecar (Pass 4.1).
+  # Leave blank or unset to disable — Office docs will render as
+  # download buttons in the frontend instead of inline previews.
+  # See docker-compose.yml `office-preview` profile.
+  preview:
+    sidecar:
+      url: ${KOSHA_PREVIEW_SIDECAR_URL:}
   storage:
     minio:
       endpoint: ${MINIO_ENDPOINT:http://localhost:9000}

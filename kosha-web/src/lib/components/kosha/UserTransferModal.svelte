@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { api } from '$lib/api';
 	import type { Department, UserProfile } from '$lib/types/api';
+	import * as m from '$paraglide/messages';
 
 	/**
 	 * Modal for transferring a user from their current department to another.
@@ -94,18 +94,16 @@
 		aria-modal="true"
 		aria-labelledby="transfer-title"
 	>
-		<h2 id="transfer-title" class="text-lg font-semibold">Transfer team member</h2>
+		<h2 id="transfer-title" class="text-lg font-semibold">{m.user_transfer_title()}</h2>
 
 		<p class="mt-2 text-sm text-muted-foreground">
-			Move <strong class="text-foreground">{user.displayName}</strong> from
-			<strong class="text-foreground">{user.departmentName}</strong> to another department.
-			They will lose access to documents scoped to the current department.
+			{@html m.user_transfer_desc({ name: user.displayName, dept: user.departmentName })}
 		</p>
 
 		<form onsubmit={confirm} class="mt-4 space-y-4">
 			<div>
 				<label for="target-dept" class="block text-sm font-medium">
-					New department <span class="text-destructive">*</span>
+					{m.user_transfer_new_dept()} <span class="text-destructive">*</span>
 				</label>
 				<select
 					id="target-dept"
@@ -113,7 +111,7 @@
 					required
 					class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 				>
-					<option value="">{loadingDepartments ? 'Loading...' : 'Select a department'}</option>
+					<option value="">{loadingDepartments ? m.app_loading() : m.user_transfer_select()}</option>
 					{#each otherDepartments as d}
 						<option value={d.id}>{d.name}</option>
 					{/each}
@@ -136,14 +134,14 @@
 					disabled={submitting}
 					class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50"
 				>
-					Cancel
+					{m.btn_cancel()}
 				</button>
 				<button
 					type="submit"
 					disabled={!targetDepartmentId || submitting}
 					class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed"
 				>
-					{submitting ? 'Transferring...' : 'Transfer'}
+					{submitting ? m.btn_transferring() : m.btn_transfer()}
 				</button>
 			</div>
 		</form>

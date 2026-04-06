@@ -76,6 +76,8 @@ class WorkflowEngineService(
     private val workflowDefinitionService: WorkflowDefinitionService,
     private val entityManager: EntityManager,
     private val events: org.springframework.context.ApplicationEventPublisher,
+    private val conditionEvaluator: ConditionEvaluator,
+    private val conditionContext: WorkflowConditionContext,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -134,30 +136,53 @@ class WorkflowEngineService(
             .findByWorkflowDefinitionIdAndDeletedAtIsNullOrderByStepOrderAsc(workflow.id!!)
         val isLinear = workflow.workflowType == "LINEAR"
 
+        // Build the condition evaluation context once — shared across
+        // all steps in this submission. The context contains document
+        // metadata + extracted NER fields from the AI sidecar.
+        val condContext = conditionContext.buildContext(event.aggregateId, event.versionId)
+
         val now = OffsetDateTime.now()
         activeSteps.forEachIndexed { idx, stepDef ->
-            val startStatus = if (isLinear && idx > 0) "WAITING" else "IN_PROGRESS"
+            // Evaluate the step's condition (Pass 5.3). If the condition
+            // is null/blank the step always fires (backwards compatible).
+            // If the condition evaluates to falsy, the step is created as
+            // SKIPPED — it never enters the assignee's inbox and doesn't
+            // block workflow completion.
+            val conditionPasses = conditionEvaluator.shouldFire(stepDef.conditionJson, condContext)
+
+            val startStatus = if (!conditionPasses) {
+                "SKIPPED"
+            } else if (isLinear && idx > 0) {
+                "WAITING"
+            } else {
+                "IN_PROGRESS"
+            }
+
             val dueAt = if (startStatus == "IN_PROGRESS") {
                 now.plusDays(stepDef.timeLimitDays.toLong())
             } else {
-                // WAITING steps get their due_at set when they advance to
-                // IN_PROGRESS. Leave null for now so the escalation scanner
-                // never picks them up prematurely.
                 null
             }
 
             val stepInst = WorkflowStepInstance(
                 workflowInstance = savedInstance,
                 stepDefinition = stepDef,
-                assignedTo = stepDef.assignee,
+                assignedTo = if (startStatus == "SKIPPED") null else stepDef.assignee,
                 status = startStatus,
                 dueAt = dueAt,
             )
             val savedStep = stepInstanceRepo.save(stepInst)
 
+            if (!conditionPasses) {
+                log.info(
+                    "Step '{}' (order {}) auto-skipped by condition: {}",
+                    stepDef.name, stepDef.stepOrder, stepDef.conditionJson?.take(60),
+                )
+            }
+
             // Fire the assignment notification only for steps that are
-            // actually IN_PROGRESS right now. WAITING steps will fire
-            // their own event later when LINEAR advancement promotes them.
+            // actually IN_PROGRESS right now. WAITING and SKIPPED steps
+            // don't need notifications.
             if (startStatus == "IN_PROGRESS" && stepDef.assignee != null) {
                 events.publishEvent(
                     WorkflowStepAssigned(

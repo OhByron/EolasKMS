@@ -6,6 +6,7 @@
 	import TreeView from '$lib/components/kosha/TreeView.svelte';
 	import StatusBadge from '$lib/components/kosha/StatusBadge.svelte';
 	import ErrorBoundary from '$lib/components/kosha/ErrorBoundary.svelte';
+	import * as m from '$paraglide/messages';
 
 	let treeNodes = $state<TaxonomyTreeNode[]>([]);
 	let selectedTermId = $state('');
@@ -57,22 +58,22 @@
 </script>
 
 <svelte:head>
-	<title>Taxonomy - Eòlas</title>
+	<title>{m.page_title_taxonomy()} - {m.nav_app_title()}</title>
 </svelte:head>
 
-<PageHeader title="Taxonomy" description="Browse the knowledge taxonomy" />
+<PageHeader title={m.page_title_taxonomy()} description={m.dashboard_taxonomy_desc()} />
 
 {#if loading}
-	<p aria-live="polite" class="mt-6 text-muted-foreground">Loading taxonomy...</p>
+	<p aria-live="polite" class="mt-6 text-muted-foreground">{m.taxonomy_loading()}</p>
 {:else if error}
 	<div class="mt-6">
 		<ErrorBoundary {error} onRetry={loadTree} />
 	</div>
 {:else if treeNodes.length === 0}
 	<div class="mt-8 text-center">
-		<p class="text-lg text-muted-foreground">No taxonomy terms configured</p>
+		<p class="text-lg text-muted-foreground">{m.taxonomy_no_terms()}</p>
 		<p class="mt-1 text-sm text-muted-foreground">
-			A Global Admin can import a seed taxonomy from Administration &gt; Taxonomy Management.
+			{m.taxonomy_admin_hint()}
 		</p>
 	</div>
 {:else}
@@ -92,10 +93,10 @@
 		<div class="lg:col-span-2">
 			{#if !selectedTermId}
 				<div class="flex h-full items-center justify-center rounded-lg border border-dashed border-border p-12">
-					<p class="text-muted-foreground">Select a term from the tree to view details.</p>
+					<p class="text-muted-foreground">{m.taxonomy_select_hint()}</p>
 				</div>
 			{:else if detailLoading}
-				<p aria-live="polite" class="text-muted-foreground">Loading term details...</p>
+				<p aria-live="polite" class="text-muted-foreground">{m.taxonomy_loading_details()}</p>
 			{:else if selectedTerm}
 				<div class="space-y-4">
 					<!-- Term header -->
@@ -106,7 +107,7 @@
 								<div class="mt-1 flex items-center gap-2">
 									<StatusBadge status={selectedTerm.status} />
 									<span class="text-xs text-muted-foreground">
-										Source: {selectedTerm.source.replace('_', ' ')}
+										{m.label_source()}: {selectedTerm.source.replace('_', ' ')}
 									</span>
 								</div>
 							</div>
@@ -121,9 +122,9 @@
 
 					<!-- Documents in this term -->
 					<section class="rounded-lg border border-border bg-card p-5">
-						<h3 class="text-sm font-semibold text-muted-foreground">Documents in this category</h3>
+						<h3 class="text-sm font-semibold text-muted-foreground">{m.taxonomy_documents_heading()}</h3>
 						{#if termDocuments.length === 0}
-							<p class="mt-2 text-sm text-muted-foreground">No documents classified under this term yet.</p>
+							<p class="mt-2 text-sm text-muted-foreground">{m.taxonomy_no_documents()}</p>
 						{:else}
 							<ul class="mt-3 space-y-2">
 								{#each termDocuments as doc}
@@ -148,7 +149,7 @@
 									href="/search?taxonomy={selectedTermId}"
 									class="mt-3 inline-block text-sm text-primary hover:underline focus:outline-2 focus:outline-ring"
 								>
-									View all {termDocTotal} documents →
+									{m.taxonomy_view_all_documents({ count: String(termDocTotal) })}
 								</a>
 							{/if}
 						{/if}

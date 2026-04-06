@@ -4,6 +4,7 @@
 	import type { LegalHoldRow, LegalHoldSummary } from '$lib/types/api';
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 	import ErrorBoundary from '$lib/components/kosha/ErrorBoundary.svelte';
+	import * as m from '$paraglide/messages';
 
 	let rows = $state<LegalHoldRow[]>([]);
 	let summary = $state<LegalHoldSummary | null>(null);
@@ -50,16 +51,16 @@
 </script>
 
 <svelte:head>
-	<title>Legal Holds - Eòlas</title>
+	<title>{m.page_title_legal_holds()} - {m.nav_app_title()}</title>
 </svelte:head>
 
-<PageHeader title="Legal Holds" description="Documents currently under legal hold with suspended retention" />
+<PageHeader title={m.legal_title()} description={m.legal_desc()} />
 
 <!-- Summary cards -->
 {#if summary}
-	<div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" role="region" aria-label="Legal hold summary">
+	<div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" role="region" aria-label={m.legal_summary_label()}>
 		<div class="rounded-lg border border-border bg-card p-4">
-			<p class="text-sm text-muted-foreground">Total on hold</p>
+			<p class="text-sm text-muted-foreground">{m.legal_total_on_hold()}</p>
 			<p class="mt-1 text-2xl font-bold">{summary.totalOnHold.toLocaleString()}</p>
 		</div>
 		{#each summary.byDepartment as dept}
@@ -77,38 +78,38 @@
 <!-- Filters -->
 <div class="mt-6 flex flex-wrap items-end gap-3">
 	<div>
-		<label for="dept-filter" class="block text-xs font-medium text-muted-foreground">Department</label>
+		<label for="dept-filter" class="block text-xs font-medium text-muted-foreground">{m.legal_filter_dept()}</label>
 		<select id="dept-filter" bind:value={filterDept} onchange={applyFilters}
 			class="mt-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-2 focus:outline-ring">
-			<option value="">All departments</option>
+			<option value="">{m.legal_all_depts()}</option>
 			{#each departments as d}
 				<option value={d.id}>{d.name}</option>
 			{/each}
 		</select>
 	</div>
-	<span class="pb-1.5 text-sm text-muted-foreground">{total.toLocaleString()} document{total !== 1 ? 's' : ''} on hold</span>
+	<span class="pb-1.5 text-sm text-muted-foreground">{total.toLocaleString()} document{total !== 1 ? 's' : ''} {m.legal_on_hold_suffix()}</span>
 </div>
 
 <!-- Data table -->
 {#if loading}
-	<p aria-live="polite" class="mt-6 text-muted-foreground">Loading legal holds...</p>
+	<p aria-live="polite" class="mt-6 text-muted-foreground">{m.legal_loading()}</p>
 {:else if error}
 	<div class="mt-6"><ErrorBoundary {error} onRetry={loadReport} /></div>
 {:else if rows.length === 0}
-	<p class="mt-6 text-muted-foreground">No documents are currently on legal hold.</p>
+	<p class="mt-6 text-muted-foreground">{m.legal_no_results()}</p>
 {:else}
 	<div class="mt-4 overflow-x-auto rounded-lg border border-border">
 		<table class="w-full text-sm">
 			<thead>
 				<tr class="border-b border-border bg-muted/50">
-					<th class="px-4 py-2 text-left font-medium">Document</th>
-					<th class="px-4 py-2 text-left font-medium">Department</th>
-					<th class="px-4 py-2 text-left font-medium">Category</th>
-					<th class="px-4 py-2 text-left font-medium">Created by</th>
-					<th class="px-4 py-2 text-left font-medium">Created</th>
-					<th class="px-4 py-2 text-right font-medium">On hold (days)</th>
-					<th class="px-4 py-2 text-left font-medium">Original policy</th>
-					<th class="px-4 py-2 text-left font-medium">Version</th>
+					<th class="px-4 py-2 text-left font-medium">{m.legal_col_doc()}</th>
+					<th class="px-4 py-2 text-left font-medium">{m.legal_col_department()}</th>
+					<th class="px-4 py-2 text-left font-medium">{m.legal_col_category()}</th>
+					<th class="px-4 py-2 text-left font-medium">{m.legal_col_created_by()}</th>
+					<th class="px-4 py-2 text-left font-medium">{m.legal_col_created()}</th>
+					<th class="px-4 py-2 text-right font-medium">{m.legal_col_hold_days()}</th>
+					<th class="px-4 py-2 text-left font-medium">{m.legal_col_orig_policy()}</th>
+					<th class="px-4 py-2 text-left font-medium">{m.legal_col_version()}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -141,13 +142,13 @@
 	</div>
 
 	{#if total > pageSize}
-		<nav aria-label="Legal holds pagination" class="mt-4 flex items-center justify-between text-sm">
+		<nav aria-label={m.legal_pagination_label()} class="mt-4 flex items-center justify-between text-sm">
 			<p class="text-muted-foreground">Page {currentPage + 1} of {Math.ceil(total / pageSize)}</p>
 			<div class="flex gap-2">
 				<button onclick={() => { currentPage--; loadReport(); }} disabled={currentPage === 0}
-					class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+					class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed">{m.btn_previous()}</button>
 				<button onclick={() => { currentPage++; loadReport(); }} disabled={(currentPage + 1) * pageSize >= total}
-					class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+					class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed">{m.btn_next()}</button>
 			</div>
 		</nav>
 	{/if}

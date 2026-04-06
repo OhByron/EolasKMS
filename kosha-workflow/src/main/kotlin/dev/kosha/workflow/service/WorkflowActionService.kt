@@ -2,6 +2,7 @@ package dev.kosha.workflow.service
 
 import dev.kosha.common.event.WorkflowCompleted
 import dev.kosha.common.event.WorkflowRejected
+import dev.kosha.common.event.WorkflowSignOffApproved
 import dev.kosha.common.event.WorkflowStepAssigned
 import dev.kosha.common.event.WorkflowStepCompleted
 import dev.kosha.identity.repository.UserProfileRepository
@@ -53,6 +54,8 @@ class WorkflowActionService(
     private val stepInstanceRepo: WorkflowStepInstanceRepository,
     private val userProfileRepo: UserProfileRepository,
     private val events: ApplicationEventPublisher,
+    private val conditionEvaluator: ConditionEvaluator,
+    private val conditionContext: WorkflowConditionContext,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -81,6 +84,24 @@ class WorkflowActionService(
             ),
         )
 
+        // SIGN_OFF steps auto-create a signature record when approved.
+        // The document module listens for this event and calls
+        // SignatureService.signFromWorkflow — we can't inject it
+        // directly because kosha-workflow doesn't depend on kosha-document.
+        if (step.stepDefinition.actionType == "SIGN_OFF") {
+            val instance = step.workflowInstance
+            events.publishEvent(
+                WorkflowSignOffApproved(
+                    aggregateId = step.id!!,
+                    workflowInstanceId = workflowInstanceId,
+                    documentId = instance.documentId,
+                    versionId = instance.versionId,
+                    signerId = actorId,
+                    actorId = actorId,
+                ),
+            )
+        }
+
         val instance = step.workflowInstance
         val isLinear = instance.workflowDefinition.workflowType == "LINEAR"
 
@@ -88,11 +109,35 @@ class WorkflowActionService(
         // step is parallel to the main chain, so LINEAR advancement only
         // walks the real step_order sequence — the synthetic legal step
         // has step_order = 9999 and is never "next".
+        //
+        // Pass 5.3 addition: evaluate the next step's condition. If it
+        // evaluates to falsy, auto-SKIP and recurse to the step after
+        // that. This loop terminates when either a step fires or all
+        // remaining steps are skipped.
         if (isLinear) {
-            val next = stepInstanceRepo
+            val condCtx = conditionContext.buildContext(instance.documentId, instance.versionId)
+            val waitingSteps = stepInstanceRepo
                 .findNextWaitingSteps(instance.id!!, step.stepDefinition.stepOrder)
-                .firstOrNull { it.stepDefinition.stepOrder < 9999 } // skip synthetic legal
-            if (next != null) {
+                .filter { it.stepDefinition.stepOrder < 9999 } // exclude synthetic legal
+
+            var promoted = false
+            for (next in waitingSteps) {
+                val conditionPasses = conditionEvaluator.shouldFire(
+                    next.stepDefinition.conditionJson, condCtx,
+                )
+                if (!conditionPasses) {
+                    // Auto-skip this step and continue to the next
+                    next.status = "SKIPPED"
+                    next.updatedAt = OffsetDateTime.now()
+                    stepInstanceRepo.save(next)
+                    log.info(
+                        "Step '{}' (order {}) auto-skipped by condition during advancement",
+                        next.stepDefinition.name, next.stepDefinition.stepOrder,
+                    )
+                    continue
+                }
+
+                // This step passes the condition — promote it
                 next.status = "IN_PROGRESS"
                 next.dueAt = OffsetDateTime.now().plusDays(next.stepDefinition.timeLimitDays.toLong())
                 next.updatedAt = OffsetDateTime.now()
@@ -102,8 +147,7 @@ class WorkflowActionService(
                     instance.id, next.stepDefinition.stepOrder, next.assignedTo?.displayName,
                 )
 
-                // Notify the newly-active assignee so they can act on the
-                // step. Same event + template that fires on instance creation.
+                // Notify the newly-active assignee
                 val assignee = next.assignedTo
                 if (assignee != null) {
                     events.publishEvent(
@@ -118,6 +162,8 @@ class WorkflowActionService(
                         ),
                     )
                 }
+                promoted = true
+                break // only promote one step at a time in LINEAR
             }
         }
 

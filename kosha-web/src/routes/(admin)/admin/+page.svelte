@@ -1,10 +1,11 @@
 <script lang="ts">
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
+	import * as m from '$paraglide/messages';
 </script>
 
-<svelte:head><title>Administration - Eòlas</title></svelte:head>
+<svelte:head><title>{m.admin_title()} - {m.nav_app_title()}</title></svelte:head>
 
-<PageHeader title="Administration" description="System configuration and management" />
+<PageHeader title={m.admin_title()} description={m.admin_desc()} />
 
 <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 	{#each [
@@ -15,6 +16,7 @@
 		{ href: '/admin/audit', title: 'Audit Log', desc: 'System-wide activity log' },
 		{ href: '/admin/taxonomy', title: 'Taxonomy Management', desc: 'Edit taxonomy tree and import seeds' },
 		{ href: '/admin/categories', title: 'Document Categories', desc: 'Edit categories and flag those that suggest legal review' },
+		{ href: '/admin/import', title: 'Bulk Import', desc: 'Validate CSV manifests for the kosha-import CLI' },
 		{ href: '/admin/mail-gateway', title: 'Mail Gateway', desc: 'Configure outbound email provider and credentials' },
 		{ href: '/admin/notification-settings', title: 'Notifications', desc: 'Retention scan cadence and legal review time limit' },
 		{ href: '/reports/aging', title: 'Document Aging', desc: 'Age distribution and retention status' },

@@ -127,6 +127,10 @@ export interface VersionDetail {
 	fileSizeBytes: number | null;
 	contentHash: string | null;
 	storageKey: string | null;
+	contentType: string | null;
+	ocrApplied: boolean;
+	ocrLanguage: string | null;
+	extractedMetadata: Record<string, unknown> | null;
 	changeSummary: string | null;
 	status: string;
 	createdBy: string;
@@ -490,6 +494,7 @@ export interface WorkflowStep {
 	escalationName: string | null;
 	escalationStatus: string | null;
 	timeLimitDays: number;
+	conditionJson: string | null;
 }
 
 export interface WorkflowDefinition {
@@ -511,6 +516,7 @@ export interface UpdateWorkflowStepRequest {
 	assigneeId: string;
 	escalationId: string;
 	timeLimitDays: number;
+	conditionJson?: string | null;
 }
 
 export interface UpdateWorkflowRequest {
@@ -545,6 +551,100 @@ export interface PasswordResetResponse {
 	user: UserProfile;
 	temporaryPassword: string;
 	emailDispatched: boolean;
+}
+
+// --- Share links (Pass 5.5) ---
+
+export interface ShareLinkCreated {
+	id: string;
+	token: string;
+	expiresAt: string;
+	hasPassword: boolean;
+	maxAccess: number | null;
+}
+
+export interface ShareLinkSummary {
+	id: string;
+	versionNumber: string;
+	expiresAt: string;
+	hasPassword: boolean;
+	maxAccess: number | null;
+	accessCount: number;
+	revoked: boolean;
+	createdAt: string;
+	createdByName: string;
+}
+
+export interface ShareLinkResolved {
+	documentId: string;
+	documentTitle: string;
+	departmentName: string;
+	versionId: string;
+	versionNumber: string;
+	fileName: string;
+	contentType: string | null;
+	storageKey: string | null;
+	ocrApplied: boolean;
+	ocrStorageKey: string | null;
+}
+
+// --- Signatures (Pass 5.2) ---
+
+export interface DocumentSignature {
+	id: string;
+	documentId: string;
+	versionId: string;
+	versionNumber: string;
+	signerId: string;
+	signerName: string;
+	signerEmail: string;
+	typedName: string;
+	contentHash: string;
+	signedAt: string;
+}
+
+// --- Bulk import (Pass 4.2.3) ---
+
+export interface ImportDryRunResponse {
+	totalRows: number;
+	validRows: number;
+	invalidRows: number;
+	rows: ImportDryRunRow[];
+	globalErrors: string[];
+}
+
+export interface ImportDryRunRow {
+	row: number;
+	filePath: string;
+	ok: boolean;
+	errors: string[];
+	resolved?: {
+		departmentId: string;
+		categoryId: string | null;
+		ownerId: string;
+		legalReviewerId: string | null;
+	} | null;
+	autoProvisionOwner?: {
+		email: string;
+		displayName: string;
+		departmentId: string;
+	} | null;
+}
+
+export interface UserImportDryRunResponse {
+	totalRows: number;
+	validRows: number;
+	invalidRows: number;
+	rows: UserImportDryRunRow[];
+	globalErrors: string[];
+}
+
+export interface UserImportDryRunRow {
+	row: number;
+	email: string;
+	ok: boolean;
+	errors: string[];
+	resolvedDepartmentId: string | null;
 }
 
 // --- Workflow Escalation Settings ---

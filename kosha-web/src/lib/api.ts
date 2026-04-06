@@ -16,6 +16,11 @@ import type {
 	DocumentCategory,
 	LegalReviewSettings,
 	WorkflowEscalationSettings,
+	DocumentSignature,
+	ShareLinkCreated,
+	ShareLinkSummary,
+	ImportDryRunResponse,
+	UserImportDryRunResponse,
 	AuditEvent,
 	ReviewTask,
 	TaxonomyTerm,
@@ -145,6 +150,31 @@ export const api = {
 
 		createVersion: (id: string, body: { fileName: string; fileSizeBytes?: number; storageKey?: string; changeSummary?: string }) =>
 			request<VersionDetail>(`/api/v1/documents/${id}/versions`, { method: 'POST', body: JSON.stringify(body) }),
+
+		// --- Signatures (Pass 5.2) ---
+		signatures: (id: string) =>
+			request<DocumentSignature[]>(`/api/v1/documents/${id}/signatures`),
+
+		sign: (docId: string, versionId: string, body: { typedName: string; contentHash?: string }) =>
+			request<DocumentSignature>(`/api/v1/documents/${docId}/versions/${versionId}/sign`, {
+				method: 'POST',
+				body: JSON.stringify(body),
+			}),
+
+		// --- Share links (Pass 5.5) ---
+		shareLinks: (docId: string) =>
+			request<ShareLinkSummary[]>(`/api/v1/documents/${docId}/share-links`),
+
+		createShareLink: (docId: string, body: { versionId: string; expiryDays?: number; password?: string; maxAccess?: number }) =>
+			request<ShareLinkCreated>(`/api/v1/documents/${docId}/share-links`, {
+				method: 'POST',
+				body: JSON.stringify(body),
+			}),
+
+		revokeShareLink: (docId: string, linkId: string) =>
+			request<void>(`/api/v1/documents/${docId}/share-links/${linkId}`, {
+				method: 'DELETE',
+			}),
 	},
 
 	// --- Current user ---
@@ -439,6 +469,22 @@ export const api = {
 			request<LegalReviewSettings>('/api/v1/admin/legal-review-settings', {
 				method: 'PUT',
 				body: JSON.stringify(body),
+			}),
+	},
+
+	// --- Bulk import (Pass 4.2.3 interactive wizard) ---
+
+	importValidator: {
+		validateDocuments: (csvContent: string, autoProvisionOwners: boolean = false) =>
+			request<ImportDryRunResponse>('/api/v1/admin/import/validate', {
+				method: 'POST',
+				body: JSON.stringify({ csvContent, autoProvisionOwners }),
+			}),
+
+		validateUsers: (csvContent: string) =>
+			request<UserImportDryRunResponse>('/api/v1/admin/import/users/validate', {
+				method: 'POST',
+				body: JSON.stringify({ csvContent }),
 			}),
 	},
 

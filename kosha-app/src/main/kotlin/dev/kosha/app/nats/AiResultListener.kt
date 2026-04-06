@@ -57,6 +57,21 @@ data class CandidateDto(
     val source: String,
 )
 
+data class OcrResult(
+    val versionId: String,
+    val documentId: String,
+    val ocrStorageKey: String,
+    val ocrFileSizeBytes: Long,
+    val language: String,
+    val ocrApplied: Boolean,
+)
+
+data class MetadataResult(
+    val versionId: String,
+    val documentId: String,
+    val extractedMetadata: Map<String, Any>,
+)
+
 @Component
 class AiResultListener(
     @Value("\${kosha.nats.url:nats://localhost:4222}") private val natsUrl: String,
@@ -121,10 +136,83 @@ class AiResultListener(
                     }
                 }
 
+                dispatcher.subscribe("ai.ocr.completed") { msg ->
+                    try {
+                        val result = objectMapper.readValue<OcrResult>(msg.data)
+                        log.info(
+                            "Received OCR result for version {} (key={})",
+                            result.versionId, result.ocrStorageKey,
+                        )
+                        saveOcrResult(result)
+                    } catch (ex: Exception) {
+                        log.error("Error processing OCR result: {}", ex.message, ex)
+                    }
+                }
+
+                dispatcher.subscribe("ai.metadata.extracted") { msg ->
+                    try {
+                        val result = objectMapper.readValue<MetadataResult>(msg.data)
+                        log.info(
+                            "Received extracted metadata for version {} ({} fields)",
+                            result.versionId, result.extractedMetadata.size,
+                        )
+                        saveMetadataResult(result)
+                    } catch (ex: Exception) {
+                        log.error("Error processing metadata result: {}", ex.message, ex)
+                    }
+                }
+
                 log.info("AI result listener started on NATS (core subscription)")
             } catch (ex: Exception) {
                 log.warn("Could not start AI result listener: {}", ex.message)
             }
+        }
+    }
+
+    /**
+     * Persist the OCR result from the AI sidecar. Sets the
+     * `ocr_storage_key`, `ocr_applied`, and `ocr_language` fields
+     * on the version row so the preview endpoint can prefer the
+     * OCR'd PDF for rendering.
+     */
+    private fun saveOcrResult(result: OcrResult) {
+        txTemplate.executeWithoutResult { _ ->
+            val versionId = UUID.fromString(result.versionId)
+            val version = versionRepo.findById(versionId).orElse(null) ?: run {
+                log.warn("Version not found for OCR result: {}", result.versionId)
+                return@executeWithoutResult
+            }
+            version.ocrStorageKey = result.ocrStorageKey
+            version.ocrApplied = true
+            version.ocrLanguage = result.language
+            versionRepo.save(version)
+            log.info(
+                "Saved OCR result for version {} (key={}, lang={})",
+                result.versionId, result.ocrStorageKey, result.language,
+            )
+        }
+    }
+
+    /**
+     * Persist the structured metadata extracted by the AI sidecar's spaCy
+     * NER pipeline. The JSONB column stores the raw JSON object so the
+     * conditional workflow engine can evaluate JSON Logic expressions
+     * against it without an intermediate deserialisation step in the hot
+     * path.
+     */
+    private fun saveMetadataResult(result: MetadataResult) {
+        txTemplate.executeWithoutResult { _ ->
+            val versionId = UUID.fromString(result.versionId)
+            val version = versionRepo.findById(versionId).orElse(null) ?: run {
+                log.warn("Version not found for metadata result: {}", result.versionId)
+                return@executeWithoutResult
+            }
+            version.extractedMetadata = objectMapper.writeValueAsString(result.extractedMetadata)
+            versionRepo.save(version)
+            log.info(
+                "Saved extracted metadata for version {} ({} fields)",
+                result.versionId, result.extractedMetadata.size,
+            )
         }
     }
 

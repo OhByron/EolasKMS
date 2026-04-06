@@ -4,6 +4,7 @@
 	import type { AuditEvent } from '$lib/types/api';
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 	import ErrorBoundary from '$lib/components/kosha/ErrorBoundary.svelte';
+	import * as m from '$paraglide/messages';
 
 	let events = $state<AuditEvent[]>([]);
 	let total = $state(0);
@@ -55,17 +56,17 @@
 </script>
 
 <svelte:head>
-	<title>Audit Log - Administration - Eòlas</title>
+	<title>{m.page_title_audit()} - {m.admin_title()} - {m.nav_app_title()}</title>
 </svelte:head>
 
-<PageHeader title="Audit Log" description="System-wide activity log" />
+<PageHeader title={m.page_title_audit()} description={m.audit_desc()} />
 
 <!-- Filter bar -->
 <div class="mt-4 flex items-center gap-3">
-	<label for="audit-filter" class="text-sm font-medium text-muted-foreground">Filter:</label>
+	<label for="audit-filter" class="text-sm font-medium text-muted-foreground">{m.audit_filter_label()}</label>
 	<select id="audit-filter" bind:value={filterType}
 		class="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-2 focus:outline-ring">
-		<option value="">All events</option>
+		<option value="">{m.audit_all_events()}</option>
 		{#each eventTypes as t}
 			<option value={t}>{t}</option>
 		{/each}
@@ -74,11 +75,11 @@
 </div>
 
 {#if loading}
-	<p aria-live="polite" class="mt-6 text-muted-foreground">Loading audit log...</p>
+	<p aria-live="polite" class="mt-6 text-muted-foreground">{m.audit_loading()}</p>
 {:else if error}
 	<div class="mt-6"><ErrorBoundary {error} onRetry={loadEvents} /></div>
 {:else if filteredEvents.length === 0}
-	<p class="mt-6 text-muted-foreground">No audit events found.</p>
+	<p class="mt-6 text-muted-foreground">{m.audit_no_events()}</p>
 {:else}
 	<div class="mt-4 space-y-1">
 		{#each filteredEvents as event}
@@ -101,17 +102,17 @@
 				{#if expandedId === event.id}
 					<div class="border-t border-border px-4 py-3">
 						<dl class="grid grid-cols-2 gap-2 text-sm">
-							<div><dt class="text-muted-foreground">Event ID</dt><dd class="font-mono text-xs">{event.id}</dd></div>
-							<div><dt class="text-muted-foreground">Aggregate</dt><dd>{event.aggregateType} / <span class="font-mono text-xs">{event.aggregateId}</span></dd></div>
+							<div><dt class="text-muted-foreground">{m.audit_event_id()}</dt><dd class="font-mono text-xs">{event.id}</dd></div>
+							<div><dt class="text-muted-foreground">{m.audit_aggregate()}</dt><dd>{event.aggregateType} / <span class="font-mono text-xs">{event.aggregateId}</span></dd></div>
 							{#if event.actorId}
-								<div><dt class="text-muted-foreground">Actor</dt><dd class="font-mono text-xs">{event.actorId}</dd></div>
+								<div><dt class="text-muted-foreground">{m.audit_actor()}</dt><dd class="font-mono text-xs">{event.actorId}</dd></div>
 							{/if}
 							{#if event.departmentId}
-								<div><dt class="text-muted-foreground">Department</dt><dd class="font-mono text-xs">{event.departmentId}</dd></div>
+								<div><dt class="text-muted-foreground">{m.label_department()}</dt><dd class="font-mono text-xs">{event.departmentId}</dd></div>
 							{/if}
 						</dl>
 						<details class="mt-3">
-							<summary class="cursor-pointer text-sm font-medium text-primary hover:underline focus:outline-2 focus:outline-ring">Payload</summary>
+							<summary class="cursor-pointer text-sm font-medium text-primary hover:underline focus:outline-2 focus:outline-ring">{m.label_payload()}</summary>
 							<pre class="mt-2 overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs">{JSON.stringify(event.payload, null, 2)}</pre>
 						</details>
 					</div>
@@ -125,9 +126,9 @@
 			<p class="text-muted-foreground">Page {currentPage + 1} of {Math.ceil(total / pageSize)}</p>
 			<div class="flex gap-2">
 				<button onclick={() => { currentPage--; loadEvents(); }} disabled={currentPage === 0}
-					class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+					class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed">{m.btn_previous()}</button>
 				<button onclick={() => { currentPage++; loadEvents(); }} disabled={(currentPage + 1) * pageSize >= total}
-					class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+					class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed">{m.btn_next()}</button>
 			</div>
 		</nav>
 	{/if}

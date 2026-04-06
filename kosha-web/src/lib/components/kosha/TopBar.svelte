@@ -1,8 +1,48 @@
 <script lang="ts">
 	import { user, logout } from '$lib/auth';
+	import * as m from '$paraglide/messages';
+	import { languageTag } from '$paraglide/runtime';
 
 	let searchQuery = $state('');
 	let userMenuOpen = $state(false);
+
+	/**
+	 * Human-readable labels for each supported language. Shown in the
+	 * language picker dropdown in their own script so a German user
+	 * sees "Deutsch", not "German".
+	 */
+	const languageLabels: Record<string, string> = {
+		en: 'English',
+		de: 'Deutsch',
+		fr: 'Français',
+		es: 'Español',
+		it: 'Italiano',
+		pt: 'Português',
+		nl: 'Nederlands',
+		pl: 'Polski',
+		da: 'Dansk',
+		nb: 'Norsk bokmål',
+		is: 'Íslenska',
+		sv: 'Svenska',
+		ar: 'العربية',
+		'zh-Hans': '简体中文',
+		ja: '日本語',
+		ko: '한국어',
+	};
+
+	const currentLang = $derived(languageTag());
+
+	function switchLanguage(lang: string) {
+		// Persist the choice in a cookie so the server hook picks it up
+		// on subsequent requests without a query param.
+		document.cookie = `eolas_lang=${lang};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
+
+		// Navigate to the same page with the lang param — the root
+		// layout's $effect and the server hook both read it.
+		const url = new URL(window.location.href);
+		url.searchParams.set('lang', lang);
+		window.location.href = url.toString();
+	}
 
 	function handleSearch(e: Event) {
 		e.preventDefault();
@@ -21,16 +61,16 @@
 <header class="flex h-14 items-center gap-4 border-b border-border bg-card px-4">
 	<a href="/dashboard" class="flex items-center gap-2 text-lg font-bold text-primary focus:outline-2 focus:outline-offset-2 focus:outline-ring">
 		<img src="/favicon.png" alt="" class="h-8 w-8" aria-hidden="true">
-		<span>Eòlas</span>
+		<span>{m.nav_app_title()}</span>
 	</a>
 
 	<form onsubmit={handleSearch} class="ml-4 flex-1 max-w-xl" role="search">
-		<label for="global-search" class="sr-only">Search documents</label>
+		<label for="global-search" class="sr-only">{m.nav_sidebar_search()}</label>
 		<input
 			id="global-search"
 			type="search"
 			bind:value={searchQuery}
-			placeholder="Search documents, keywords..."
+			placeholder={m.topbar_search_placeholder()}
 			class="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm placeholder:text-muted-foreground focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 		/>
 	</form>
@@ -70,14 +110,32 @@
 							class="block px-3 py-2 text-sm hover:bg-muted focus:bg-muted focus:outline-none"
 							onclick={() => (userMenuOpen = false)}
 						>
-							Profile
+							{m.topbar_profile()}
 						</a>
+
+						<!-- Language selector -->
+						<div class="border-t border-border px-3 py-2">
+							<label for="lang-select" class="block text-xs font-medium text-muted-foreground">
+								🌐 Language
+							</label>
+							<select
+								id="lang-select"
+								value={currentLang}
+								onchange={(e) => switchLanguage((e.target as HTMLSelectElement).value)}
+								class="mt-1 w-full rounded-md border border-border bg-background px-2 py-1 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
+							>
+								{#each Object.entries(languageLabels) as [code, label]}
+									<option value={code}>{label}</option>
+								{/each}
+							</select>
+						</div>
+
 						<button
 							role="menuitem"
-							class="w-full px-3 py-2 text-left text-sm hover:bg-muted focus:bg-muted focus:outline-none"
+							class="w-full border-t border-border px-3 py-2 text-left text-sm hover:bg-muted focus:bg-muted focus:outline-none"
 							onclick={() => { userMenuOpen = false; logout(); }}
 						>
-							Sign out
+							{m.topbar_sign_out()}
 						</button>
 					</div>
 				{/if}

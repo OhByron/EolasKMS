@@ -1,0 +1,124 @@
+{
+  "__inputs": [
+    { "name": "DS_PROMETHEUS", "label": "Prometheus", "type": "datasource", "pluginId": "prometheus" }
+  ],
+  "title": "Eòlas KMS",
+  "uid": "eolas-kms-v1",
+  "version": 1,
+  "description": "Operational dashboard for Eòlas KMS. Import this JSON into Grafana and point it at a Prometheus datasource scraping /actuator/prometheus.",
+  "panels": [
+    {
+      "title": "JVM Heap Usage",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        { "expr": "jvm_memory_used_bytes{area='heap',application='kosha-api'}", "legendFormat": "{{id}}" }
+      ]
+    },
+    {
+      "title": "HTTP Request Rate (5m)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        { "expr": "rate(http_server_requests_seconds_count{application='kosha-api'}[5m])", "legendFormat": "{{method}} {{uri}} {{status}}" }
+      ]
+    },
+    {
+      "title": "Workflow Instances",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 },
+      "targets": [
+        { "expr": "eolas_workflow_instances_created_total", "legendFormat": "created" }
+      ]
+    },
+    {
+      "title": "Uploads Stored",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 8 },
+      "targets": [
+        { "expr": "eolas_uploads_stored_total{outcome='success'}", "legendFormat": "success" },
+        { "expr": "eolas_uploads_stored_total{outcome='failure'}", "legendFormat": "failure" }
+      ]
+    },
+    {
+      "title": "Document Previews",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 },
+      "targets": [
+        { "expr": "eolas_preview_served_total{outcome='success'}", "legendFormat": "served" },
+        { "expr": "eolas_preview_served_total{outcome='not_found'}", "legendFormat": "not_found" }
+      ]
+    },
+    {
+      "title": "Office Conversions",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 8 },
+      "targets": [
+        { "expr": "eolas_preview_office_total{outcome='converted'}", "legendFormat": "converted" },
+        { "expr": "eolas_preview_office_total{outcome='cache_hit'}", "legendFormat": "cache_hit" },
+        { "expr": "eolas_preview_office_total{outcome='failed'}", "legendFormat": "failed" }
+      ]
+    },
+    {
+      "title": "Office Conversion Latency (p95)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, rate(eolas_preview_office_duration_seconds_bucket[5m]))", "legendFormat": "p95" }
+      ]
+    },
+    {
+      "title": "Signatures Created",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 12 },
+      "targets": [
+        { "expr": "eolas_signatures_total", "legendFormat": "total" }
+      ]
+    },
+    {
+      "title": "Share Links",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 12 },
+      "targets": [
+        { "expr": "eolas_share_links_total", "legendFormat": "created" },
+        { "expr": "eolas_share_links_accessed_total{outcome='allowed'}", "legendFormat": "accessed" }
+      ]
+    },
+    {
+      "title": "Import Dry Runs",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 16 },
+      "targets": [
+        { "expr": "eolas_import_dry_runs_total", "legendFormat": "total" }
+      ]
+    },
+    {
+      "title": "Import Rows Validated",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 16 },
+      "targets": [
+        { "expr": "eolas_import_rows_validated_total{outcome='ok'}", "legendFormat": "ok" },
+        { "expr": "eolas_import_rows_validated_total{outcome='fail'}", "legendFormat": "fail" }
+      ]
+    },
+    {
+      "title": "DB Connection Pool",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "targets": [
+        { "expr": "hikaricp_connections_active{pool='HikariPool-1'}", "legendFormat": "active" },
+        { "expr": "hikaricp_connections_idle{pool='HikariPool-1'}", "legendFormat": "idle" },
+        { "expr": "hikaricp_connections_pending{pool='HikariPool-1'}", "legendFormat": "pending" }
+      ]
+    },
+    {
+      "title": "Scheduler Activity",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "targets": [
+        { "expr": "executor_completed_tasks_total{name='taskScheduler'}", "legendFormat": "completed" },
+        { "expr": "executor_active_threads{name='taskScheduler'}", "legendFormat": "active" }
+      ]
+    }
+  ]
+}

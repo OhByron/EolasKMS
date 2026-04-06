@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { api } from '$lib/api';
 	import type { Department, ProvisionedUserResponse } from '$lib/types/api';
+	import * as m from '$paraglide/messages';
 
 	/**
 	 * Reusable user creation modal.
@@ -142,36 +143,35 @@
 		aria-labelledby="user-create-title"
 	>
 		<h2 id="user-create-title" class="text-lg font-semibold">
-			{result ? 'User Created' : 'Add User'}
+			{result ? m.user_created_title() : m.user_create_title()}
 		</h2>
 
 		{#if result}
 			<!-- Success state — show the temp password -->
 			<div class="mt-4 space-y-4">
 				<p class="text-sm text-muted-foreground">
-					The user has been created. Share the temporary password below with
-					them — they will be prompted to change it on first login.
+					{m.user_create_success_desc()}
 				</p>
 
 				<div class="rounded-md border border-border bg-background p-3">
 					<dl class="space-y-1 text-sm">
 						<div class="flex justify-between">
-							<dt class="text-muted-foreground">Name</dt>
+							<dt class="text-muted-foreground">{m.label_name()}</dt>
 							<dd class="font-medium">{result.user.displayName}</dd>
 						</div>
 						<div class="flex justify-between">
-							<dt class="text-muted-foreground">Email</dt>
+							<dt class="text-muted-foreground">{m.label_email()}</dt>
 							<dd class="font-mono text-xs">{result.user.email}</dd>
 						</div>
 						<div class="flex justify-between">
-							<dt class="text-muted-foreground">Role</dt>
+							<dt class="text-muted-foreground">{m.label_role()}</dt>
 							<dd class="font-medium">{result.user.role}</dd>
 						</div>
 					</dl>
 				</div>
 
 				<div>
-					<label for="temp-pwd" class="block text-sm font-medium">Temporary password</label>
+					<label for="temp-pwd" class="block text-sm font-medium">{m.label_temporary_password()}</label>
 					<div class="mt-1 flex gap-2">
 						<input
 							id="temp-pwd"
@@ -185,11 +185,11 @@
 							onclick={copyPassword}
 							class="rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-ring"
 						>
-							{passwordCopied ? 'Copied' : 'Copy'}
+							{passwordCopied ? m.user_create_copied() : m.btn_copy()}
 						</button>
 					</div>
 					<p class="mt-1 text-xs text-muted-foreground">
-						This password will NOT be shown again. Copy it now.
+						{m.user_pwd_warning()}
 					</p>
 				</div>
 
@@ -199,7 +199,7 @@
 						onclick={close}
 						class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring"
 					>
-						Done
+						{m.btn_done()}
 					</button>
 				</div>
 			</div>
@@ -208,7 +208,7 @@
 			<form onsubmit={submit} class="mt-4 space-y-4">
 				<div>
 					<label for="uc-name" class="block text-sm font-medium">
-						Display name <span class="text-destructive">*</span>
+						{m.label_display_name()} <span class="text-destructive">*</span>
 					</label>
 					<input
 						id="uc-name"
@@ -223,7 +223,7 @@
 
 				<div>
 					<label for="uc-email" class="block text-sm font-medium">
-						Email <span class="text-destructive">*</span>
+						{m.label_email()} <span class="text-destructive">*</span>
 					</label>
 					<input
 						id="uc-email"
@@ -234,21 +234,21 @@
 						class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 					/>
 					<p class="mt-1 text-xs text-muted-foreground">
-						Used as username. Must be unique.
+						{m.user_create_email_hint()}
 					</p>
 				</div>
 
 				{#if lockedDepartmentId}
 					<div>
-						<label class="block text-sm font-medium">Department</label>
+						<label class="block text-sm font-medium">{m.label_department()}</label>
 						<p class="mt-1 rounded-md border border-border bg-muted px-3 py-2 text-sm">
-							{lockedDepartmentName ?? 'Current department'}
+							{lockedDepartmentName ?? m.user_create_current_department()}
 						</p>
 					</div>
 				{:else}
 					<div>
 						<label for="uc-dept" class="block text-sm font-medium">
-							Department <span class="text-destructive">*</span>
+							{m.label_department()} <span class="text-destructive">*</span>
 						</label>
 						<select
 							id="uc-dept"
@@ -256,7 +256,7 @@
 							required
 							class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 						>
-							<option value="">{loadingDepartments ? 'Loading...' : 'Select a department'}</option>
+							<option value="">{loadingDepartments ? m.app_loading() : m.label_select_department()}</option>
 							{#each departments as d}
 								<option value={d.id}>{d.name}</option>
 							{/each}
@@ -265,21 +265,21 @@
 				{/if}
 
 				<div>
-					<label for="uc-role" class="block text-sm font-medium">Role</label>
+					<label for="uc-role" class="block text-sm font-medium">{m.label_role()}</label>
 					<select
 						id="uc-role"
 						bind:value={role}
 						class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 					>
-						<option value="CONTRIBUTOR">Contributor — upload and submit documents</option>
-						<option value="EDITOR">Editor — review, approve, publish</option>
-						<option value="DEPT_ADMIN">Department Admin — manage team and workflows</option>
-						<option value="GLOBAL_ADMIN">Global Admin — full system access</option>
+						<option value="CONTRIBUTOR">{m.user_create_role_contributor()}</option>
+						<option value="EDITOR">{m.user_create_role_editor()}</option>
+						<option value="DEPT_ADMIN">{m.user_create_role_dept_admin()}</option>
+						<option value="GLOBAL_ADMIN">{m.user_create_role_global_admin()}</option>
 					</select>
 				</div>
 
 				<fieldset class="rounded-md border border-border p-3">
-					<legend class="px-1 text-sm font-medium">Temporary password</legend>
+					<legend class="px-1 text-sm font-medium">{m.user_create_temp_password()}</legend>
 					<div class="space-y-2">
 						<label class="flex items-center gap-2 text-sm">
 							<input
@@ -288,7 +288,7 @@
 								checked={!useCustomPassword}
 								onchange={() => (useCustomPassword = false)}
 							/>
-							Auto-generate a secure password (recommended)
+							{m.user_create_auto_generate()}
 						</label>
 						<label class="flex items-center gap-2 text-sm">
 							<input
@@ -297,20 +297,20 @@
 								checked={useCustomPassword}
 								onchange={() => (useCustomPassword = true)}
 							/>
-							Set a custom password
+							{m.user_create_custom_password()}
 						</label>
 						{#if useCustomPassword}
 							<input
 								type="text"
 								bind:value={customPassword}
-								placeholder="At least 8 characters"
+								placeholder={m.user_create_custom_placeholder()}
 								minlength="8"
 								class="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 							/>
 						{/if}
 					</div>
 					<p class="mt-2 text-xs text-muted-foreground">
-						The user will be prompted to change this password on first login.
+						{m.user_create_password_change_hint()}
 					</p>
 				</fieldset>
 
@@ -330,14 +330,14 @@
 						disabled={submitting}
 						class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50"
 					>
-						Cancel
+						{m.btn_cancel()}
 					</button>
 					<button
 						type="submit"
 						disabled={!canSubmit || submitting}
 						class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed"
 					>
-						{submitting ? 'Creating...' : 'Create User'}
+						{submitting ? m.user_create_creating() : m.user_create_create_user()}
 					</button>
 				</div>
 			</form>

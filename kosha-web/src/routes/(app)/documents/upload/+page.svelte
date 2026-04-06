@@ -5,6 +5,7 @@
 	import { onMount } from 'svelte';
 	import { user as authUser } from '$lib/auth';
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
+	import * as m from '$paraglide/messages';
 
 	// --- State ---
 	let step = $state(1);
@@ -334,15 +335,15 @@
 </script>
 
 <svelte:head>
-	<title>Upload Document - Eòlas</title>
+	<title>{m.page_title_upload_doc()} - {m.nav_app_title()}</title>
 </svelte:head>
 
-<PageHeader title="Upload Document" />
+<PageHeader title={m.upload_title()} />
 
 <!-- Step indicator -->
 <nav aria-label="Upload steps" class="mt-6">
 	<ol class="flex items-center gap-2 text-sm">
-		{#each [{ n: 1, label: 'Details' }, { n: 2, label: 'Upload' }, { n: 3, label: 'Review' }] as s}
+		{#each [{ n: 1, label: m.upload_step_details() }, { n: 2, label: m.upload_step_upload() }, { n: 3, label: m.upload_step_review() }] as s}
 			<li class="flex items-center gap-2">
 				<span
 					class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold"
@@ -368,7 +369,7 @@
 {#if error}
 	<div role="alert" class="mt-4 rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
 		{error}
-		<button onclick={() => (error = '')} class="ml-2 underline focus:outline-2 focus:outline-ring">Dismiss</button>
+		<button onclick={() => (error = '')} class="ml-2 underline focus:outline-2 focus:outline-ring">{m.btn_dismiss()}</button>
 	</div>
 {/if}
 
@@ -377,7 +378,7 @@
 	{#if step === 1}
 		<form onsubmit={(e) => { e.preventDefault(); if (step1Valid) step = 2; }} class="space-y-4">
 			<div>
-				<label for="doc-title" class="block text-sm font-medium">Title <span class="text-destructive">*</span></label>
+				<label for="doc-title" class="block text-sm font-medium">{m.upload_field_title()} <span class="text-destructive">*</span></label>
 				<input
 					id="doc-title"
 					type="text"
@@ -390,7 +391,7 @@
 			</div>
 
 			<div>
-				<label for="doc-desc" class="block text-sm font-medium">Description</label>
+				<label for="doc-desc" class="block text-sm font-medium">{m.upload_field_description()}</label>
 				<textarea
 					id="doc-desc"
 					bind:value={description}
@@ -401,7 +402,7 @@
 			</div>
 
 			<div>
-				<label for="doc-dept" class="block text-sm font-medium">Department <span class="text-destructive">*</span></label>
+				<label for="doc-dept" class="block text-sm font-medium">{m.upload_field_department()} <span class="text-destructive">*</span></label>
 				<select
 					id="doc-dept"
 					bind:value={departmentId}
@@ -409,7 +410,7 @@
 					class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 					aria-required="true"
 				>
-					<option value="">Select a department</option>
+					<option value="">{m.label_select_department()}</option>
 					{#each departments as dept}
 						<option value={dept.id}>{dept.name}</option>
 					{/each}
@@ -417,27 +418,27 @@
 			</div>
 
 			<div>
-				<label for="doc-category" class="block text-sm font-medium">Category</label>
+				<label for="doc-category" class="block text-sm font-medium">{m.upload_field_category()}</label>
 				<select
 					id="doc-category"
 					value={categoryId}
 					onchange={(e) => onCategoryChange((e.target as HTMLSelectElement).value)}
 					class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 				>
-					<option value="">— uncategorised —</option>
+					<option value="">{m.category_uncategorised()}</option>
 					{#each categories as cat}
 						<option value={cat.id}>
-							{cat.name}{cat.suggestsLegalReview ? ' (legal review suggested)' : ''}
+							{cat.name}{cat.suggestsLegalReview ? ` ${m.category_legal_review_suggested()}` : ''}
 						</option>
 					{/each}
 				</select>
 				<p class="mt-1 text-xs text-muted-foreground">
-					Categorising a document helps with search and may suggest legal review.
+					{m.upload_category_hint()}
 				</p>
 			</div>
 
 			<fieldset class="rounded-md border border-border bg-muted/20 p-3">
-				<legend class="px-1 text-sm font-medium">Legal Review</legend>
+				<legend class="px-1 text-sm font-medium">{m.upload_legal_heading()}</legend>
 				<label class="flex items-start gap-2 text-sm">
 					<input
 						type="checkbox"
@@ -446,9 +447,9 @@
 						class="mt-0.5 focus:ring-ring"
 					/>
 					<span>
-						Requires legal review
+						{m.upload_legal_requires()}
 						<span class="block text-xs text-muted-foreground">
-							A legal reviewer will approve this document in parallel with the department workflow. Pick the person from the list below.
+							{m.upload_legal_hint()}
 						</span>
 					</span>
 				</label>
@@ -456,12 +457,12 @@
 				{#if requiresLegalReview}
 					{#if legalReviewers.length === 0}
 						<p class="mt-2 rounded-md border border-warning bg-warning/10 p-2 text-xs" role="alert">
-							No legal reviewers are available. A global admin must flag at least one department as a legal review provider (Department detail → "Handles legal review") before you can use this option.
+							{m.upload_legal_unavailable()}
 						</p>
 					{:else}
 						<div class="mt-3">
 							<label for="legal-reviewer" class="block text-xs font-medium">
-								Legal reviewer <span class="text-destructive">*</span>
+								{m.upload_legal_reviewer_label()} <span class="text-destructive">*</span>
 							</label>
 							<select
 								id="legal-reviewer"
@@ -477,7 +478,7 @@
 								{/each}
 							</select>
 							<p class="mt-1 text-xs text-muted-foreground">
-								They will receive a heads-up email immediately and an action request when you submit the document for review.
+								{m.upload_legal_email_hint()}
 							</p>
 						</div>
 					{/if}
@@ -485,30 +486,30 @@
 			</fieldset>
 
 			<fieldset>
-				<legend class="text-sm font-medium">Storage Mode</legend>
+				<legend class="text-sm font-medium">{m.upload_field_storage()}</legend>
 				<div class="mt-1 flex gap-4">
 					<label class="flex items-center gap-2 text-sm">
 						<input type="radio" bind:group={storageMode} value="VAULT" class="focus:ring-ring" />
-						Vault (managed storage)
+						{m.upload_storage_vault()}
 					</label>
 					<label class="flex items-center gap-2 text-sm">
 						<input type="radio" bind:group={storageMode} value="CONNECTOR" class="focus:ring-ring" />
-						Connector (index in place)
+						{m.upload_storage_connector()}
 					</label>
 				</div>
 			</fieldset>
 
 			<!-- Document Owner -->
 			<fieldset>
-				<legend class="text-sm font-medium">Document Owner</legend>
+				<legend class="text-sm font-medium">{m.upload_owner_heading()}</legend>
 				<div class="mt-1 flex gap-4">
 					<label class="flex items-center gap-2 text-sm">
 						<input type="radio" bind:group={ownerMode} value="self" onchange={clearOwner} class="focus:ring-ring" />
-						Myself
+						{m.upload_owner_myself()}
 					</label>
 					<label class="flex items-center gap-2 text-sm">
 						<input type="radio" bind:group={ownerMode} value="other" class="focus:ring-ring" />
-						Someone else
+						{m.upload_owner_other()}
 					</label>
 				</div>
 
@@ -522,24 +523,24 @@
 									type="button"
 									onclick={clearOwner}
 									class="ml-auto text-xs text-destructive hover:underline focus:outline-2 focus:outline-ring"
-								>Remove</button>
+								>{m.btn_remove()}</button>
 							</div>
 							<p class="mt-1 text-xs text-muted-foreground">
-								You will be set as the proxy owner for this document.
+								{m.upload_owner_proxy_hint()}
 							</p>
 						{:else}
 							<label for="owner-search" class="sr-only">Search for a user</label>
 							<input
 								id="owner-search"
 								type="text"
-								placeholder="Search by name or email..."
+								placeholder={m.upload_owner_search_placeholder()}
 								value={ownerSearch}
 								oninput={(e) => searchOwners((e.target as HTMLInputElement).value)}
 								class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 								autocomplete="off"
 							/>
 							{#if searchingOwner}
-								<p class="mt-1 text-xs text-muted-foreground">Searching...</p>
+								<p class="mt-1 text-xs text-muted-foreground">{m.upload_searching()}</p>
 							{/if}
 							{#if ownerResults.length > 0}
 								<ul class="mt-1 max-h-40 overflow-y-auto rounded-md border border-border bg-card" role="listbox" aria-label="User search results">
@@ -560,7 +561,7 @@
 									{/each}
 								</ul>
 							{:else if ownerSearch.length >= 2 && !searchingOwner}
-								<p class="mt-1 text-xs text-muted-foreground">No users found</p>
+								<p class="mt-1 text-xs text-muted-foreground">{m.upload_no_users_found()}</p>
 							{/if}
 						{/if}
 					</div>
@@ -568,15 +569,15 @@
 			</fieldset>
 
 			<div>
-				<label for="doc-wf" class="block text-sm font-medium">Workflow</label>
+				<label for="doc-wf" class="block text-sm font-medium">{m.upload_field_workflow()}</label>
 				<select
 					id="doc-wf"
 					bind:value={workflowType}
 					class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 				>
-					<option value="NONE">No workflow</option>
-					<option value="LINEAR">Linear review chain</option>
-					<option value="PARALLEL">Parallel review</option>
+					<option value="NONE">{m.workflow_none()}</option>
+					<option value="LINEAR">{m.workflow_linear()}</option>
+					<option value="PARALLEL">{m.workflow_parallel()}</option>
 				</select>
 			</div>
 
@@ -585,14 +586,14 @@
 					href="/documents"
 					class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 				>
-					Cancel
+					{m.btn_cancel()}
 				</a>
 				<button
 					type="submit"
 					disabled={!step1Valid}
 					class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed"
 				>
-					Next: Upload File →
+					{m.doc_next_upload()}
 				</button>
 			</div>
 		</form>
@@ -609,13 +610,13 @@
 					ondragover={(e) => e.preventDefault()}
 					ondrop={handleFileDrop}
 				>
-					<p class="text-lg font-medium">Drag & drop your file here</p>
-					<p class="mt-1 text-sm text-muted-foreground">or click to browse</p>
+					<p class="text-lg font-medium">{m.upload_file_drop()}</p>
+					<p class="mt-1 text-sm text-muted-foreground">{m.upload_file_browse()}</p>
 					<p class="mt-2 text-xs text-muted-foreground">
-						Supports: Word, Excel, PowerPoint, PDF, Text, Images
+						{m.upload_file_formats()}
 					</p>
 					<label class="mt-4 cursor-pointer rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring">
-						Choose File
+						{m.upload_file_button()}
 						<input
 							type="file"
 							class="sr-only"
@@ -638,18 +639,18 @@
 						class="rounded-md border border-border px-3 py-1 text-sm hover:bg-muted focus:outline-2 focus:outline-ring"
 						aria-label="Remove selected file"
 					>
-						Remove
+						{m.btn_remove()}
 					</button>
 				</div>
 			{/if}
 
 			{#if checkingDuplicate}
-				<p class="text-sm text-muted-foreground" aria-live="polite">Checking for duplicates...</p>
+				<p class="text-sm text-muted-foreground" aria-live="polite">{m.upload_duplicate_checking()}</p>
 			{/if}
 
 			{#if duplicateInfo?.duplicate}
 				<div class="rounded-lg border-2 border-warning bg-warning/10 p-4" role="alert">
-					<p class="font-medium text-warning">Duplicate file detected</p>
+					<p class="font-medium text-warning">{m.upload_duplicate_detected()}</p>
 					<p class="mt-1 text-sm">
 						This file already exists as <strong>v{duplicateInfo.existingVersion}</strong> of
 						"<strong>{duplicateInfo.existingTitle}</strong>"
@@ -660,13 +661,13 @@
 							onclick={goToExistingDocument}
 							class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring"
 						>
-							Go to existing document
+							{m.btn_go_existing()}
 						</button>
 						<button
 							onclick={() => (duplicateInfo = null)}
 							class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-ring"
 						>
-							Upload anyway
+							{m.btn_upload_anyway()}
 						</button>
 					</div>
 				</div>
@@ -688,7 +689,7 @@
 						></div>
 					</div>
 					<p class="mt-1 text-sm text-muted-foreground" aria-live="polite">
-						Uploading... {uploadProgress}%
+						{m.btn_uploading()} {uploadProgress}%
 					</p>
 				</div>
 			{/if}
@@ -699,14 +700,14 @@
 					disabled={uploading}
 					class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 				>
-					← Back
+					{m.btn_back()}
 				</button>
 				<button
 					onclick={submitUpload}
 					disabled={!selectedFile || uploading}
 					class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed"
 				>
-					{uploading ? 'Uploading...' : 'Next: AI Review →'}
+					{uploading ? m.btn_uploading() : m.doc_next_ai_review()}
 				</button>
 			</div>
 		</div>
@@ -726,25 +727,25 @@
 					<div class="flex items-center gap-3">
 						<span class="inline-block h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-hidden="true"></span>
 						<div>
-							<p class="font-medium">AI is analyzing your document...</p>
+							<p class="font-medium">{m.upload_ai_analyzing()}</p>
 							<p class="text-sm text-muted-foreground">{aiStep}</p>
 						</div>
 					</div>
 				{:else if aiStatus === 'complete'}
-					<p class="font-medium text-success">AI analysis complete. Review the results below.</p>
+					<p class="font-medium text-success">{m.upload_ai_complete()}</p>
 				{/if}
 			</div>
 
 			{#if aiStatus === 'complete' && createdVersion}
 				<!-- AI Summary -->
 				<section class="rounded-lg border border-border bg-card p-5">
-					<h2 class="text-sm font-semibold text-muted-foreground">AI Summary</h2>
+					<h2 class="text-sm font-semibold text-muted-foreground">{m.doc_ai_summary()}</h2>
 					{#if createdVersion.metadata?.summary}
 						<p class="mt-2 text-sm leading-relaxed">{createdVersion.metadata.summary}</p>
 						{#if createdVersion.metadata.aiConfidence != null}
 							<div class="mt-3">
 								<div class="flex items-center justify-between text-xs text-muted-foreground">
-									<span>Confidence</span>
+									<span>{m.versions_ai_confidence()}</span>
 									<span>{Math.round(createdVersion.metadata.aiConfidence * 100)}%</span>
 								</div>
 								<div
@@ -764,7 +765,7 @@
 						{/if}
 					{:else}
 						<p class="mt-2 text-sm text-muted-foreground">
-							No AI summary generated. You can add one manually on the document detail page.
+							{m.upload_ai_no_summary()}
 						</p>
 					{/if}
 				</section>
@@ -776,13 +777,13 @@
 					onclick={saveAsDraft}
 					class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 				>
-					Save as Draft
+					{m.upload_save_draft()}
 				</button>
 				<button
 					onclick={submitForReview}
 					class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 				>
-					Submit for Review
+					{m.upload_submit_review()}
 				</button>
 			</div>
 		</div>

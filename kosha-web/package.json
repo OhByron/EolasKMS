@@ -27,10 +27,12 @@
 		"vite": "^7.3.1"
 	},
 	"dependencies": {
+		"@inlang/paraglide-sveltekit": "^0.16.1",
 		"@tanstack/svelte-table": "^8.21.3",
 		"formsnap": "^2.0.1",
 		"lucide-svelte": "^1.0.1",
 		"oidc-client-ts": "^3.5.0",
+		"pdfjs-dist": "^5.6.205",
 		"svelte-sonner": "^1.1.0",
 		"sveltekit-superforms": "^2.30.1",
 		"zod": "^4.3.6"

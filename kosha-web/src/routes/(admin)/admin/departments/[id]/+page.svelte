@@ -9,6 +9,7 @@
 	import UserCreateModal from '$lib/components/kosha/UserCreateModal.svelte';
 	import UserTransferModal from '$lib/components/kosha/UserTransferModal.svelte';
 	import WorkflowEditor from '$lib/components/kosha/WorkflowEditor.svelte';
+	import * as m from '$paraglide/messages';
 
 	let dept = $state<Department | null>(null);
 	let users = $state<UserProfile[]>([]);
@@ -158,24 +159,24 @@
 </script>
 
 <svelte:head>
-	<title>{dept?.name ?? 'Department'} - Administration - Eòlas</title>
+	<title>{dept?.name ?? m.label_department()} - {m.nav_sidebar_administration()} - {m.nav_app_title()}</title>
 </svelte:head>
 
 {#if loading}
-	<p aria-live="polite" class="text-muted-foreground">Loading department...</p>
+	<p aria-live="polite" class="text-muted-foreground">{m.dept_loading()}</p>
 {:else if error && !dept}
 	<ErrorBoundary {error} onRetry={loadData} />
 {:else if dept}
 	<PageHeader title={dept.name} description={dept.description ?? undefined}>
 		<a href="/admin/departments" class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-ring">
-			← All Departments
+			{m.dept_detail_all_departments()}
 		</a>
 		<button
 			type="button"
 			onclick={() => (addMemberModalOpen = true)}
 			class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 		>
-			+ Add Member
+			{m.btn_add_member()}
 		</button>
 	</PageHeader>
 
@@ -197,7 +198,7 @@
 			<!-- Team Members tab -->
 			<section class="rounded-lg border border-border bg-card p-5">
 				<div class="flex items-center justify-between">
-					<h2 class="text-sm font-semibold text-muted-foreground">Team Members ({usersTotal})</h2>
+					<h2 class="text-sm font-semibold text-muted-foreground">{m.dept_team_members({ count: usersTotal })}</h2>
 				</div>
 
 				{#if teamError}
@@ -210,24 +211,24 @@
 				{/if}
 
 				{#if users.length === 0}
-					<p class="mt-3 text-sm text-muted-foreground">No users in this department yet.</p>
+					<p class="mt-3 text-sm text-muted-foreground">{m.dept_no_members()}</p>
 					<button
 						type="button"
 						onclick={() => (addMemberModalOpen = true)}
 						class="mt-2 text-sm text-primary underline hover:opacity-80 focus:outline-2 focus:outline-ring"
 					>
-						Add the first team member
+						{m.dept_add_first()}
 					</button>
 				{:else}
 					<div class="mt-3 overflow-x-auto">
 						<table class="w-full text-sm" aria-label="Department members">
 							<thead>
 								<tr class="border-b border-border">
-									<th scope="col" class="pb-2 text-left font-semibold">Name</th>
-									<th scope="col" class="pb-2 text-left font-semibold">Email</th>
-									<th scope="col" class="pb-2 text-left font-semibold">Role</th>
-									<th scope="col" class="pb-2 text-left font-semibold">Status</th>
-									<th scope="col" class="pb-2 text-right font-semibold">Actions</th>
+									<th scope="col" class="pb-2 text-left font-semibold">{m.label_name()}</th>
+									<th scope="col" class="pb-2 text-left font-semibold">{m.label_email()}</th>
+									<th scope="col" class="pb-2 text-left font-semibold">{m.label_role()}</th>
+									<th scope="col" class="pb-2 text-left font-semibold">{m.label_status()}</th>
+									<th scope="col" class="pb-2 text-right font-semibold">{m.label_actions()}</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -249,10 +250,10 @@
 												disabled={busy}
 												class="rounded-md border border-border bg-background px-2 py-1 text-xs focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 											>
-												<option value="CONTRIBUTOR">Contributor</option>
-												<option value="EDITOR">Editor</option>
-												<option value="DEPT_ADMIN">Dept Admin</option>
-												<option value="GLOBAL_ADMIN">Global Admin</option>
+												<option value="CONTRIBUTOR">{m.role_contributor()}</option>
+												<option value="EDITOR">{m.role_editor()}</option>
+												<option value="DEPT_ADMIN">{m.role_dept_admin()}</option>
+												<option value="GLOBAL_ADMIN">{m.role_global_admin()}</option>
 											</select>
 										</td>
 										<td class="py-2">
@@ -267,7 +268,7 @@
 													class="rounded-md border border-border px-2 py-1 text-xs font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 													aria-label={u.status === 'ACTIVE' ? `Deactivate ${u.displayName}` : `Reactivate ${u.displayName}`}
 												>
-													{u.status === 'ACTIVE' ? 'Deactivate' : 'Reactivate'}
+													{u.status === 'ACTIVE' ? m.dept_deactivate() : m.dept_reactivate()}
 												</button>
 												<button
 													type="button"
@@ -276,7 +277,7 @@
 													class="rounded-md border border-border px-2 py-1 text-xs font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 													aria-label="Transfer {u.displayName} to another department"
 												>
-													Transfer…
+													{m.dept_transfer()}
 												</button>
 											</div>
 										</td>
@@ -286,8 +287,7 @@
 						</table>
 					</div>
 					<p class="mt-3 text-xs text-muted-foreground">
-						Deactivating a member removes their rights without deleting their account.
-						Transferring moves them to another department — they will lose access to documents scoped to {dept.name}.
+						{m.dept_deactivate_hint()}
 					</p>
 				{/if}
 			</section>
@@ -299,27 +299,27 @@
 
 		<div class="space-y-4">
 			<section class="rounded-lg border border-border bg-card p-5">
-				<h2 class="mb-3 text-sm font-semibold text-muted-foreground">Details</h2>
+				<h2 class="mb-3 text-sm font-semibold text-muted-foreground">{m.label_details()}</h2>
 				<dl class="space-y-2 text-sm">
 					<div>
-						<dt class="text-muted-foreground">Status</dt>
+						<dt class="text-muted-foreground">{m.label_status()}</dt>
 						<dd><StatusBadge status={dept.status} /></dd>
 					</div>
 					<div>
-						<dt class="text-muted-foreground">Created</dt>
+						<dt class="text-muted-foreground">{m.label_created()}</dt>
 						<dd class="font-medium">{new Date(dept.createdAt).toLocaleDateString()}</dd>
 					</div>
 					<div>
-						<dt class="text-muted-foreground">Updated</dt>
+						<dt class="text-muted-foreground">{m.label_updated()}</dt>
 						<dd class="font-medium">{new Date(dept.updatedAt).toLocaleDateString()}</dd>
 					</div>
 				</dl>
 			</section>
 
 			<section class="rounded-lg border border-border bg-card p-5">
-				<h2 class="mb-1 text-sm font-semibold text-muted-foreground">Legal Review</h2>
+				<h2 class="mb-1 text-sm font-semibold text-muted-foreground">{m.dept_legal_review_heading()}</h2>
 				<p class="mb-3 text-xs text-muted-foreground">
-					Controls whether members of this department can be picked as legal reviewers for documents that require one.
+					{m.dept_legal_review_desc()}
 				</p>
 				<label class="flex items-start gap-2 text-sm">
 					<input
@@ -330,9 +330,9 @@
 						class="mt-0.5 focus:ring-ring"
 					/>
 					<span>
-						Handles legal review
+						{m.dept_legal_review_toggle()}
 						<span class="block text-xs text-muted-foreground">
-							Global admin only. Members of flagged departments appear in the "Legal reviewer" dropdown on the upload form.
+							{m.dept_legal_review_hint()}
 						</span>
 					</span>
 				</label>
@@ -343,9 +343,9 @@
 
 			{#if scanSettings}
 				<section class="rounded-lg border border-border bg-card p-5">
-					<h2 class="mb-1 text-sm font-semibold text-muted-foreground">Retention Scan Cadence</h2>
+					<h2 class="mb-1 text-sm font-semibold text-muted-foreground">{m.dept_scan_heading()}</h2>
 					<p class="mb-3 text-xs text-muted-foreground">
-						How often this department is scanned for approaching or overdue retention reviews.
+						{m.dept_scan_desc()}
 					</p>
 
 					<fieldset>
@@ -359,7 +359,7 @@
 									onchange={() => (scanSelection = 'inherit')}
 								/>
 								<span>
-									Use global default
+									{m.dept_scan_use_global()}
 									<span class="text-xs text-muted-foreground">
 										({scanSettings.inheritsDefault ? scanSettings.effectiveIntervalHours : scanSettings.validIntervals[0].hours}h)
 									</span>
@@ -384,16 +384,16 @@
 
 					<div class="mt-4 space-y-2 border-t border-border pt-3 text-xs">
 						<div class="flex justify-between">
-							<dt class="text-muted-foreground">Current</dt>
+							<dt class="text-muted-foreground">{m.dept_scan_current()}</dt>
 							<dd class="font-medium">
 								{scanSettings.effectiveIntervalHours}h
 								{#if scanSettings.inheritsDefault}
-									<span class="text-muted-foreground">(inherited)</span>
+									<span class="text-muted-foreground">{m.dept_scan_inherited()}</span>
 								{/if}
 							</dd>
 						</div>
 						<div class="flex justify-between">
-							<dt class="text-muted-foreground">Last scan</dt>
+							<dt class="text-muted-foreground">{m.dept_scan_last()}</dt>
 							<dd class="font-medium">{formatDate(scanSettings.lastScanAt)}</dd>
 						</div>
 					</div>
@@ -417,7 +417,7 @@
 							disabled={savingScan}
 							class="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 						>
-							{savingScan ? 'Saving...' : 'Save'}
+							{savingScan ? m.btn_saving() : m.btn_save()}
 						</button>
 					</div>
 				</section>

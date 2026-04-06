@@ -1,30 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-
-	const labelMap: Record<string, string> = {
-		dashboard: 'Dashboard',
-		documents: 'Documents',
-		upload: 'Upload',
-		search: 'Search',
-		taxonomy: 'Taxonomy',
-		inbox: 'Inbox',
-		profile: 'Profile',
-		admin: 'Administration',
-		departments: 'Departments',
-		users: 'Users',
-		retention: 'Retention Policies',
-		ai: 'AI Configuration',
-		audit: 'Audit Log',
-		'mail-gateway': 'Mail Gateway',
-		'notification-settings': 'Notifications',
-		categories: 'Document Categories',
-		reports: 'Reports',
-		aging: 'Document Aging',
-		'critical-items': 'Critical Items',
-		'legal-holds': 'Legal Holds',
-		review: 'Review',
-		new: 'Create'
-	};
+	import * as m from '$paraglide/messages';
 
 	interface Crumb {
 		label: string;
@@ -32,6 +8,32 @@
 	}
 
 	const crumbs: Crumb[] = $derived.by(() => {
+		const labelMap: Record<string, string> = {
+			dashboard: m.nav_sidebar_dashboard(),
+			documents: m.nav_sidebar_documents(),
+			upload: m.page_title_upload_doc(),
+			search: m.nav_sidebar_search(),
+			taxonomy: m.nav_sidebar_taxonomy(),
+			inbox: m.nav_sidebar_inbox(),
+			profile: m.page_title_profile(),
+			admin: m.nav_sidebar_administration(),
+			departments: m.nav_sidebar_departments(),
+			users: m.nav_sidebar_all_users(),
+			retention: m.page_title_retention(),
+			ai: m.page_title_ai_config(),
+			audit: m.page_title_audit(),
+			'mail-gateway': m.page_title_mail_gateway(),
+			'notification-settings': m.nav_sidebar_notifications(),
+			categories: m.page_title_categories(),
+			import: m.nav_sidebar_bulk_import(),
+			reports: m.nav_sidebar_reports(),
+			aging: m.nav_sidebar_document_aging(),
+			'critical-items': m.nav_sidebar_critical_items(),
+			'legal-holds': m.nav_sidebar_legal_holds(),
+			review: m.review_title(),
+			new: m.btn_create()
+		};
+
 		const pathname = page.url?.pathname ?? '/';
 		const segments = pathname.split('/').filter(Boolean);
 		const result: Crumb[] = [];

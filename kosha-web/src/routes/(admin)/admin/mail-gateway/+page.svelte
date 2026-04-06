@@ -4,6 +4,7 @@
 	import type { MailGatewayConfig, ProviderPreset, GatewayTestResult } from '$lib/types/api';
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 	import ErrorBoundary from '$lib/components/kosha/ErrorBoundary.svelte';
+	import * as m from '$paraglide/messages';
 
 	let config = $state<MailGatewayConfig | null>(null);
 	let presets = $state<ProviderPreset[]>([]);
@@ -119,7 +120,7 @@
 			// Reset password state — backend now has the new value
 			password = '';
 			passwordTouched = false;
-			saveResult = 'Configuration saved';
+			saveResult = m.mail_config_saved();
 		} catch (e: any) {
 			error = e.message;
 		} finally {
@@ -134,7 +135,7 @@
 			const res = await api.mailGateway.testConnection(buildRequest());
 			testResult = res.data;
 		} catch (e: any) {
-			testResult = { success: false, message: 'Request failed', detail: e.message };
+			testResult = { success: false, message: m.mail_test_request_failed(), detail: e.message };
 		} finally {
 			testing = false;
 		}
@@ -142,7 +143,7 @@
 
 	async function runTestSend() {
 		if (!testRecipient) {
-			testResult = { success: false, message: 'Enter a recipient address first', detail: null };
+			testResult = { success: false, message: m.mail_test_no_recipient(), detail: null };
 			return;
 		}
 		testing = true;
@@ -154,26 +155,26 @@
 			});
 			testResult = res.data;
 		} catch (e: any) {
-			testResult = { success: false, message: 'Request failed', detail: e.message };
+			testResult = { success: false, message: m.mail_test_request_failed(), detail: e.message };
 		} finally {
 			testing = false;
 		}
 	}
 
 	function formatDate(iso: string | null): string {
-		if (!iso) return 'never';
+		if (!iso) return m.time_never();
 		return new Date(iso).toLocaleString('en-US');
 	}
 </script>
 
 <svelte:head>
-	<title>Mail Gateway - Administration - Eòlas</title>
+	<title>{m.page_title_mail_gateway()} - {m.nav_sidebar_administration()} - {m.nav_app_title()}</title>
 </svelte:head>
 
-<PageHeader title="Mail Gateway" description="Configure the outbound email provider used for all Eòlas notifications." />
+<PageHeader title={m.mail_title()} description={m.mail_desc()} />
 
 {#if loading}
-	<p aria-live="polite" class="mt-6 text-muted-foreground">Loading configuration...</p>
+	<p aria-live="polite" class="mt-6 text-muted-foreground">{m.mail_loading()}</p>
 {:else if error}
 	<div class="mt-6"><ErrorBoundary {error} onRetry={load} /></div>
 {:else if config}
@@ -187,7 +188,7 @@
 			class="lg:col-span-2 space-y-5 rounded-lg border border-border bg-card p-6"
 		>
 			<div>
-				<label for="provider" class="block text-sm font-medium">Provider</label>
+				<label for="provider" class="block text-sm font-medium">{m.mail_provider()}</label>
 				<select
 					id="provider"
 					bind:value={provider}
@@ -205,14 +206,14 @@
 
 			{#if currentPreset?.warning}
 				<div class="rounded-md border border-warning bg-warning/10 p-3 text-sm" role="note">
-					<strong class="font-medium">Note:</strong>
+					<strong class="font-medium">{m.mail_note()}</strong>
 					{currentPreset.warning}
 				</div>
 			{/if}
 
 			{#if currentPreset?.showRegion && currentPreset.regions.length > 0}
 				<div>
-					<label for="region" class="block text-sm font-medium">Region</label>
+					<label for="region" class="block text-sm font-medium">{m.mail_region()}</label>
 					<select
 						id="region"
 						value={region}
@@ -228,7 +229,7 @@
 
 			<div class="grid gap-4 sm:grid-cols-[1fr_120px]">
 				<div>
-					<label for="host" class="block text-sm font-medium">SMTP host</label>
+					<label for="host" class="block text-sm font-medium">{m.mail_smtp_host()}</label>
 					<input
 						id="host"
 						type="text"
@@ -239,7 +240,7 @@
 					/>
 				</div>
 				<div>
-					<label for="port" class="block text-sm font-medium">Port</label>
+					<label for="port" class="block text-sm font-medium">{m.mail_port()}</label>
 					<input
 						id="port"
 						type="number"
@@ -253,16 +254,16 @@
 			</div>
 
 			<fieldset>
-				<legend class="text-sm font-medium">Encryption</legend>
+				<legend class="text-sm font-medium">{m.mail_encryption()}</legend>
 				<div class="mt-2 flex gap-4 text-sm">
 					<label class="flex items-center gap-2">
-						<input type="radio" bind:group={encryption} value="starttls" /> STARTTLS
+						<input type="radio" bind:group={encryption} value="starttls" /> {m.mail_encryption_starttls()}
 					</label>
 					<label class="flex items-center gap-2">
-						<input type="radio" bind:group={encryption} value="tls" /> Implicit TLS
+						<input type="radio" bind:group={encryption} value="tls" /> {m.mail_encryption_tls()}
 					</label>
 					<label class="flex items-center gap-2">
-						<input type="radio" bind:group={encryption} value="none" /> None
+						<input type="radio" bind:group={encryption} value="none" /> {m.mail_encryption_none()}
 					</label>
 				</div>
 			</fieldset>
@@ -270,14 +271,14 @@
 			{#if currentPreset?.showSkipTlsVerify}
 				<label class="flex items-center gap-2 text-sm">
 					<input type="checkbox" bind:checked={skipTlsVerify} />
-					Skip TLS certificate verification (self-signed / on-prem)
+					{m.mail_skip_tls()}
 				</label>
 			{/if}
 
 			{#if currentPreset?.showUsername !== false}
 				<div>
 					<label for="username" class="block text-sm font-medium">
-						Username
+						{m.mail_username()}
 						{#if currentPreset?.fixedUsername}
 							<span class="text-xs font-normal text-muted-foreground">(auto-set to "{currentPreset.fixedUsername}")</span>
 						{/if}
@@ -295,9 +296,9 @@
 			{#if currentPreset?.showPassword !== false}
 				<div>
 					<label for="password" class="block text-sm font-medium">
-						Password / API key
+						{m.mail_password()}
 						{#if config.hasPassword}
-							<span class="text-xs font-normal text-muted-foreground">— leave blank to keep existing</span>
+							<span class="text-xs font-normal text-muted-foreground">{m.mail_password_keep()}</span>
 						{/if}
 					</label>
 					<input
@@ -316,7 +317,7 @@
 
 			<div class="grid gap-4 sm:grid-cols-2">
 				<div>
-					<label for="fromEmail" class="block text-sm font-medium">From email</label>
+					<label for="fromEmail" class="block text-sm font-medium">{m.mail_from_email()}</label>
 					<input
 						id="fromEmail"
 						type="email"
@@ -326,7 +327,7 @@
 					/>
 				</div>
 				<div>
-					<label for="fromName" class="block text-sm font-medium">From name</label>
+					<label for="fromName" class="block text-sm font-medium">{m.mail_from_name()}</label>
 					<input
 						id="fromName"
 						type="text"
@@ -338,7 +339,7 @@
 			</div>
 
 			<div>
-				<label for="replyTo" class="block text-sm font-medium">Reply-to (optional)</label>
+				<label for="replyTo" class="block text-sm font-medium">{m.mail_reply_to()}</label>
 				<input
 					id="replyTo"
 					type="email"
@@ -359,14 +360,14 @@
 						onclick={load}
 						class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 					>
-						Discard
+						{m.btn_discard()}
 					</button>
 					<button
 						type="submit"
 						disabled={saving}
 						class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 					>
-						{saving ? 'Saving...' : 'Save Configuration'}
+						{saving ? m.btn_saving() : m.mail_save_config()}
 					</button>
 				</div>
 			</div>
@@ -375,9 +376,9 @@
 		<!-- Test panel -->
 		<aside class="space-y-4">
 			<div class="rounded-lg border border-border bg-card p-5">
-				<h2 class="text-sm font-semibold">Test the configuration</h2>
+				<h2 class="text-sm font-semibold">{m.mail_test_heading()}</h2>
 				<p class="mt-1 text-xs text-muted-foreground">
-					Test without saving. The current form values are used — not the stored config.
+					{m.mail_test_desc()}
 				</p>
 
 				<div class="mt-4 space-y-2">
@@ -387,12 +388,12 @@
 						disabled={testing}
 						class="w-full rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 					>
-						{testing ? 'Testing...' : 'Test Connection'}
+						{testing ? m.mail_testing() : m.mail_test_connection()}
 					</button>
 
 					<div>
 						<label for="testRecipient" class="block text-xs font-medium text-muted-foreground">
-							Test recipient
+							{m.mail_test_recipient()}
 						</label>
 						<input
 							id="testRecipient"
@@ -409,7 +410,7 @@
 						disabled={testing}
 						class="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 					>
-						{testing ? 'Sending...' : 'Send Test Email'}
+						{testing ? m.mail_test_sending() : m.mail_test_send()}
 					</button>
 				</div>
 
@@ -434,19 +435,19 @@
 			</div>
 
 			<div class="rounded-lg border border-border bg-card p-5">
-				<h2 class="text-sm font-semibold">Last test result</h2>
+				<h2 class="text-sm font-semibold">{m.mail_test_last()}</h2>
 				<dl class="mt-2 space-y-1 text-xs">
 					<div class="flex justify-between">
-						<dt class="text-muted-foreground">When</dt>
+						<dt class="text-muted-foreground">{m.mail_test_when()}</dt>
 						<dd>{formatDate(config.lastTestedAt)}</dd>
 					</div>
 					<div class="flex justify-between">
-						<dt class="text-muted-foreground">Outcome</dt>
+						<dt class="text-muted-foreground">{m.mail_test_outcome()}</dt>
 						<dd>
 							{#if config.lastTestSuccess === true}
-								<span class="text-success">success</span>
+								<span class="text-success">{m.mail_test_success()}</span>
 							{:else if config.lastTestSuccess === false}
-								<span class="text-destructive">failure</span>
+								<span class="text-destructive">{m.mail_test_failure()}</span>
 							{:else}
 								—
 							{/if}

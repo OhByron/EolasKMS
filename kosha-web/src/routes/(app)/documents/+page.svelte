@@ -4,6 +4,7 @@
 	import type { Department, DocumentListItem } from '$lib/types/api';
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 	import StatusBadge from '$lib/components/kosha/StatusBadge.svelte';
+	import * as m from '$paraglide/messages';
 
 	let documents = $state<DocumentListItem[]>([]);
 	let total = $state(0);
@@ -69,22 +70,22 @@
 </script>
 
 <svelte:head>
-	<title>Documents - Eòlas</title>
+	<title>{m.doc_title()} - {m.nav_app_title()}</title>
 </svelte:head>
 
-<PageHeader title="Documents" description="{total} document{total !== 1 ? 's' : ''}">
+<PageHeader title={m.doc_title()} description="{total} document{total !== 1 ? 's' : ''}">
 	<a
 		href="/documents/upload"
 		class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 	>
-		+ Upload Document
+		{m.btn_upload_document()}
 	</a>
 </PageHeader>
 
 <div class="mt-4 flex flex-wrap items-end gap-3">
 	<div class="flex flex-col gap-1">
 		<label for="doc-dept-filter" class="text-xs font-medium text-muted-foreground">
-			Filter by department
+			{m.label_filter_by_department()}
 		</label>
 		<select
 			id="doc-dept-filter"
@@ -92,7 +93,7 @@
 			onchange={onDepartmentChange}
 			class="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 		>
-			<option value="">All departments</option>
+			<option value="">{m.label_all_departments()}</option>
 			{#each departments as d (d.id)}
 				<option value={d.id}>{d.name}</option>
 			{/each}
@@ -104,13 +105,13 @@
 			onclick={() => { departmentFilter = ''; onDepartmentChange(); }}
 			class="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 		>
-			Clear filter
+			{m.btn_clear_filter()}
 		</button>
 	{/if}
 </div>
 
 {#if loading}
-	<p aria-live="polite" class="mt-4 text-muted-foreground">Loading documents...</p>
+	<p aria-live="polite" class="mt-4 text-muted-foreground">{m.doc_loading()}</p>
 {:else if error}
 	<div role="alert" class="mt-4 rounded-md border border-destructive bg-destructive/10 p-4">
 		<p class="text-sm text-destructive">{error}</p>
@@ -118,14 +119,14 @@
 			onclick={loadDocuments}
 			class="mt-2 text-sm font-medium text-destructive underline focus:outline-2 focus:outline-ring"
 		>
-			Retry
+			{m.btn_retry()}
 		</button>
 	</div>
 {:else if documents.length === 0}
 	<div class="mt-8 text-center">
-		<p class="text-muted-foreground">No documents found.</p>
+		<p class="text-muted-foreground">{m.doc_no_documents()}</p>
 		<a href="/documents/upload" class="mt-2 inline-block text-sm font-medium text-primary underline">
-			Upload your first document
+			{m.doc_upload_first()}
 		</a>
 	</div>
 {:else}
@@ -133,11 +134,11 @@
 		<table class="w-full text-sm" aria-label="Document list">
 			<thead>
 				<tr class="border-b border-border bg-muted/50">
-					<th scope="col" class="px-4 py-3 text-left font-semibold">Title</th>
-					<th scope="col" class="px-4 py-3 text-left font-semibold">Department</th>
-					<th scope="col" class="px-4 py-3 text-left font-semibold">Status</th>
-					<th scope="col" class="px-4 py-3 text-left font-semibold">Version</th>
-					<th scope="col" class="px-4 py-3 text-left font-semibold">Created</th>
+					<th scope="col" class="px-4 py-3 text-left font-semibold">{m.label_title()}</th>
+					<th scope="col" class="px-4 py-3 text-left font-semibold">{m.label_department()}</th>
+					<th scope="col" class="px-4 py-3 text-left font-semibold">{m.label_status()}</th>
+					<th scope="col" class="px-4 py-3 text-left font-semibold">{m.label_current_version()}</th>
+					<th scope="col" class="px-4 py-3 text-left font-semibold">{m.label_created()}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -179,14 +180,14 @@
 				disabled={currentPage === 0}
 				class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed"
 			>
-				Previous
+				{m.btn_previous()}
 			</button>
 			<button
 				onclick={nextPage}
 				disabled={(currentPage + 1) * pageSize >= total}
 				class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed"
 			>
-				Next
+				{m.btn_next()}
 			</button>
 		</div>
 	</nav>

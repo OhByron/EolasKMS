@@ -10,6 +10,8 @@ from models.messages import AiTaskMessage
 from pipelines.summarizer import summarize
 from pipelines.keyword_extractor import extract_keywords
 from pipelines.classifier import classify_keywords, invalidate_cache
+from pipelines.ocr import run_ocr
+from pipelines.metadata_extractor import extract_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,22 @@ def _get_minio_client() -> Minio:
         secret_key=settings.minio_secret_key,
         secure=settings.minio_secure,
     )
+
+
+async def _fetch_document_bytes(task: AiTaskMessage) -> bytes | None:
+    """Get raw file bytes from MinIO for OCR processing."""
+    if not task.storage_key:
+        return None
+    try:
+        client = _get_minio_client()
+        response = client.get_object(settings.minio_bucket, task.storage_key)
+        data = response.read()
+        response.close()
+        response.release_conn()
+        return data
+    except Exception:
+        logger.exception("Failed to fetch bytes from MinIO: %s", task.storage_key)
+        return None
 
 
 async def _fetch_document_text(task: AiTaskMessage) -> str:
@@ -113,3 +131,45 @@ async def handle_ai_task(payload: dict, js) -> None:
                     len(candidates), task.document_id,
                 )
                 invalidate_cache()  # New terms will be created, refresh cache
+
+    # Run structured metadata extraction (Pass 5.3.0).
+    # Uses spaCy NER to produce named fields that the conditional
+    # workflow engine (Pass 5.3) evaluates via JSON Logic. Runs on
+    # the same extracted text as summarization — no extra fetch.
+    if task.task_type in ("FULL_ANALYSIS", "EXTRACT_METADATA"):
+        metadata = await extract_metadata(text)
+        if metadata:
+            result = {
+                "versionId": str(task.version_id),
+                "documentId": str(task.document_id),
+                "extractedMetadata": metadata,
+            }
+            await js.publish("ai.metadata.extracted", json.dumps(result).encode())
+            logger.info(
+                "Published structured metadata for version %s (%d fields)",
+                task.version_id, len(metadata),
+            )
+
+    # Run OCR on scanned PDFs (Pass 5.1).
+    # Only fires for PDFs — the MIME check is the first gate, the
+    # `detect_needs_ocr` inside `run_ocr` is the second. Non-PDF
+    # formats are silently skipped. OCR is also triggered by the
+    # explicit OCR task type for admin-initiated reprocessing.
+    if task.task_type in ("FULL_ANALYSIS", "OCR"):
+        mime = (task.mime_type or "").lower()
+        if mime == "application/pdf" or task.task_type == "OCR":
+            pdf_bytes = await _fetch_document_bytes(task)
+            if pdf_bytes:
+                language = settings.tesseract_lang  # default from env; per-doc hint comes later
+                ocr_result = await run_ocr(
+                    pdf_bytes=pdf_bytes,
+                    document_id=str(task.document_id),
+                    version_id=str(task.version_id),
+                    language=language,
+                )
+                if ocr_result:
+                    await js.publish("ai.ocr.completed", json.dumps(ocr_result).encode())
+                    logger.info(
+                        "Published OCR result for version %s (key=%s)",
+                        task.version_id, ocr_result["ocrStorageKey"],
+                    )

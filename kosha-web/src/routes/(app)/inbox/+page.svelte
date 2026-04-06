@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import * as m from '$paraglide/messages';
 	import { api } from '$lib/api';
 	import type { ReviewTask } from '$lib/types/api';
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
@@ -41,19 +42,18 @@
 	function timeAgo(iso: string): string {
 		const diff = Date.now() - new Date(iso).getTime();
 		const hours = Math.floor(diff / 3600000);
-		if (hours < 1) return 'Just now';
-		if (hours < 24) return `${hours}h ago`;
+		if (hours < 1) return m.time_just_now();
+		if (hours < 24) return m.time_hours_ago({ n: hours });
 		const days = Math.floor(hours / 24);
-		if (days === 1) return '1 day ago';
-		return `${days} days ago`;
+		return m.time_days_ago({ n: days });
 	}
 </script>
 
 <svelte:head>
-	<title>Review Inbox - Eòlas</title>
+	<title>{m.inbox_title()} - {m.nav_app_title()}</title>
 </svelte:head>
 
-<PageHeader title="Review Inbox" description="{total} task{total !== 1 ? 's' : ''}" />
+<PageHeader title={m.inbox_title()} description="{total} task{total !== 1 ? 's' : ''}" />
 
 <!-- Filter tabs -->
 <div class="mt-4" role="tablist" aria-label="Filter tasks">
@@ -67,7 +67,7 @@
 		class:bg-muted={filter !== 'pending'}
 		class:text-muted-foreground={filter !== 'pending'}
 	>
-		Pending
+		{m.inbox_tab_pending()}
 	</button>
 	<button
 		role="tab"
@@ -79,32 +79,32 @@
 		class:bg-muted={filter !== 'all'}
 		class:text-muted-foreground={filter !== 'all'}
 	>
-		All
+		{m.inbox_tab_all()}
 	</button>
 </div>
 
 {#if loading}
-	<p aria-live="polite" class="mt-6 text-muted-foreground">Loading tasks...</p>
+	<p aria-live="polite" class="mt-6 text-muted-foreground">{m.inbox_loading()}</p>
 {:else if error}
 	<div class="mt-6">
 		<ErrorBoundary {error} onRetry={loadTasks} />
 	</div>
 {:else if filteredTasks.length === 0}
 	<div class="mt-8 text-center">
-		<p class="text-lg text-muted-foreground">No pending review tasks</p>
-		<p class="mt-1 text-sm text-muted-foreground">Documents assigned to you for review will appear here.</p>
+		<p class="text-lg text-muted-foreground">{m.inbox_empty()}</p>
+		<p class="mt-1 text-sm text-muted-foreground">{m.inbox_empty_hint()}</p>
 	</div>
 {:else}
 	<div class="mt-4 overflow-x-auto rounded-lg border border-border">
 		<table class="w-full text-sm" aria-label="Review tasks">
 			<thead>
 				<tr class="border-b border-border bg-muted/50">
-					<th scope="col" class="px-4 py-3 text-left font-semibold">Document</th>
-					<th scope="col" class="px-4 py-3 text-left font-semibold">Submitter</th>
-					<th scope="col" class="px-4 py-3 text-left font-semibold">Department</th>
-					<th scope="col" class="px-4 py-3 text-left font-semibold">Step</th>
-					<th scope="col" class="px-4 py-3 text-left font-semibold">Status</th>
-					<th scope="col" class="px-4 py-3 text-left font-semibold">Submitted</th>
+					<th scope="col" class="px-4 py-3 text-left font-semibold">{m.inbox_col_document()}</th>
+					<th scope="col" class="px-4 py-3 text-left font-semibold">{m.inbox_col_submitter()}</th>
+					<th scope="col" class="px-4 py-3 text-left font-semibold">{m.inbox_col_department()}</th>
+					<th scope="col" class="px-4 py-3 text-left font-semibold">{m.inbox_col_step()}</th>
+					<th scope="col" class="px-4 py-3 text-left font-semibold">{m.inbox_col_status()}</th>
+					<th scope="col" class="px-4 py-3 text-left font-semibold">{m.inbox_col_submitted()}</th>
 				</tr>
 			</thead>
 			<tbody>

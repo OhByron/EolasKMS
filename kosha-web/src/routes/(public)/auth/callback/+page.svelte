@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { handleCallback } from '$lib/auth';
+	import * as m from '$paraglide/messages';
 
 	let error = $state('');
 	let logoutUrl = $state('');
@@ -30,7 +31,7 @@
 			goto(returnTo);
 		} catch (e: any) {
 			(window as any).__kosha_callback_processing = false;
-			error = e.message ?? 'Authentication failed';
+			error = e.message ?? m.err_auth_failed();
 			for (const key of Object.keys(localStorage)) {
 				if (key.startsWith('oidc.')) localStorage.removeItem(key);
 			}
@@ -42,15 +43,15 @@
 	{#if error}
 		<div class="text-center">
 			<p class="text-destructive font-medium">{error}</p>
-			<p class="mt-2 text-sm text-muted-foreground">OIDC session has been cleared.</p>
+			<p class="mt-2 text-sm text-muted-foreground">{m.auth_session_cleared()}</p>
 			<a
 				href={logoutUrl}
 				class="mt-4 inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring"
 			>
-				Try again
+				{m.btn_try_again()}
 			</a>
 		</div>
 	{:else}
-		<p class="text-muted-foreground">Signing in...</p>
+		<p class="text-muted-foreground">{m.auth_signing_in()}</p>
 	{/if}
 </div>

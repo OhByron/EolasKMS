@@ -1,0 +1,82 @@
+# ============================================================================
+# Production overlay for Eòlas KMS
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# What this overlay changes from the dev base:
+#   - Resource limits on every service (memory + CPU)
+#   - Restart policies (always, not unless-stopped)
+#   - No exposed ports on internal services (postgres, nats, opensearch)
+#   - Health check intervals tightened
+#   - Dev bypass explicitly disabled via environment
+#   - Mailpit replaced by real SMTP config (set via env vars)
+#
+# TLS termination is NOT handled here — use nginx, Traefik, or Caddy
+# as a reverse proxy in front of the kosha-api service. See the
+# deployment docs for recipes.
+# ============================================================================
+
+services:
+  kosha-api:
+    environment:
+      # Disable dev bypass in production
+      KOSHA_SECURITY_DEV_BYPASS_ENABLED: "false"
+      # Production crypto — set these in your .env file or secrets manager
+      KOSHA_CRYPTO_PASSWORD: ${KOSHA_CRYPTO_PASSWORD:?Set KOSHA_CRYPTO_PASSWORD}
+      KOSHA_CRYPTO_SALT: ${KOSHA_CRYPTO_SALT:?Set KOSHA_CRYPTO_SALT}
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2.0"
+    restart: always
+
+  postgres:
+    ports: []  # No external access in production
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+    restart: always
+
+  opensearch:
+    ports: []
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+    restart: always
+
+  minio:
+    ports: []  # Only the API port internally; console disabled
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    restart: always
+
+  nats:
+    ports: []
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+    restart: always
+
+  keycloak:
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+    restart: always
+
+  # In production, replace mailpit with your real SMTP config.
+  # Comment out the mailpit service entirely and set:
+  #   SPRING_MAIL_HOST, SPRING_MAIL_PORT, plus the mail gateway
+  #   admin settings via the Eòlas UI.

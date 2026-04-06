@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { user, hasRole, hasAnyRole } from '$lib/auth';
+	import * as m from '$paraglide/messages';
 
 	interface NavItem {
 		label: string;
@@ -22,43 +23,44 @@
 			title: 'Main',
 			visible: true,
 			items: [
-				{ label: 'Dashboard', href: '/dashboard', icon: '⊞' },
-				{ label: 'Documents', href: '/documents', icon: '📄' },
-				{ label: 'Search', href: '/search', icon: '🔍' },
-				{ label: 'Taxonomy', href: '/taxonomy', icon: '🌳' }
+				{ label: m.nav_sidebar_dashboard(), href: '/dashboard', icon: '⊞' },
+				{ label: m.nav_sidebar_documents(), href: '/documents', icon: '📄' },
+				{ label: m.nav_sidebar_search(), href: '/search', icon: '🔍' },
+				{ label: m.nav_sidebar_taxonomy(), href: '/taxonomy', icon: '🌳' }
 			]
 		},
 		{
-			title: 'Workflow',
+			title: m.nav_sidebar_inbox(),
 			visible: hasAnyRole('GLOBAL_ADMIN', 'DEPT_ADMIN', 'EDITOR'),
-			items: [{ label: 'Inbox', href: '/inbox', icon: '📥' }]
+			items: [{ label: m.nav_sidebar_inbox(), href: '/inbox', icon: '📥' }]
 		},
 		{
-			title: 'Administration',
+			title: m.nav_sidebar_administration(),
 			visible: hasAnyRole('GLOBAL_ADMIN', 'DEPT_ADMIN'),
 			items: [
 				...(hasRole('GLOBAL_ADMIN')
 					? [
-							{ label: 'Departments', href: '/admin/departments', icon: '🏢' },
-							{ label: 'All Users', href: '/admin/users', icon: '👥' },
-							{ label: 'Retention', href: '/admin/retention', icon: '🛡' },
-							{ label: 'AI Config', href: '/admin/ai', icon: '🧠' },
-							{ label: 'Audit Log', href: '/admin/audit', icon: '📜' },
-							{ label: 'Taxonomy Mgmt', href: '/admin/taxonomy', icon: '🔗' },
-							{ label: 'Categories', href: '/admin/categories', icon: '🏷' },
-							{ label: 'Mail Gateway', href: '/admin/mail-gateway', icon: '✉' },
-							{ label: 'Notifications', href: '/admin/notification-settings', icon: '🔔' }
+							{ label: m.nav_sidebar_departments(), href: '/admin/departments', icon: '🏢' },
+							{ label: m.nav_sidebar_all_users(), href: '/admin/users', icon: '👥' },
+							{ label: m.nav_sidebar_retention(), href: '/admin/retention', icon: '🛡' },
+							{ label: m.nav_sidebar_ai_config(), href: '/admin/ai', icon: '🧠' },
+							{ label: m.nav_sidebar_audit_log(), href: '/admin/audit', icon: '📜' },
+							{ label: m.nav_sidebar_taxonomy_mgmt(), href: '/admin/taxonomy', icon: '🔗' },
+							{ label: m.nav_sidebar_categories(), href: '/admin/categories', icon: '🏷' },
+							{ label: m.nav_sidebar_bulk_import(), href: '/admin/import', icon: '📥' },
+							{ label: m.nav_sidebar_mail_gateway(), href: '/admin/mail-gateway', icon: '✉' },
+							{ label: m.nav_sidebar_notifications(), href: '/admin/notification-settings', icon: '🔔' }
 						]
 					: [])
 			]
 		},
 		{
-			title: 'Reports',
+			title: m.nav_sidebar_reports(),
 			visible: hasAnyRole('GLOBAL_ADMIN', 'DEPT_ADMIN'),
 			items: [
-				{ label: 'Document Aging', href: '/reports/aging', icon: '⏳' },
-				{ label: 'Critical Items', href: '/reports/critical-items', icon: '⚠' },
-				{ label: 'Legal Holds', href: '/reports/legal-holds', icon: '⚖' }
+				{ label: m.nav_sidebar_document_aging(), href: '/reports/aging', icon: '⏳' },
+				{ label: m.nav_sidebar_critical_items(), href: '/reports/critical-items', icon: '⚠' },
+				{ label: m.nav_sidebar_legal_holds(), href: '/reports/legal-holds', icon: '⚖' }
 			]
 		}
 	]);

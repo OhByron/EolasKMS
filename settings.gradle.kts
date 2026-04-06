@@ -13,6 +13,7 @@ include(
     "kosha-audit",
     "kosha-reporting",
     "kosha-app",
+    "kosha-import",
 )
 
 pluginManagement {

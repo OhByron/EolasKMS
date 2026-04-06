@@ -95,6 +95,8 @@ class SecurityConfig {
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     .requestMatchers("/actuator/health/**").permitAll()
                     .requestMatchers("/actuator/prometheus").permitAll()
+                    // Public share link resolution — no auth, the token IS the credential.
+                    .requestMatchers(HttpMethod.POST, "/api/v1/share/*").permitAll()
                     .requestMatchers("/api/v1/**").authenticated()
                     .anyRequest().denyAll()
             }

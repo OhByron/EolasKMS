@@ -5,6 +5,7 @@
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 	import StatusBadge from '$lib/components/kosha/StatusBadge.svelte';
 	import ErrorBoundary from '$lib/components/kosha/ErrorBoundary.svelte';
+	import * as m from '$paraglide/messages';
 
 	let rows = $state<CriticalItemRow[]>([]);
 	let summary = $state<CriticalItemsSummary | null>(null);
@@ -114,16 +115,16 @@
 </script>
 
 <svelte:head>
-	<title>Critical Items - Eòlas</title>
+	<title>{m.page_title_critical_items()} - {m.nav_app_title()}</title>
 </svelte:head>
 
-<PageHeader title="Critical Items" description="Documents with overdue retention reviews requiring immediate attention" />
+<PageHeader title={m.critical_title()} description={m.critical_desc()} />
 
 <!-- Summary cards -->
 {#if summary}
-	<div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5" role="region" aria-label="Critical items summary">
+	<div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5" role="region" aria-label={m.critical_summary_label()}>
 		<div class="rounded-lg border border-border bg-card p-4">
-			<p class="text-sm text-muted-foreground">Total overdue</p>
+			<p class="text-sm text-muted-foreground">{m.critical_total_overdue()}</p>
 			<p class="mt-1 text-2xl font-bold text-destructive">{summary.totalCriticalItems.toLocaleString()}</p>
 		</div>
 		{#each summary.bySeverity as sev}
@@ -137,15 +138,15 @@
 	{#if summary.byDepartment.length > 0}
 		<details class="mt-4">
 			<summary class="cursor-pointer text-sm font-medium text-primary hover:underline focus:outline-2 focus:outline-ring">
-				Department breakdown
+				{m.critical_dept_breakdown()}
 			</summary>
 			<div class="mt-2 overflow-x-auto rounded-lg border border-border">
 				<table class="w-full text-sm">
 					<thead>
 						<tr class="border-b border-border bg-muted/50">
-							<th class="px-4 py-2 text-left font-medium">Department</th>
-							<th class="px-4 py-2 text-right font-medium">Overdue items</th>
-							<th class="px-4 py-2 text-right font-medium">Oldest overdue (days)</th>
+							<th class="px-4 py-2 text-left font-medium">{m.critical_col_department()}</th>
+							<th class="px-4 py-2 text-right font-medium">{m.critical_col_overdue_items()}</th>
+							<th class="px-4 py-2 text-right font-medium">{m.critical_col_oldest_overdue()}</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -166,17 +167,17 @@
 <!-- Filters + Actions bar -->
 <div class="mt-6 flex flex-wrap items-end gap-3">
 	<div>
-		<label for="dept-filter" class="block text-xs font-medium text-muted-foreground">Department</label>
+		<label for="dept-filter" class="block text-xs font-medium text-muted-foreground">{m.critical_filter_dept()}</label>
 		<select id="dept-filter" bind:value={filterDept} onchange={applyFilters}
 			class="mt-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-2 focus:outline-ring">
-			<option value="">All departments</option>
+			<option value="">{m.critical_all_depts()}</option>
 			{#each departments as d}
 				<option value={d.id}>{d.name}</option>
 			{/each}
 		</select>
 	</div>
 	<div>
-		<label for="min-days" class="block text-xs font-medium text-muted-foreground">Min days overdue</label>
+		<label for="min-days" class="block text-xs font-medium text-muted-foreground">{m.critical_filter_min_days()}</label>
 		<input id="min-days" type="number" min="0" bind:value={filterMinDays} onchange={applyFilters}
 			placeholder="0"
 			class="mt-1 w-24 rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-2 focus:outline-ring" />
@@ -193,14 +194,14 @@
 			disabled={selectedIds.size === 0 || notifying}
 			class="rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed"
 		>
-			Notify Selected ({selectedIds.size})
+			{m.critical_notify_selected({ count: String(selectedIds.size) })}
 		</button>
 		<button
 			onclick={notifyAll}
 			disabled={notifying}
 			class="rounded-md bg-destructive px-3 py-1.5 text-sm font-medium text-destructive-foreground hover:opacity-90 focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed"
 		>
-			{notifying ? 'Sending...' : 'Notify All'}
+			{notifying ? m.critical_notify_sending() : m.critical_notify_all()}
 		</button>
 	{/if}
 </div>
@@ -213,11 +214,11 @@
 
 <!-- Data table -->
 {#if loading}
-	<p aria-live="polite" class="mt-6 text-muted-foreground">Loading critical items...</p>
+	<p aria-live="polite" class="mt-6 text-muted-foreground">{m.critical_loading()}</p>
 {:else if error}
 	<div class="mt-6"><ErrorBoundary {error} onRetry={loadReport} /></div>
 {:else if rows.length === 0}
-	<p class="mt-6 text-muted-foreground">No overdue retention reviews found. All clear.</p>
+	<p class="mt-6 text-muted-foreground">{m.critical_no_results()}</p>
 {:else}
 	<div class="mt-4 overflow-x-auto rounded-lg border border-border">
 		<table class="w-full text-sm">
@@ -228,17 +229,17 @@
 							type="checkbox"
 							checked={allSelected}
 							onchange={toggleAll}
-							aria-label="Select all"
+							aria-label={m.critical_select_all()}
 							class="rounded focus:ring-ring"
 						/>
 					</th>
-					<th class="px-4 py-2 text-left font-medium">Severity</th>
-					<th class="px-4 py-2 text-left font-medium">Document</th>
-					<th class="px-4 py-2 text-left font-medium">Department</th>
-					<th class="px-4 py-2 text-left font-medium">Status</th>
-					<th class="px-4 py-2 text-left font-medium">Policy</th>
-					<th class="px-4 py-2 text-left font-medium">Review due</th>
-					<th class="px-4 py-2 text-right font-medium">Days overdue</th>
+					<th class="px-4 py-2 text-left font-medium">{m.critical_col_severity()}</th>
+					<th class="px-4 py-2 text-left font-medium">{m.critical_col_doc()}</th>
+					<th class="px-4 py-2 text-left font-medium">{m.critical_col_department()}</th>
+					<th class="px-4 py-2 text-left font-medium">{m.critical_col_status()}</th>
+					<th class="px-4 py-2 text-left font-medium">{m.critical_col_policy()}</th>
+					<th class="px-4 py-2 text-left font-medium">{m.critical_col_review_due()}</th>
+					<th class="px-4 py-2 text-right font-medium">{m.critical_col_days_overdue()}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -282,13 +283,13 @@
 	</div>
 
 	{#if total > pageSize}
-		<nav aria-label="Critical items pagination" class="mt-4 flex items-center justify-between text-sm">
+		<nav aria-label={m.critical_pagination_label()} class="mt-4 flex items-center justify-between text-sm">
 			<p class="text-muted-foreground">Page {currentPage + 1} of {Math.ceil(total / pageSize)}</p>
 			<div class="flex gap-2">
 				<button onclick={() => { currentPage--; loadReport(); }} disabled={currentPage === 0}
-					class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+					class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed">{m.btn_previous()}</button>
 				<button onclick={() => { currentPage++; loadReport(); }} disabled={(currentPage + 1) * pageSize >= total}
-					class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+					class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed">{m.btn_next()}</button>
 			</div>
 		</nav>
 	{/if}

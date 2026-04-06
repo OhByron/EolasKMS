@@ -4,6 +4,7 @@
 	import type { AiConfig, AiStats } from '$lib/types/api';
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 	import ErrorBoundary from '$lib/components/kosha/ErrorBoundary.svelte';
+	import * as m from '$paraglide/messages';
 
 	let activeTab = $state<'model' | 'prompts' | 'reprocess' | 'stats'>('model');
 	let config = $state<AiConfig | null>(null);
@@ -92,7 +93,7 @@
 				relationshipDetectionEnabled: relationships,
 				ocrEnabled: ocr
 			} as any);
-			successMsg = 'Configuration saved successfully.';
+			successMsg = m.ai_config_saved();
 		} catch (e: any) {
 			error = e.message;
 		} finally {
@@ -109,24 +110,24 @@
 			if (reprocessProgress >= 100) {
 				clearInterval(interval);
 				reprocessing = false;
-				successMsg = 'Reprocessing complete.';
+				successMsg = m.ai_reprocess_complete();
 			}
 		}, 500);
 	}
 
 	const tabs = [
-		{ id: 'model' as const, label: 'Model Settings' },
-		{ id: 'prompts' as const, label: 'Prompts' },
-		{ id: 'reprocess' as const, label: 'Reprocessing' },
-		{ id: 'stats' as const, label: 'Statistics' }
+		{ id: 'model' as const, label: m.ai_tab_model() },
+		{ id: 'prompts' as const, label: m.ai_tab_prompts() },
+		{ id: 'reprocess' as const, label: m.ai_tab_reprocess() },
+		{ id: 'stats' as const, label: m.ai_tab_stats() }
 	];
 </script>
 
 <svelte:head>
-	<title>AI Configuration - Administration - Eòlas</title>
+	<title>{m.page_title_ai_config()} - {m.nav_sidebar_administration()} - {m.nav_app_title()}</title>
 </svelte:head>
 
-<PageHeader title="AI Configuration" description="Model settings and prompt tuning" />
+<PageHeader title={m.page_title_ai_config()} description={m.ai_desc()} />
 
 {#if error}
 	<div role="alert" class="mt-4 rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
@@ -136,7 +137,7 @@
 {/if}
 
 <!-- Tabs -->
-<div class="mt-6" role="tablist" aria-label="AI configuration sections">
+<div class="mt-6" role="tablist" aria-label={m.ai_config_sections_label()}>
 	{#each tabs as tab}
 		<button
 			role="tab"
@@ -157,36 +158,36 @@
 
 <div class="rounded-b-lg rounded-tr-lg border border-border bg-card p-6">
 	{#if loading}
-		<p aria-live="polite" class="text-muted-foreground">Loading configuration...</p>
+		<p aria-live="polite" class="text-muted-foreground">{m.ai_loading_config()}</p>
 
 	{:else if activeTab === 'model'}
 		<form onsubmit={(e) => { e.preventDefault(); saveConfig(); }} class="max-w-lg space-y-4">
 			<div>
-				<label for="ai-provider" class="block text-sm font-medium">Provider</label>
+				<label for="ai-provider" class="block text-sm font-medium">{m.ai_provider()}</label>
 				<select id="ai-provider" bind:value={provider} onchange={onProviderChange}
 					class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-2 focus:outline-ring">
-					<option value="ollama">Ollama (local)</option>
-					<option value="openai">OpenAI-compatible</option>
-					<option value="anthropic">Anthropic</option>
+					<option value="ollama">{m.ai_provider_ollama()}</option>
+					<option value="openai">{m.ai_provider_openai()}</option>
+					<option value="anthropic">{m.ai_provider_anthropic()}</option>
 				</select>
 				{#if provider === 'ollama'}
-					<p class="mt-1 text-xs text-muted-foreground">Runs locally — no API key required.</p>
+					<p class="mt-1 text-xs text-muted-foreground">{m.ai_ollama_hint()}</p>
 				{/if}
 			</div>
 			<div>
-				<label for="ai-endpoint" class="block text-sm font-medium">Endpoint</label>
+				<label for="ai-endpoint" class="block text-sm font-medium">{m.ai_endpoint()}</label>
 				<input id="ai-endpoint" type="url" bind:value={endpoint}
 					class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-2 focus:outline-ring" />
 			</div>
 			<div>
-				<label for="ai-model" class="block text-sm font-medium">Model</label>
+				<label for="ai-model" class="block text-sm font-medium">{m.ai_model()}</label>
 				<input id="ai-model" type="text" bind:value={model}
 					class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-2 focus:outline-ring" />
 			</div>
 			{#if needsApiKey}
 				<div>
 					<label for="ai-apikey" class="block text-sm font-medium">
-						API Key <span class="text-destructive">*</span>
+						{m.ai_api_key()} <span class="text-destructive">*</span>
 					</label>
 					<input
 						id="ai-apikey"
@@ -199,22 +200,22 @@
 					/>
 					<p class="mt-1 text-xs text-muted-foreground">
 						{#if provider === 'anthropic'}
-							Get your key at <span class="font-medium">console.anthropic.com</span>
+							{@html m.ai_api_key_anthropic_hint()}
 						{:else}
-							Enter your API key for the selected provider.
+							{m.ai_api_key_generic_hint()}
 						{/if}
 					</p>
 				</div>
 			{/if}
 			<fieldset>
-				<legend class="text-sm font-medium">Capabilities</legend>
+				<legend class="text-sm font-medium">{m.ai_capabilities()}</legend>
 				<div class="mt-2 space-y-2">
 					{#each [
-						{ bind: () => summarization, set: (v: boolean) => summarization = v, label: 'Summarization' },
-						{ bind: () => keywords, set: (v: boolean) => keywords = v, label: 'Keyword extraction' },
-						{ bind: () => classification, set: (v: boolean) => classification = v, label: 'Taxonomy classification' },
-						{ bind: () => relationships, set: (v: boolean) => relationships = v, label: 'Relationship detection' },
-						{ bind: () => ocr, set: (v: boolean) => ocr = v, label: 'OCR enhancement' }
+						{ bind: () => summarization, set: (v: boolean) => summarization = v, label: m.ai_cap_summarization() },
+						{ bind: () => keywords, set: (v: boolean) => keywords = v, label: m.ai_cap_keywords() },
+						{ bind: () => classification, set: (v: boolean) => classification = v, label: m.ai_cap_classification() },
+						{ bind: () => relationships, set: (v: boolean) => relationships = v, label: m.ai_cap_relationships() },
+						{ bind: () => ocr, set: (v: boolean) => ocr = v, label: m.ai_cap_ocr() }
 					] as cap}
 						<label class="flex items-center gap-2 text-sm">
 							<input type="checkbox" checked={cap.bind()} onchange={(e) => cap.set((e.target as HTMLInputElement).checked)} class="rounded focus:ring-ring" />
@@ -226,7 +227,7 @@
 			<div class="flex gap-3 pt-4">
 				<button type="submit" disabled={saving}
 					class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring disabled:opacity-50">
-					{saving ? 'Saving...' : 'Save Settings'}
+					{saving ? m.btn_saving() : m.ai_save_settings()}
 				</button>
 			</div>
 		</form>
@@ -234,35 +235,35 @@
 	{:else if activeTab === 'prompts'}
 		<div class="max-w-2xl space-y-6">
 			<div>
-				<label for="prompt-summary" class="block text-sm font-medium">Summarization Prompt</label>
-				<p class="text-xs text-muted-foreground">Variables: {'{{document_text}}'}, {'{{title}}'}, {'{{category}}'}</p>
+				<label for="prompt-summary" class="block text-sm font-medium">{m.ai_prompt_summary()}</label>
+				<p class="text-xs text-muted-foreground">{m.ai_prompt_variables({ vars: '{{document_text}}, {{title}}, {{category}}' })}</p>
 				<textarea id="prompt-summary" rows="6"
 					class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm focus:outline-2 focus:outline-ring"
-					placeholder="You are a document summarization assistant. Summarize the following document concisely..."
+					placeholder={m.ai_prompt_summary_placeholder()}
 				></textarea>
 			</div>
 			<div>
-				<label for="prompt-keywords" class="block text-sm font-medium">Keyword Extraction Prompt</label>
+				<label for="prompt-keywords" class="block text-sm font-medium">{m.ai_prompt_keywords()}</label>
 				<textarea id="prompt-keywords" rows="6"
 					class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm focus:outline-2 focus:outline-ring"
-					placeholder="Extract key terms and phrases from the following document..."
+					placeholder={m.ai_prompt_keywords_placeholder()}
 				></textarea>
 			</div>
 			<div class="flex gap-3">
-				<button class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-ring">Reset to Defaults</button>
-				<button class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring">Save Prompts</button>
+				<button class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-ring">{m.ai_reset_defaults()}</button>
+				<button class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring">{m.ai_save_prompts()}</button>
 			</div>
 		</div>
 
 	{:else if activeTab === 'reprocess'}
 		<div class="max-w-lg space-y-4">
-			<p class="text-sm text-muted-foreground">Reprocess documents with current AI settings. Documents with human-reviewed metadata will be skipped unless overridden.</p>
+			<p class="text-sm text-muted-foreground">{m.ai_reprocess_desc()}</p>
 			<div>
-				<label for="reprocess-scope" class="block text-sm font-medium">Scope</label>
+				<label for="reprocess-scope" class="block text-sm font-medium">{m.ai_reprocess_scope()}</label>
 				<select id="reprocess-scope" bind:value={reprocessScope}
 					class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-2 focus:outline-ring">
-					<option value="all">All documents</option>
-					<option value="unprocessed">Unprocessed only</option>
+					<option value="all">{m.ai_reprocess_all()}</option>
+					<option value="unprocessed">{m.ai_reprocess_unprocessed()}</option>
 				</select>
 			</div>
 
@@ -274,16 +275,16 @@
 						aria-valuenow={reprocessProgress}
 						aria-valuemin={0}
 						aria-valuemax={100}
-						aria-label="Reprocessing progress"
+						aria-label={m.ai_reprocess_progress_label()}
 					>
 						<div class="h-full rounded-full bg-primary transition-all duration-300" style="width: {reprocessProgress}%"></div>
 					</div>
-					<p class="mt-1 text-sm text-muted-foreground" aria-live="polite">Processing... {reprocessProgress}%</p>
+					<p class="mt-1 text-sm text-muted-foreground" aria-live="polite">{m.ai_reprocess_progress({ pct: String(reprocessProgress) })}</p>
 				</div>
 			{:else}
 				<button onclick={startReprocess}
 					class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring">
-					Start Reprocessing
+					{m.ai_reprocess_start()}
 				</button>
 			{/if}
 		</div>
@@ -293,24 +294,24 @@
 			{#if stats}
 				<dl class="space-y-3 text-sm">
 					<div class="flex justify-between border-b border-border pb-2">
-						<dt class="text-muted-foreground">Total Processed</dt>
+						<dt class="text-muted-foreground">{m.ai_stats_total()}</dt>
 						<dd class="font-semibold">{stats.totalProcessed}</dd>
 					</div>
 					<div class="flex justify-between border-b border-border pb-2">
-						<dt class="text-muted-foreground">Pending</dt>
+						<dt class="text-muted-foreground">{m.ai_stats_pending()}</dt>
 						<dd class="font-semibold">{stats.totalPending}</dd>
 					</div>
 					<div class="flex justify-between border-b border-border pb-2">
-						<dt class="text-muted-foreground">Average Confidence</dt>
+						<dt class="text-muted-foreground">{m.ai_stats_confidence()}</dt>
 						<dd class="font-semibold">{Math.round(stats.averageConfidence * 100)}%</dd>
 					</div>
 					<div class="flex justify-between">
-						<dt class="text-muted-foreground">Last Processed</dt>
-						<dd class="font-semibold">{stats.lastProcessedAt ? new Date(stats.lastProcessedAt).toLocaleString() : 'Never'}</dd>
+						<dt class="text-muted-foreground">{m.ai_stats_last()}</dt>
+						<dd class="font-semibold">{stats.lastProcessedAt ? new Date(stats.lastProcessedAt).toLocaleString() : m.ai_stats_never()}</dd>
 					</div>
 				</dl>
 			{:else}
-				<p class="text-muted-foreground">No AI processing statistics available yet.</p>
+				<p class="text-muted-foreground">{m.ai_stats_empty()}</p>
 			{/if}
 		</div>
 	{/if}

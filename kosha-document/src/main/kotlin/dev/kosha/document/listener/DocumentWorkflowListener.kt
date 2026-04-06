@@ -3,7 +3,9 @@ package dev.kosha.document.listener
 import dev.kosha.common.event.DocumentStatusChanged
 import dev.kosha.common.event.WorkflowCompleted
 import dev.kosha.common.event.WorkflowRejected
+import dev.kosha.common.event.WorkflowSignOffApproved
 import dev.kosha.document.repository.DocumentRepository
+import dev.kosha.document.service.SignatureService
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.event.EventListener
@@ -40,6 +42,7 @@ import java.time.OffsetDateTime
 class DocumentWorkflowListener(
     private val documentRepo: DocumentRepository,
     private val events: ApplicationEventPublisher,
+    private val signatureService: SignatureService,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -115,5 +118,31 @@ class DocumentWorkflowListener(
             "Returned document {} to DRAFT after workflow {} rejected: {}",
             doc.id, event.aggregateId, event.reason,
         )
+    }
+
+    /**
+     * Auto-create a signature when a SIGN_OFF workflow step is approved.
+     * Runs synchronously in the approver's transaction so a signature
+     * creation failure rolls back the approval — we don't want an
+     * approved-but-unsigned step in the audit trail.
+     */
+    @EventListener
+    @Transactional
+    fun onSignOffApproved(event: WorkflowSignOffApproved) {
+        try {
+            signatureService.signFromWorkflow(
+                documentId = event.documentId,
+                versionId = event.versionId,
+                signerId = event.signerId,
+            )
+            log.info(
+                "Auto-signed document {} version {} by user {} (workflow step {})",
+                event.documentId, event.versionId, event.signerId, event.aggregateId,
+            )
+        } catch (ex: IllegalStateException) {
+            // "Already signed" is acceptable — the user may have manually
+            // signed before the workflow step completed. Log and continue.
+            log.info("Sign-off auto-sign skipped: {}", ex.message)
+        }
     }
 }

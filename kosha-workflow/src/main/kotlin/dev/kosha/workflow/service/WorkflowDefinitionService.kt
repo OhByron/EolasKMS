@@ -193,6 +193,7 @@ class WorkflowDefinitionService(
                 assignee = assignee,
                 escalation = escalation,
                 timeLimitDays = stepRequest.timeLimitDays,
+                conditionJson = stepRequest.conditionJson?.takeIf { it.isNotBlank() },
             )
             stepRepo.save(step)
         }
@@ -262,5 +263,6 @@ class WorkflowDefinitionService(
         escalationName = escalation?.displayName,
         escalationStatus = escalation?.status,
         timeLimitDays = timeLimitDays,
+        conditionJson = conditionJson,
     )
 }

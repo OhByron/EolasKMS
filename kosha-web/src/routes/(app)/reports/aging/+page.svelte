@@ -5,6 +5,7 @@
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 	import StatusBadge from '$lib/components/kosha/StatusBadge.svelte';
 	import ErrorBoundary from '$lib/components/kosha/ErrorBoundary.svelte';
+	import * as m from '$paraglide/messages';
 
 	let rows = $state<AgingReportRow[]>([]);
 	let summary = $state<AgingReportSummary | null>(null);
@@ -61,16 +62,16 @@
 </script>
 
 <svelte:head>
-	<title>Document Aging Report - Eòlas</title>
+	<title>{m.page_title_aging_report()} - {m.nav_app_title()}</title>
 </svelte:head>
 
-<PageHeader title="Document Aging" description="Age distribution and retention status across the document library" />
+<PageHeader title={m.aging_title()} description={m.aging_desc()} />
 
 <!-- Summary cards -->
 {#if summary}
-	<div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" role="region" aria-label="Aging summary">
+	<div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" role="region" aria-label={m.aging_summary_label()}>
 		<div class="rounded-lg border border-border bg-card p-4">
-			<p class="text-sm text-muted-foreground">Total documents</p>
+			<p class="text-sm text-muted-foreground">{m.aging_total_docs()}</p>
 			<p class="mt-1 text-2xl font-bold">{summary.totalDocuments.toLocaleString()}</p>
 		</div>
 		{#each summary.byAgeBand as band}
@@ -85,16 +86,16 @@
 	{#if summary.byDepartment.length > 0}
 		<details class="mt-4">
 			<summary class="cursor-pointer text-sm font-medium text-primary hover:underline focus:outline-2 focus:outline-ring">
-				Department breakdown
+				{m.aging_dept_breakdown()}
 			</summary>
 			<div class="mt-2 overflow-x-auto rounded-lg border border-border">
 				<table class="w-full text-sm">
 					<thead>
 						<tr class="border-b border-border bg-muted/50">
-							<th class="px-4 py-2 text-left font-medium">Department</th>
-							<th class="px-4 py-2 text-right font-medium">Documents</th>
-							<th class="px-4 py-2 text-right font-medium">Avg age (days)</th>
-							<th class="px-4 py-2 text-right font-medium">Oldest (days)</th>
+							<th class="px-4 py-2 text-left font-medium">{m.aging_col_department()}</th>
+							<th class="px-4 py-2 text-right font-medium">{m.aging_col_documents()}</th>
+							<th class="px-4 py-2 text-right font-medium">{m.aging_col_avg_age()}</th>
+							<th class="px-4 py-2 text-right font-medium">{m.aging_col_oldest()}</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -116,20 +117,20 @@
 <!-- Filters -->
 <div class="mt-6 flex flex-wrap items-end gap-3">
 	<div>
-		<label for="dept-filter" class="block text-xs font-medium text-muted-foreground">Department</label>
+		<label for="dept-filter" class="block text-xs font-medium text-muted-foreground">{m.aging_filter_dept()}</label>
 		<select id="dept-filter" bind:value={filterDept} onchange={applyFilters}
 			class="mt-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-2 focus:outline-ring">
-			<option value="">All departments</option>
+			<option value="">{m.aging_all_depts()}</option>
 			{#each departments as d}
 				<option value={d.id}>{d.name}</option>
 			{/each}
 		</select>
 	</div>
 	<div>
-		<label for="status-filter" class="block text-xs font-medium text-muted-foreground">Status</label>
+		<label for="status-filter" class="block text-xs font-medium text-muted-foreground">{m.aging_filter_status()}</label>
 		<select id="status-filter" bind:value={filterStatus} onchange={applyFilters}
 			class="mt-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-2 focus:outline-ring">
-			<option value="">All statuses</option>
+			<option value="">{m.aging_all_statuses()}</option>
 			{#each ['DRAFT', 'IN_REVIEW', 'PUBLISHED', 'ARCHIVED', 'SUPERSEDED', 'LEGAL_HOLD', 'REJECTED'] as s}
 				<option value={s}>{s}</option>
 			{/each}
@@ -140,23 +141,23 @@
 
 <!-- Data table -->
 {#if loading}
-	<p aria-live="polite" class="mt-6 text-muted-foreground">Loading aging report...</p>
+	<p aria-live="polite" class="mt-6 text-muted-foreground">{m.aging_loading()}</p>
 {:else if error}
 	<div class="mt-6"><ErrorBoundary {error} onRetry={loadReport} /></div>
 {:else if rows.length === 0}
-	<p class="mt-6 text-muted-foreground">No documents match the current filters.</p>
+	<p class="mt-6 text-muted-foreground">{m.aging_no_results()}</p>
 {:else}
 	<div class="mt-4 overflow-x-auto rounded-lg border border-border">
 		<table class="w-full text-sm">
 			<thead>
 				<tr class="border-b border-border bg-muted/50">
-					<th class="px-4 py-2 text-left font-medium">Document</th>
-					<th class="px-4 py-2 text-left font-medium">Department</th>
-					<th class="px-4 py-2 text-left font-medium">Status</th>
-					<th class="px-4 py-2 text-left font-medium">Policy</th>
-					<th class="px-4 py-2 text-right font-medium">Age (days)</th>
-					<th class="px-4 py-2 text-left font-medium">Age band</th>
-					<th class="px-4 py-2 text-left font-medium">Overdue</th>
+					<th class="px-4 py-2 text-left font-medium">{m.aging_col_doc()}</th>
+					<th class="px-4 py-2 text-left font-medium">{m.aging_col_department()}</th>
+					<th class="px-4 py-2 text-left font-medium">{m.aging_col_status()}</th>
+					<th class="px-4 py-2 text-left font-medium">{m.aging_col_policy()}</th>
+					<th class="px-4 py-2 text-right font-medium">{m.aging_col_age()}</th>
+					<th class="px-4 py-2 text-left font-medium">{m.aging_col_age_band()}</th>
+					<th class="px-4 py-2 text-left font-medium">{m.aging_col_overdue()}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -179,7 +180,7 @@
 						</td>
 						<td class="px-4 py-2 text-center">
 							{#if row.hasOverdueReview}
-								<span class="text-destructive" aria-label="Has overdue review" title="Has overdue review">●</span>
+								<span class="text-destructive" aria-label={m.aging_overdue_label()} title={m.aging_overdue_label()}>●</span>
 							{/if}
 						</td>
 					</tr>
@@ -189,13 +190,13 @@
 	</div>
 
 	{#if total > pageSize}
-		<nav aria-label="Aging report pagination" class="mt-4 flex items-center justify-between text-sm">
+		<nav aria-label={m.aging_pagination_label()} class="mt-4 flex items-center justify-between text-sm">
 			<p class="text-muted-foreground">Page {currentPage + 1} of {Math.ceil(total / pageSize)}</p>
 			<div class="flex gap-2">
 				<button onclick={() => { currentPage--; loadReport(); }} disabled={currentPage === 0}
-					class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+					class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed">{m.btn_previous()}</button>
 				<button onclick={() => { currentPage++; loadReport(); }} disabled={(currentPage + 1) * pageSize >= total}
-					class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+					class="rounded-md border border-border px-3 py-1 hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed">{m.btn_next()}</button>
 			</div>
 		</nav>
 	{/if}

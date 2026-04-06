@@ -4,6 +4,7 @@
 	import type { DocumentCategory } from '$lib/types/api';
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 	import ErrorBoundary from '$lib/components/kosha/ErrorBoundary.svelte';
+	import * as m from '$paraglide/messages';
 
 	/**
 	 * Document Categories admin page.
@@ -71,7 +72,7 @@
 		const name = (nameDrafts[cat.id] ?? '').trim();
 		const description = descriptionDrafts[cat.id] ?? '';
 		if (!name) {
-			rowMessages = { ...rowMessages, [cat.id]: 'Name is required' };
+			rowMessages = { ...rowMessages, [cat.id]: m.categories_name_required() };
 			return;
 		}
 		await patchCategory(cat.id, { name, description: description || null });
@@ -94,10 +95,10 @@
 			categories = categories.map((c) => (c.id === id ? updated : c));
 			nameDrafts = { ...nameDrafts, [id]: updated.name };
 			descriptionDrafts = { ...descriptionDrafts, [id]: updated.description ?? '' };
-			rowMessages = { ...rowMessages, [id]: 'Saved' };
+			rowMessages = { ...rowMessages, [id]: m.categories_saved() };
 			// Clear the success message after a moment
 			setTimeout(() => {
-				if (rowMessages[id] === 'Saved') {
+				if (rowMessages[id] === m.categories_saved()) {
 					const next = { ...rowMessages };
 					delete next[id];
 					rowMessages = next;
@@ -114,24 +115,22 @@
 </script>
 
 <svelte:head>
-	<title>Document Categories - Administration - Eòlas</title>
+	<title>{m.page_title_categories()} - {m.admin_title()} - {m.nav_app_title()}</title>
 </svelte:head>
 
 <PageHeader
-	title="Document Categories"
-	description="Edit category metadata and flag which categories should suggest legal review on upload."
+	title={m.categories_title()}
+	description={m.categories_desc()}
 />
 
 {#if loading}
-	<p aria-live="polite" class="mt-6 text-muted-foreground">Loading categories...</p>
+	<p aria-live="polite" class="mt-6 text-muted-foreground">{m.categories_loading()}</p>
 {:else if error}
 	<div class="mt-6"><ErrorBoundary {error} onRetry={load} /></div>
 {:else}
 	<div class="mt-6 space-y-3">
 		<p class="text-xs text-muted-foreground">
-			When a category is flagged as <em>suggests legal review</em>, the document upload form pre-ticks
-			the "requires legal review" checkbox whenever a submitter picks that category. Submitters can
-			always override the suggestion.
+			{@html m.categories_legal_review_hint()}
 		</p>
 
 		{#each categories as cat (cat.id)}
@@ -142,7 +141,7 @@
 					<div class="flex-1 space-y-3">
 						<div>
 							<label for="name-{cat.id}" class="block text-xs font-medium text-muted-foreground">
-								Name
+								{m.label_name()}
 							</label>
 							<input
 								id="name-{cat.id}"
@@ -155,7 +154,7 @@
 						</div>
 						<div>
 							<label for="desc-{cat.id}" class="block text-xs font-medium text-muted-foreground">
-								Description
+								{m.label_description()}
 							</label>
 							<textarea
 								id="desc-{cat.id}"
@@ -175,10 +174,9 @@
 								class="mt-0.5 focus:ring-ring"
 							/>
 							<span>
-								Suggests legal review
+								{m.categories_suggests_legal_review()}
 								<span class="block text-xs text-muted-foreground">
-									Pre-ticks the "requires legal review" checkbox on the upload form
-									when this category is selected.
+									{m.categories_suggests_legal_review_hint()}
 								</span>
 							</span>
 						</label>
@@ -186,7 +184,7 @@
 
 					<div class="flex shrink-0 flex-col items-end gap-2">
 						<span class="text-xs text-muted-foreground">
-							Status: <span class="font-medium">{cat.status}</span>
+							{m.label_status()}: <span class="font-medium">{cat.status}</span>
 						</span>
 						<button
 							type="button"
@@ -194,13 +192,13 @@
 							disabled={busy || !anyTextDirty(cat)}
 							class="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed"
 						>
-							{busy ? 'Saving...' : 'Save text edits'}
+							{busy ? m.btn_saving() : m.categories_save_text_edits()}
 						</button>
 						{#if message}
 							<span
 								class="text-xs"
-								class:text-success={message === 'Saved'}
-								class:text-destructive={message !== 'Saved'}
+								class:text-success={message === m.categories_saved()}
+								class:text-destructive={message !== m.categories_saved()}
 								aria-live="polite"
 							>
 								{message}

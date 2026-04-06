@@ -8,6 +8,7 @@
 	} from '$lib/types/api';
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 	import ErrorBoundary from '$lib/components/kosha/ErrorBoundary.svelte';
+	import * as m from '$paraglide/messages';
 
 	// ── Retention cadence (existing) ─────────────────────────────
 	let settings = $state<NotificationSettings | null>(null);
@@ -148,18 +149,18 @@
 	}
 
 	function formatDate(iso: string | null): string {
-		if (!iso) return 'never';
+		if (!iso) return m.time_never();
 		return new Date(iso).toLocaleString('en-US');
 	}
 </script>
 
 <svelte:head>
-	<title>Notification Settings - Administration - Eòlas</title>
+	<title>{m.settings_page_title()} - {m.nav_sidebar_administration()} - {m.nav_app_title()}</title>
 </svelte:head>
 
 <PageHeader
-	title="Notification Settings"
-	description="Global defaults for retention notification cadence and legal review time limits."
+	title={m.settings_page_title()}
+	description={m.settings_page_desc()}
 />
 
 {#if loading}
@@ -177,16 +178,14 @@
 			class="rounded-lg border border-border bg-card p-6 space-y-5"
 		>
 			<div>
-				<h2 class="text-sm font-semibold">Retention scan cadence</h2>
+				<h2 class="text-sm font-semibold">{m.settings_retention_heading()}</h2>
 				<p class="mt-1 text-xs text-muted-foreground">
-					How often the system checks each department for approaching or overdue retention
-					reviews, and dispatches notifications to document owners. This is the default —
-					department administrators can override it on their own department's settings page.
+					{m.settings_retention_desc()}
 				</p>
 			</div>
 
 			<fieldset>
-				<legend class="text-sm font-medium">Default scan interval</legend>
+				<legend class="text-sm font-medium">{m.settings_retention_interval()}</legend>
 				<div class="mt-2 space-y-2">
 					{#each settings.validIntervals as opt}
 						<label class="flex items-center gap-3 text-sm">
@@ -206,8 +205,7 @@
 					{/each}
 				</div>
 				<p class="mt-3 text-xs text-muted-foreground">
-					Minimum cadence is {settings.minScanIntervalHours}h — the scanner cannot be disabled
-					to preserve retention compliance posture.
+					{m.settings_retention_min_hint({ hours: settings.minScanIntervalHours.toString() })}
 				</p>
 			</fieldset>
 
@@ -223,14 +221,14 @@
 						onclick={load}
 						class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 					>
-						Discard
+						{m.btn_discard()}
 					</button>
 					<button
 						type="submit"
 						disabled={saving || selectedInterval === settings.defaultScanIntervalHours}
 						class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 					>
-						{saving ? 'Saving...' : 'Save Settings'}
+						{saving ? m.btn_saving() : m.btn_save()}
 					</button>
 				</div>
 			</div>
@@ -245,11 +243,9 @@
 			class="rounded-lg border border-border bg-card p-6 space-y-5"
 		>
 			<div>
-				<h2 class="text-sm font-semibold">Legal review time limit</h2>
+				<h2 class="text-sm font-semibold">{m.settings_legal_heading()}</h2>
 				<p class="mt-1 text-xs text-muted-foreground">
-					When a document requires legal review, the chosen reviewer has this many
-					days to approve or reject after the document is submitted. If they do not
-					respond within the window, the request escalates to their department admin.
+					{m.settings_legal_desc()}
 				</p>
 			</div>
 
@@ -265,7 +261,7 @@
 			{:else if legalSettings}
 				<div>
 					<label for="legal-time-limit" class="block text-sm font-medium">
-						Default time limit (days)
+						{m.settings_legal_field()}
 					</label>
 					<input
 						id="legal-time-limit"
@@ -277,7 +273,7 @@
 						class="mt-1 w-32 rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 					/>
 					<p class="mt-1 text-xs text-muted-foreground">
-						Between 1 and 90 days. Applies to every legal review request regardless of department.
+						{m.settings_legal_range()}
 					</p>
 				</div>
 
@@ -299,14 +295,14 @@
 							onclick={loadLegal}
 							class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 						>
-							Discard
+							{m.btn_discard()}
 						</button>
 						<button
 							type="submit"
 							disabled={legalSaving || legalTimeLimitDays === legalSettings.defaultTimeLimitDays}
 							class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 						>
-							{legalSaving ? 'Saving...' : 'Save Legal Settings'}
+							{legalSaving ? m.btn_saving() : m.btn_save()}
 						</button>
 					</div>
 				</div>
@@ -322,11 +318,9 @@
 			class="rounded-lg border border-border bg-card p-6 space-y-5"
 		>
 			<div>
-				<h2 class="text-sm font-semibold">Workflow escalation cadence</h2>
+				<h2 class="text-sm font-semibold">{m.settings_escalation_heading()}</h2>
 				<p class="mt-1 text-xs text-muted-foreground">
-					How often the workflow engine scans for overdue approval steps and reassigns them
-					to their configured escalation contact. Changes take effect within one minute —
-					no restart required. This setting is global and not overridable per department.
+					{m.settings_escalation_desc()}
 				</p>
 			</div>
 
@@ -345,7 +339,7 @@
 				</div>
 			{:else if escalationSettings}
 				<fieldset>
-					<legend class="text-sm font-medium">Scan interval</legend>
+					<legend class="text-sm font-medium">{m.settings_escalation_interval()}</legend>
 					<div class="mt-2 space-y-2">
 						{#each escalationSettings.validIntervals as opt}
 							<label class="flex items-center gap-3 text-sm">
@@ -365,8 +359,7 @@
 						{/each}
 					</div>
 					<p class="mt-3 text-xs text-muted-foreground">
-						Shorter intervals surface missed deadlines faster but cost a database query per
-						minute. The 15-minute default is appropriate for most deployments.
+						{m.settings_escalation_hint()}
 					</p>
 				</fieldset>
 
@@ -390,7 +383,7 @@
 							onclick={loadEscalation}
 							class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 						>
-							Discard
+							{m.btn_discard()}
 						</button>
 						<button
 							type="submit"
@@ -398,7 +391,7 @@
 								escalationInterval === escalationSettings.scanIntervalMinutes}
 							class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 						>
-							{escalationSaving ? 'Saving...' : 'Save Escalation Cadence'}
+							{escalationSaving ? m.btn_saving() : m.btn_save()}
 						</button>
 					</div>
 				</div>
