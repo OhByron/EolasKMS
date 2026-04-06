@@ -49,7 +49,8 @@
 							{ label: m.nav_sidebar_categories(), href: '/admin/categories', icon: '🏷' },
 							{ label: m.nav_sidebar_bulk_import(), href: '/admin/import', icon: '📥' },
 							{ label: m.nav_sidebar_mail_gateway(), href: '/admin/mail-gateway', icon: '✉' },
-							{ label: m.nav_sidebar_notifications(), href: '/admin/notification-settings', icon: '🔔' }
+							{ label: m.nav_sidebar_notifications(), href: '/admin/notification-settings', icon: '🔔' },
+							{ label: 'Licence', href: '/admin/licence', icon: '🔑' }
 						]
 					: [])
 			]
