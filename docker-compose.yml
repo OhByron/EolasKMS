@@ -25,7 +25,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/kosha
       SPRING_DATASOURCE_USERNAME: kosha
       SPRING_DATASOURCE_PASSWORD: kosha
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/kosha
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:8180/realms/kosha
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/kosha/protocol/openid-connect/certs
       KOSHA_NATS_URL: nats://nats:4222
       KOSHA_OPENSEARCH_URL: http://opensearch:9200
       KOSHA_STORAGE_MINIO_ENDPOINT: http://minio:9000
