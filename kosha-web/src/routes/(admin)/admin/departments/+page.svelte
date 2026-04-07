@@ -95,7 +95,7 @@
 								{dept.name}
 							</a>
 						</td>
-						<td class="px-4 py-3 text-muted-foreground">{dept.description ?? '—'}</td>
+						<td class="px-4 py-3 text-muted-foreground">{dept.description ?? '-'}</td>
 						<td class="px-4 py-3"><StatusBadge status={dept.status} /></td>
 						<td class="px-4 py-3 text-muted-foreground">{new Date(dept.createdAt).toLocaleDateString()}</td>
 					</tr>

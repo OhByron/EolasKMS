@@ -187,14 +187,55 @@
 			</p>
 			<p class="mt-2">
 				Enable <strong>auto-provision</strong> below to allow the importer to create missing
-				owners on the fly with temporary passwords — matches the <code class="text-xs"
+				owners on the fly with temporary passwords, matching the <code class="text-xs"
 					>--auto-provision</code> CLI flag.
 			</p>
 		{:else}
 			<p>
-				User CSVs provision Eòlas accounts + Keycloak accounts in one atomic step. Run the user
+				User CSVs provision Eòlas accounts and Keycloak accounts in one atomic step. Run the user
 				import <em>before</em> the document import if your documents reference users that don't
 				exist yet (alternatively, use auto-provision on the document import).
+			</p>
+			<div class="mt-4 overflow-x-auto">
+				<table class="w-full text-xs">
+					<thead>
+						<tr class="border-b border-border text-left">
+							<th class="pb-1.5 pr-3 font-medium">Column</th>
+							<th class="pb-1.5 pr-3 font-medium">Required</th>
+							<th class="pb-1.5 font-medium">Notes</th>
+						</tr>
+					</thead>
+					<tbody class="text-muted-foreground">
+						<tr class="border-b border-border/50">
+							<td class="py-1.5 pr-3"><code>email</code></td>
+							<td class="py-1.5 pr-3">Yes</td>
+							<td class="py-1.5">Must be unique across both Eòlas and Keycloak</td>
+						</tr>
+						<tr class="border-b border-border/50">
+							<td class="py-1.5 pr-3"><code>display_name</code></td>
+							<td class="py-1.5 pr-3">Yes</td>
+							<td class="py-1.5">Full name as it appears in the UI</td>
+						</tr>
+						<tr class="border-b border-border/50">
+							<td class="py-1.5 pr-3"><code>department_name</code></td>
+							<td class="py-1.5 pr-3">Yes</td>
+							<td class="py-1.5">Exact match, case-insensitive; department must exist</td>
+						</tr>
+						<tr class="border-b border-border/50">
+							<td class="py-1.5 pr-3"><code>role</code></td>
+							<td class="py-1.5 pr-3">Yes</td>
+							<td class="py-1.5">GLOBAL_ADMIN, DEPT_ADMIN, EDITOR, or CONTRIBUTOR</td>
+						</tr>
+						<tr>
+							<td class="py-1.5 pr-3"><code>temporary_password</code></td>
+							<td class="py-1.5 pr-3">No</td>
+							<td class="py-1.5">Blank generates a secure random password automatically</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="mt-3 text-xs text-muted-foreground">
+				Click <strong>Load template</strong> above for a ready-to-edit example CSV.
 			</p>
 		{/if}
 	</aside>
@@ -334,7 +375,7 @@
 											({row.autoProvisionOwner.displayName}) as CONTRIBUTOR
 										</span>
 									{:else}
-										<span class="text-muted-foreground">—</span>
+										<span class="text-muted-foreground">-</span>
 									{/if}
 								</td>
 							</tr>
@@ -416,7 +457,7 @@
 											{/each}
 										</ul>
 									{:else}
-										<span class="text-muted-foreground">—</span>
+										<span class="text-muted-foreground">-</span>
 									{/if}
 								</td>
 							</tr>

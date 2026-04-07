@@ -87,7 +87,7 @@
 	}
 
 	function formatSize(bytes: number | null): string {
-		if (!bytes) return '—';
+		if (!bytes) return '-';
 		if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
 		return `${(bytes / 1048576).toFixed(1)} MB`;
 	}
@@ -258,7 +258,7 @@
 							<li class="flex items-center justify-between text-sm">
 								<span>
 									<span class="font-medium">v{ver.versionNumber}</span>
-									<span class="text-muted-foreground"> — {ver.fileName}</span>
+									<span class="text-muted-foreground"> - {ver.fileName}</span>
 								</span>
 								<span class="text-xs text-muted-foreground">{formatDate(ver.createdAt)}</span>
 							</li>

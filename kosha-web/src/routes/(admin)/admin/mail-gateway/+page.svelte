@@ -449,7 +449,7 @@
 							{:else if config.lastTestSuccess === false}
 								<span class="text-destructive">{m.mail_test_failure()}</span>
 							{:else}
-								—
+								-
 							{/if}
 						</dd>
 					</div>

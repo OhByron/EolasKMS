@@ -171,7 +171,7 @@
 						</td>
 						<td class="px-4 py-2">{row.departmentName}</td>
 						<td class="px-4 py-2"><StatusBadge status={row.status} /></td>
-						<td class="px-4 py-2 text-xs">{row.retentionPolicyName ?? '—'}</td>
+						<td class="px-4 py-2 text-xs">{row.retentionPolicyName ?? '-'}</td>
 						<td class="px-4 py-2 text-right font-mono">{row.ageDays.toLocaleString()}</td>
 						<td class="px-4 py-2">
 							<span class="rounded-md px-2 py-0.5 text-xs font-medium {ageBandColor(row.ageBand)}">

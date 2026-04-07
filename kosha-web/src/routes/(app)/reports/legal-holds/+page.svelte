@@ -122,8 +122,8 @@
 							<p class="truncate text-xs text-muted-foreground" style="max-width: 18rem">{row.title}</p>
 						</td>
 						<td class="px-4 py-2">{row.departmentName}</td>
-						<td class="px-4 py-2 text-xs">{row.categoryName ?? '—'}</td>
-						<td class="px-4 py-2 text-xs">{row.createdByName ?? '—'}</td>
+						<td class="px-4 py-2 text-xs">{row.categoryName ?? '-'}</td>
+						<td class="px-4 py-2 text-xs">{row.createdByName ?? '-'}</td>
 						<td class="px-4 py-2 text-xs">{formatDate(row.createdAt)}</td>
 						<td class="px-4 py-2 text-right font-mono font-bold">{row.holdSinceDays.toLocaleString()}</td>
 						<td class="px-4 py-2 text-xs">
@@ -131,10 +131,10 @@
 								{row.retentionPolicyName}
 								<span class="text-muted-foreground">({row.originalRetentionPeriod})</span>
 							{:else}
-								<span class="text-muted-foreground">—</span>
+								<span class="text-muted-foreground">-</span>
 							{/if}
 						</td>
-						<td class="px-4 py-2 text-xs font-mono">{row.latestVersionNumber ?? '—'}</td>
+						<td class="px-4 py-2 text-xs font-mono">{row.latestVersionNumber ?? '-'}</td>
 					</tr>
 				{/each}
 			</tbody>

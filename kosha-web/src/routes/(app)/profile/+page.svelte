@@ -60,13 +60,13 @@
 				<dl class="mt-6 grid gap-4 sm:grid-cols-2">
 					<div>
 						<dt class="text-xs font-medium text-muted-foreground">{m.label_department()}</dt>
-						<dd class="mt-1 text-sm font-medium">{profile?.departmentName ?? '—'}</dd>
+						<dd class="mt-1 text-sm font-medium">{profile?.departmentName ?? '-'}</dd>
 					</div>
 					<div>
 						<dt class="text-xs font-medium text-muted-foreground">{m.label_role()}</dt>
 						<dd class="mt-1">
 							<span class="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-								{profile?.role ?? $user?.roles?.[0] ?? '—'}
+								{profile?.role ?? $user?.roles?.[0] ?? '-'}
 							</span>
 						</dd>
 					</div>
@@ -76,13 +76,13 @@
 							{#if profile?.status}
 								<StatusBadge status={profile.status} />
 							{:else}
-								<span class="text-sm">—</span>
+								<span class="text-sm">-</span>
 							{/if}
 						</dd>
 					</div>
 					<div>
 						<dt class="text-xs font-medium text-muted-foreground">{m.label_joined()}</dt>
-						<dd class="mt-1 text-sm">{profile?.createdAt ? formatDate(profile.createdAt) : '—'}</dd>
+						<dd class="mt-1 text-sm">{profile?.createdAt ? formatDate(profile.createdAt) : '-'}</dd>
 					</div>
 				</dl>
 			</section>
@@ -116,11 +116,11 @@
 					</div>
 					<div>
 						<dt class="text-muted-foreground">{m.label_department()}</dt>
-						<dd class="font-medium">{profile?.departmentName ?? '—'}</dd>
+						<dd class="font-medium">{profile?.departmentName ?? '-'}</dd>
 					</div>
 					<div>
 						<dt class="text-muted-foreground">{m.label_last_update()}</dt>
-						<dd class="font-medium">{profile?.updatedAt ? formatDate(profile.updatedAt) : '—'}</dd>
+						<dd class="font-medium">{profile?.updatedAt ? formatDate(profile.updatedAt) : '-'}</dd>
 					</div>
 				</dl>
 			</section>

@@ -159,7 +159,7 @@
 								<StatusBadge status="LOCKED" />
 							{/if}
 						</td>
-						<td class="px-4 py-3 text-muted-foreground">{doc.currentVersion ?? '—'}</td>
+						<td class="px-4 py-3 text-muted-foreground">{doc.currentVersion ?? '-'}</td>
 						<td class="px-4 py-3 text-muted-foreground">
 							{new Date(doc.createdAt).toLocaleDateString()}
 						</td>
@@ -172,7 +172,7 @@
 	<!-- Pagination -->
 	<nav aria-label="Document list pagination" class="mt-4 flex items-center justify-between text-sm">
 		<p class="text-muted-foreground">
-			Showing {currentPage * pageSize + 1}–{Math.min((currentPage + 1) * pageSize, total)} of {total}
+			Showing {currentPage * pageSize + 1}-{Math.min((currentPage + 1) * pageSize, total)} of {total}
 		</p>
 		<div class="flex gap-2">
 			<button

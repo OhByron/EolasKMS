@@ -473,7 +473,7 @@
 								<option value="">Select a legal reviewer</option>
 								{#each legalReviewers as reviewer}
 									<option value={reviewer.id}>
-										{reviewer.displayName} — {reviewer.departmentName}
+										{reviewer.displayName}, {reviewer.departmentName}
 									</option>
 								{/each}
 							</select>
