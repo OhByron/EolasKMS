@@ -12,7 +12,7 @@
 	let applying = $state(false);
 	let error = $state('');
 
-	const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8080';
+	const API_BASE = '';
 
 	onMount(async () => {
 		await initAuth();
