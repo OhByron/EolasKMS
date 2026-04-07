@@ -4,12 +4,72 @@
 	import { user, initAuth, login } from '$lib/auth';
 	import * as m from '$paraglide/messages';
 
+	let loading = $state(true);
+	let hasKey = $state(false);
+	let licenceTier = $state('');
+	let licenceOrg = $state('');
+	let keyInput = $state('');
+	let applying = $state(false);
+	let error = $state('');
+
+	const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8080';
+
 	onMount(async () => {
 		await initAuth();
 		if ($user) {
 			goto('/dashboard');
+			return;
 		}
+
+		// Check if a licence key has been applied
+		try {
+			const res = await fetch(`${API_BASE}/api/v1/public/licence`);
+			if (res.ok) {
+				const body = await res.json();
+				hasKey = body.data?.hasKey ?? false;
+				licenceTier = body.data?.tier ?? '';
+				licenceOrg = body.data?.organisation ?? '';
+			}
+		} catch (e) {
+			// Backend not reachable — show licence entry as fallback
+			console.error('Failed to check licence status:', e);
+		}
+
+		loading = false;
 	});
+
+	async function applyKey() {
+		const trimmed = keyInput.trim();
+		if (!trimmed) {
+			error = 'Please paste your licence key.';
+			return;
+		}
+		applying = true;
+		error = '';
+
+		try {
+			const res = await fetch(`${API_BASE}/api/v1/public/licence`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ key: trimmed }),
+			});
+
+			const body = await res.json();
+
+			if (!res.ok) {
+				error = body.message ?? body.error ?? 'Invalid licence key. Please check and try again.';
+				return;
+			}
+
+			hasKey = true;
+			licenceTier = body.data?.tier ?? '';
+			licenceOrg = body.data?.organisation ?? '';
+		} catch (e) {
+			error = 'Could not reach the server. Please try again.';
+		} finally {
+			applying = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -21,15 +81,71 @@
 		<img src="/favicon.png" alt={m.nav_app_title()} class="mx-auto h-32 w-32">
 		<h1 class="mt-6 text-5xl font-bold text-primary">{m.nav_app_title()}</h1>
 		<p class="mt-2 text-lg text-muted-foreground italic">{m.landing_tagline()}</p>
-		<p class="mt-4 text-sm text-muted-foreground">{m.landing_subtitle()}</p>
 
-		{#if !$user}
-			<button
-				onclick={login}
-				class="mt-8 rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground transition hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring"
-			>
-				{m.btn_sign_in()}
-			</button>
+		{#if loading}
+			<p class="mt-8 text-sm text-muted-foreground">Loading...</p>
+		{:else if !hasKey}
+			<!-- Licence entry gate -->
+			<div class="mt-8 rounded-lg border border-border bg-card p-6 text-left shadow-sm">
+				<h2 class="text-lg font-semibold text-foreground">Enter your licence key</h2>
+				<p class="mt-1 text-sm text-muted-foreground">
+					Paste your licence key below to activate this instance.
+				</p>
+
+				<textarea
+					bind:value={keyInput}
+					rows="4"
+					class="mt-4 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:outline-2 focus:outline-ring"
+					placeholder="Paste your licence key here..."
+					onfocus={(e) => e.currentTarget.select()}
+				></textarea>
+
+				{#if error}
+					<p class="mt-2 text-sm text-destructive">{error}</p>
+				{/if}
+
+				<button
+					onclick={applyKey}
+					disabled={applying}
+					class="mt-4 w-full rounded-lg bg-primary px-4 py-2.5 font-semibold text-primary-foreground transition hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
+				>
+					{applying ? 'Applying...' : 'Activate licence'}
+				</button>
+
+				<div class="mt-4 border-t border-border pt-4 text-center">
+					<p class="text-sm text-muted-foreground">
+						Don't have a key?
+						<a href="https://www.eolaskms.com/request-key" target="_blank" rel="noopener"
+							class="font-medium text-primary underline hover:opacity-80">
+							Request one here
+						</a>
+					</p>
+					<p class="mt-1 text-xs text-muted-foreground">
+						Community keys are free and generated instantly.
+					</p>
+				</div>
+			</div>
+		{:else}
+			<!-- Licence applied — show login -->
+			<p class="mt-4 text-sm text-muted-foreground">{m.landing_subtitle()}</p>
+
+			{#if licenceOrg}
+				<p class="mt-2 text-xs text-muted-foreground">
+					Licensed to <span class="font-medium text-foreground">{licenceOrg}</span>
+					{#if licenceTier && licenceTier !== 'community'}
+						<span class="ml-1 rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">{licenceTier}</span>
+					{/if}
+				</p>
+			{/if}
+
+			{#if !$user}
+				<button
+					onclick={login}
+					class="mt-8 rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground transition hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring"
+				>
+					{m.btn_sign_in()}
+				</button>
+			{/if}
 		{/if}
 	</div>
 </div>

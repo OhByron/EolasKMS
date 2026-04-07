@@ -97,6 +97,8 @@ class SecurityConfig {
                     .requestMatchers("/actuator/prometheus").permitAll()
                     // Public share link resolution — no auth, the token IS the credential.
                     .requestMatchers(HttpMethod.POST, "/api/v1/share/*").permitAll()
+                    // Public licence check and apply — shown before login.
+                    .requestMatchers("/api/v1/public/licence").permitAll()
                     .requestMatchers("/api/v1/**").authenticated()
                     .anyRequest().denyAll()
             }
