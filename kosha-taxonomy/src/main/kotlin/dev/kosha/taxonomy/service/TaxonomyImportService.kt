@@ -4,8 +4,8 @@ import dev.kosha.taxonomy.entity.TaxonomyEdge
 import dev.kosha.taxonomy.entity.TaxonomyTerm
 import dev.kosha.taxonomy.repository.TaxonomyEdgeRepository
 import dev.kosha.taxonomy.repository.TaxonomyTermRepository
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -249,11 +249,11 @@ class TaxonomyImportService(
         val trimmed = content.trim()
         return if (trimmed.startsWith("[")) {
             // Array of terms (flat or nested)
-            val items: List<Map<String, Any?>> = objectMapper.readValue(trimmed)
+            val items: List<Map<String, Any?>> = objectMapper.readValue(trimmed, object : TypeReference<List<Map<String, Any?>>>() {})
             flattenJsonTerms(items, parentLabel = "")
         } else if (trimmed.startsWith("{")) {
             // Single root object with "terms" array
-            val root: Map<String, Any?> = objectMapper.readValue(trimmed)
+            val root: Map<String, Any?> = objectMapper.readValue(trimmed, object : TypeReference<Map<String, Any?>>() {})
             val terms = root["terms"] as? List<*>
                 ?: throw IllegalArgumentException("JSON object must have a 'terms' array")
             @Suppress("UNCHECKED_CAST")
