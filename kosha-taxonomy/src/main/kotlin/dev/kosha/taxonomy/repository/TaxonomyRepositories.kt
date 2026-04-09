@@ -23,6 +23,7 @@ interface TaxonomyTermRepository : JpaRepository<TaxonomyTerm, UUID> {
 interface TaxonomyEdgeRepository : JpaRepository<TaxonomyEdge, UUID> {
     fun findByParentTermId(parentTermId: UUID): List<TaxonomyEdge>
     fun findByChildTermId(childTermId: UUID): List<TaxonomyEdge>
+    fun findByParentTermIdAndChildTermId(parentTermId: UUID, childTermId: UUID): List<TaxonomyEdge>
 
     @Query("SELECT e FROM TaxonomyEdge e WHERE e.edgeType = 'BROADER'")
     fun findAllBroaderEdges(): List<TaxonomyEdge>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api } from '$lib/api';
-	import type { TaxonomyTreeNode, TaxonomyTerm } from '$lib/types/api';
+	import type { TaxonomyTreeNode, TaxonomyTerm, TaxonomyImportPreview, TaxonomyImportResult } from '$lib/types/api';
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 	import TreeView from '$lib/components/kosha/TreeView.svelte';
 	import StatusBadge from '$lib/components/kosha/StatusBadge.svelte';
@@ -29,8 +29,81 @@
 	let editDesc = $state('');
 	let saving = $state(false);
 
-	// Import seed state
+	// Import state
 	let showImport = $state(false);
+	let importFileContent = $state('');
+	let importFileName = $state('');
+	let importFormat = $state('');
+	let importSourceRef = $state('');
+	let importPreviewing = $state(false);
+	let importCommitting = $state(false);
+	let importPreview = $state<TaxonomyImportPreview | null>(null);
+	let importResult = $state<TaxonomyImportResult | null>(null);
+	let importError = $state('');
+
+	function detectFormat(filename: string): string {
+		const ext = filename.split('.').pop()?.toLowerCase() ?? '';
+		if (ext === 'csv') return 'csv';
+		if (ext === 'json') return 'json';
+		if (ext === 'xml' || ext === 'rdf') return 'xml';
+		return 'csv';
+	}
+
+	function onImportFilePick(ev: Event) {
+		const input = ev.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+		importFileName = file.name;
+		importFormat = detectFormat(file.name);
+		importPreview = null;
+		importResult = null;
+		importError = '';
+		const reader = new FileReader();
+		reader.onload = () => { importFileContent = String(reader.result ?? ''); };
+		reader.readAsText(file);
+	}
+
+	async function previewImport() {
+		if (!importFileContent.trim()) { importError = 'No file content to preview.'; return; }
+		importPreviewing = true;
+		importError = '';
+		importPreview = null;
+		try {
+			const res = await api.taxonomy.importPreview(importFileContent, importFormat);
+			importPreview = res.data;
+		} catch (e: any) {
+			importError = e.message ?? 'Preview failed.';
+		} finally {
+			importPreviewing = false;
+		}
+	}
+
+	async function commitImport() {
+		if (!importFileContent.trim()) return;
+		importCommitting = true;
+		importError = '';
+		try {
+			const res = await api.taxonomy.importCommit(importFileContent, importFormat, importSourceRef || undefined);
+			importResult = res.data;
+			importPreview = null;
+			await loadTree();
+		} catch (e: any) {
+			importError = e.message ?? 'Import failed.';
+		} finally {
+			importCommitting = false;
+		}
+	}
+
+	function resetImportDialog() {
+		showImport = false;
+		importFileContent = '';
+		importFileName = '';
+		importFormat = '';
+		importSourceRef = '';
+		importPreview = null;
+		importResult = null;
+		importError = '';
+	}
 
 	onMount(() => loadTree());
 
@@ -495,28 +568,193 @@
 	</div>
 {/if}
 
-<!-- Import seed dialog -->
+<!-- Import dialog -->
 {#if showImport}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-		onclick={(e) => { if (e.target === e.currentTarget) showImport = false; }}
-		onkeydown={(e) => { if (e.key === 'Escape') showImport = false; }}>
-		<div class="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg" role="dialog" aria-modal="true" aria-label={m.taxmgmt_import_dialog_label()}>
+		onclick={(e) => { if (e.target === e.currentTarget) resetImportDialog(); }}
+		onkeydown={(e) => { if (e.key === 'Escape') resetImportDialog(); }}>
+		<div class="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-lg border border-border bg-card p-6 shadow-lg" role="dialog" aria-modal="true" aria-label={m.taxmgmt_import_dialog_label()}>
 			<h2 class="text-lg font-semibold">{m.taxmgmt_import_title()}</h2>
 			<p class="mt-2 text-sm text-muted-foreground">{m.taxmgmt_import_desc()}</p>
-			<div class="mt-4">
-				<label class="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center hover:border-primary">
-					<p class="text-sm font-medium">{m.taxmgmt_choose_file()}</p>
-					<p class="text-xs text-muted-foreground">{m.taxmgmt_file_formats()}</p>
-					<input type="file" class="sr-only" accept=".json,.csv,.rdf,.xml" />
-				</label>
-			</div>
-			<div class="mt-4 flex justify-end gap-3">
-				<button onclick={() => (showImport = false)}
-					class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-ring">{m.btn_cancel()}</button>
-				<button disabled
-					class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">{m.taxmgmt_import_btn()}</button>
-			</div>
+
+			{#if importResult}
+				<!-- Import complete -->
+				<div class="mt-4 rounded-md border border-border p-4">
+					<h3 class="font-semibold text-sm">Import complete</h3>
+					<div class="mt-2 flex gap-4 text-sm">
+						<span class="text-success font-medium">{importResult.created} created</span>
+						<span class="text-muted-foreground">{importResult.skipped} skipped</span>
+						{#if importResult.errors > 0}
+							<span class="text-destructive font-medium">{importResult.errors} errors</span>
+						{/if}
+					</div>
+					{#if importResult.details.length > 0}
+						<div class="mt-3 max-h-48 overflow-y-auto">
+							<table class="w-full text-xs">
+								<thead>
+									<tr class="border-b border-border text-left">
+										<th class="pb-1 pr-2 font-medium">Row</th>
+										<th class="pb-1 pr-2 font-medium">Label</th>
+										<th class="pb-1 pr-2 font-medium">Status</th>
+										<th class="pb-1 font-medium">Note</th>
+									</tr>
+								</thead>
+								<tbody>
+									{#each importResult.details as row}
+										<tr class="border-b border-border/50">
+											<td class="py-1 pr-2">{row.row}</td>
+											<td class="py-1 pr-2">{row.label}</td>
+											<td class="py-1 pr-2">
+												<span class="rounded px-1.5 py-0.5 text-xs font-medium {row.status === 'created' ? 'bg-green-100 text-success' : row.status === 'error' ? 'bg-red-100 text-destructive' : 'bg-muted text-muted-foreground'}">
+													{row.status}
+												</span>
+											</td>
+											<td class="py-1 text-muted-foreground">{row.message ?? ''}</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					{/if}
+				</div>
+				<div class="mt-4 flex justify-end">
+					<button onclick={resetImportDialog}
+						class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring">Done</button>
+				</div>
+			{:else}
+				<!-- File selection -->
+				<div class="mt-4">
+					<label class="block cursor-pointer rounded-lg border-2 border-dashed border-border p-6 text-center hover:border-primary">
+						{#if importFileName}
+							<p class="text-sm font-medium">{importFileName}</p>
+							<p class="text-xs text-muted-foreground">Format detected: {importFormat.toUpperCase()}</p>
+						{:else}
+							<p class="text-sm font-medium">{m.taxmgmt_choose_file()}</p>
+							<p class="text-xs text-muted-foreground">{m.taxmgmt_file_formats()}</p>
+						{/if}
+						<input type="file" class="sr-only" accept=".json,.csv,.rdf,.xml" onchange={onImportFilePick} />
+					</label>
+				</div>
+
+				<!-- Source reference (optional) -->
+				<div class="mt-3">
+					<label for="import-source" class="block text-xs font-medium text-muted-foreground">Source reference (optional)</label>
+					<input id="import-source" type="text" bind:value={importSourceRef}
+						placeholder="e.g. ISO 15489, ANZSRC 2020, internal v3"
+						class="mt-1 w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-2 focus:outline-ring" />
+				</div>
+
+				<!-- Format examples -->
+				<details class="mt-3">
+					<summary class="cursor-pointer text-xs font-medium text-primary hover:underline">Supported formats and examples</summary>
+					<div class="mt-2 space-y-3 text-xs text-muted-foreground">
+						<div>
+							<p class="font-semibold text-foreground">CSV</p>
+							<pre class="mt-1 rounded bg-muted p-2 overflow-x-auto">label,description,parent_label
+Finance,Financial operations,
+Accounts Payable,Vendor payment management,Finance
+Accounts Receivable,Customer billing,Finance</pre>
+						</div>
+						<div>
+							<p class="font-semibold text-foreground">JSON (nested)</p>
+							<pre class="mt-1 rounded bg-muted p-2 overflow-x-auto">{`[
+  {"label":"Finance","description":"Financial operations","children":[
+    {"label":"Accounts Payable","description":"Vendor payments"},
+    {"label":"Accounts Receivable","description":"Customer billing"}
+  ]}
+]`}</pre>
+						</div>
+						<div>
+							<p class="font-semibold text-foreground">JSON (flat)</p>
+							<pre class="mt-1 rounded bg-muted p-2 overflow-x-auto">{`[
+  {"label":"Finance","description":"Financial operations"},
+  {"label":"Accounts Payable","parent":"Finance"}
+]`}</pre>
+						</div>
+						<div>
+							<p class="font-semibold text-foreground">XML</p>
+							<pre class="mt-1 rounded bg-muted p-2 overflow-x-auto">{`<taxonomy>
+  <term label="Finance" description="Financial operations">
+    <term label="Accounts Payable" />
+  </term>
+</taxonomy>`}</pre>
+						</div>
+					</div>
+				</details>
+
+				{#if importError}
+					<div role="alert" class="mt-3 rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive">{importError}</div>
+				{/if}
+
+				<!-- Preview results -->
+				{#if importPreview}
+					<div class="mt-4 rounded-md border border-border p-4">
+						<h3 class="font-semibold text-sm">Preview</h3>
+						<div class="mt-2 flex gap-4 text-sm">
+							<span>{importPreview.totalRows} terms found</span>
+							<span class="text-success font-medium">{importPreview.newTerms} new</span>
+							{#if importPreview.duplicates > 0}
+								<span class="text-muted-foreground">{importPreview.duplicates} duplicates (will skip)</span>
+							{/if}
+							{#if importPreview.errors > 0}
+								<span class="text-destructive font-medium">{importPreview.errors} errors</span>
+							{/if}
+						</div>
+						{#if importPreview.rows.length > 0}
+							<div class="mt-3 max-h-48 overflow-y-auto">
+								<table class="w-full text-xs">
+									<thead>
+										<tr class="border-b border-border text-left">
+											<th class="pb-1 pr-2 font-medium">Row</th>
+											<th class="pb-1 pr-2 font-medium">Label</th>
+											<th class="pb-1 pr-2 font-medium">Parent</th>
+											<th class="pb-1 font-medium">Status</th>
+										</tr>
+									</thead>
+									<tbody>
+										{#each importPreview.rows as row}
+											<tr class="border-b border-border/50">
+												<td class="py-1 pr-2">{row.row}</td>
+												<td class="py-1 pr-2">{row.label}</td>
+												<td class="py-1 pr-2 text-muted-foreground">{row.parentLabel || '-'}</td>
+												<td class="py-1">
+													{#if row.ok}
+														<span class="text-success font-medium">OK</span>
+													{:else}
+														<span class="text-destructive" title={row.errors.join('; ')}>{row.errors[0]}</span>
+													{/if}
+												</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+							</div>
+						{/if}
+					</div>
+				{/if}
+
+				<!-- Actions -->
+				<div class="mt-4 flex justify-end gap-3">
+					<button onclick={resetImportDialog}
+						class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-ring">{m.btn_cancel()}</button>
+					{#if !importPreview}
+						<button onclick={previewImport} disabled={!importFileContent.trim() || importPreviewing}
+							class="rounded-md border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10 focus:outline-2 focus:outline-ring disabled:opacity-50">
+							{importPreviewing ? 'Previewing...' : 'Preview'}
+						</button>
+					{:else}
+						<button onclick={previewImport} disabled={importPreviewing}
+							class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50">
+							Re-preview
+						</button>
+						<button onclick={commitImport} disabled={importCommitting || importPreview.newTerms === 0}
+							class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring disabled:opacity-50">
+							{importCommitting ? 'Importing...' : `Import ${importPreview.newTerms} terms`}
+						</button>
+					{/if}
+				</div>
+			{/if}
 		</div>
 	</div>
 {/if}

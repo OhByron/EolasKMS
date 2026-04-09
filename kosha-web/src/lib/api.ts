@@ -293,6 +293,16 @@ export const api = {
 
 		classifications: (documentId: string) =>
 			request<DocumentClassification[]>(`/api/v1/documents/${documentId}/classifications`),
+
+		importPreview: (content: string, format: string) =>
+			request<TaxonomyImportPreview>('/api/v1/admin/taxonomy/import/preview', {
+				method: 'POST', body: JSON.stringify({ content, format }),
+			}),
+
+		importCommit: (content: string, format: string, sourceRef?: string) =>
+			request<TaxonomyImportResult>('/api/v1/admin/taxonomy/import/commit', {
+				method: 'POST', body: JSON.stringify({ content, format, sourceRef }),
+			}),
 	},
 
 	// --- Search ---

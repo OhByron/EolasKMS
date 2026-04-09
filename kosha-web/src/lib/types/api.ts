@@ -229,6 +229,41 @@ export interface DocumentClassification {
 	createdAt: string;
 }
 
+// --- Taxonomy Import ---
+
+export interface TaxonomyImportRowPreview {
+	row: number;
+	label: string;
+	description: string;
+	parentLabel: string;
+	isDuplicate: boolean;
+	errors: string[];
+	ok: boolean;
+}
+
+export interface TaxonomyImportPreview {
+	totalRows: number;
+	newTerms: number;
+	duplicates: number;
+	errors: number;
+	rows: TaxonomyImportRowPreview[];
+	globalErrors: string[];
+}
+
+export interface TaxonomyImportResultRow {
+	row: number;
+	label: string;
+	status: string;
+	message: string | null;
+}
+
+export interface TaxonomyImportResult {
+	created: number;
+	skipped: number;
+	errors: number;
+	details: TaxonomyImportResultRow[];
+}
+
 // --- Search ---
 
 export interface SearchRequest {
