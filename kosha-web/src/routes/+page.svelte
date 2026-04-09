@@ -83,20 +83,17 @@
 		<p class="mt-2 text-lg text-muted-foreground italic">{m.landing_tagline()}</p>
 
 		{#if loading}
-			<p class="mt-8 text-sm text-muted-foreground">Loading...</p>
+			<p class="mt-8 text-sm text-muted-foreground">{m.app_loading()}</p>
 		{:else if !hasKey}
-			<!-- Licence entry gate -->
 			<div class="mt-8 rounded-lg border border-border bg-card p-6 text-left shadow-sm">
-				<h2 class="text-lg font-semibold text-foreground">Enter your licence key</h2>
-				<p class="mt-1 text-sm text-muted-foreground">
-					Paste your licence key below to activate this instance.
-				</p>
+				<h2 class="text-lg font-semibold text-foreground">{m.licence_gate_title()}</h2>
+				<p class="mt-1 text-sm text-muted-foreground">{m.licence_gate_desc()}</p>
 
 				<textarea
 					bind:value={keyInput}
 					rows="4"
 					class="mt-4 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:outline-2 focus:outline-ring"
-					placeholder="Paste your licence key here..."
+					placeholder={m.licence_gate_placeholder()}
 					onfocus={(e) => e.currentTarget.select()}
 				></textarea>
 
@@ -109,29 +106,26 @@
 					disabled={applying}
 					class="mt-4 w-full rounded-lg bg-primary px-4 py-2.5 font-semibold text-primary-foreground transition hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 				>
-					{applying ? 'Applying...' : 'Activate licence'}
+					{applying ? m.licence_gate_applying() : m.licence_gate_apply()}
 				</button>
 
 				<div class="mt-4 border-t border-border pt-4 text-center">
 					<p class="text-sm text-muted-foreground">
-						Don't have a key?
+						{m.licence_gate_no_key()}
 						<a href="https://www.eolaskms.com/request-key" target="_blank" rel="noopener"
 							class="font-medium text-primary underline hover:opacity-80">
-							Request one here
+							{m.licence_gate_request_link()}
 						</a>
 					</p>
-					<p class="mt-1 text-xs text-muted-foreground">
-						Community keys are free and generated instantly.
-					</p>
+					<p class="mt-1 text-xs text-muted-foreground">{m.licence_gate_free_hint()}</p>
 				</div>
 			</div>
 		{:else}
-			<!-- Licence applied — show login -->
 			<p class="mt-4 text-sm text-muted-foreground">{m.landing_subtitle()}</p>
 
 			{#if licenceOrg}
 				<p class="mt-2 text-xs text-muted-foreground">
-					Licensed to <span class="font-medium text-foreground">{licenceOrg}</span>
+					{m.licence_gate_licensed_to({ org: licenceOrg })}
 					{#if licenceTier && licenceTier !== 'community'}
 						<span class="ml-1 rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">{licenceTier}</span>
 					{/if}

@@ -579,14 +579,13 @@
 			<p class="mt-2 text-sm text-muted-foreground">{m.taxmgmt_import_desc()}</p>
 
 			{#if importResult}
-				<!-- Import complete -->
 				<div class="mt-4 rounded-md border border-border p-4">
-					<h3 class="font-semibold text-sm">Import complete</h3>
+					<h3 class="font-semibold text-sm">{m.tax_import_complete()}</h3>
 					<div class="mt-2 flex gap-4 text-sm">
-						<span class="text-success font-medium">{importResult.created} created</span>
-						<span class="text-muted-foreground">{importResult.skipped} skipped</span>
+						<span class="text-success font-medium">{m.tax_import_created({ count: importResult.created.toString() })}</span>
+						<span class="text-muted-foreground">{m.tax_import_skipped({ count: importResult.skipped.toString() })}</span>
 						{#if importResult.errors > 0}
-							<span class="text-destructive font-medium">{importResult.errors} errors</span>
+							<span class="text-destructive font-medium">{m.tax_import_errors({ count: importResult.errors.toString() })}</span>
 						{/if}
 					</div>
 					{#if importResult.details.length > 0}
@@ -594,10 +593,10 @@
 							<table class="w-full text-xs">
 								<thead>
 									<tr class="border-b border-border text-left">
-										<th class="pb-1 pr-2 font-medium">Row</th>
-										<th class="pb-1 pr-2 font-medium">Label</th>
-										<th class="pb-1 pr-2 font-medium">Status</th>
-										<th class="pb-1 font-medium">Note</th>
+										<th class="pb-1 pr-2 font-medium">{m.tax_import_col_row()}</th>
+										<th class="pb-1 pr-2 font-medium">{m.tax_import_col_label()}</th>
+										<th class="pb-1 pr-2 font-medium">{m.tax_import_col_status()}</th>
+										<th class="pb-1 font-medium">{m.tax_import_col_note()}</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -620,7 +619,7 @@
 				</div>
 				<div class="mt-4 flex justify-end">
 					<button onclick={resetImportDialog}
-						class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring">Done</button>
+						class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring">{m.tax_import_done()}</button>
 				</div>
 			{:else}
 				<!-- File selection -->
@@ -628,7 +627,7 @@
 					<label class="block cursor-pointer rounded-lg border-2 border-dashed border-border p-6 text-center hover:border-primary">
 						{#if importFileName}
 							<p class="text-sm font-medium">{importFileName}</p>
-							<p class="text-xs text-muted-foreground">Format detected: {importFormat.toUpperCase()}</p>
+							<p class="text-xs text-muted-foreground">{m.tax_import_format_detected({ format: importFormat.toUpperCase() })}</p>
 						{:else}
 							<p class="text-sm font-medium">{m.taxmgmt_choose_file()}</p>
 							<p class="text-xs text-muted-foreground">{m.taxmgmt_file_formats()}</p>
@@ -639,15 +638,15 @@
 
 				<!-- Source reference (optional) -->
 				<div class="mt-3">
-					<label for="import-source" class="block text-xs font-medium text-muted-foreground">Source reference (optional)</label>
+					<label for="import-source" class="block text-xs font-medium text-muted-foreground">{m.tax_import_source_label()}</label>
 					<input id="import-source" type="text" bind:value={importSourceRef}
-						placeholder="e.g. ISO 15489, ANZSRC 2020, internal v3"
+						placeholder={m.tax_import_source_placeholder()}
 						class="mt-1 w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-2 focus:outline-ring" />
 				</div>
 
 				<!-- Format examples -->
 				<details class="mt-3">
-					<summary class="cursor-pointer text-xs font-medium text-primary hover:underline">Supported formats and examples</summary>
+					<summary class="cursor-pointer text-xs font-medium text-primary hover:underline">{m.tax_import_formats_toggle()}</summary>
 					<div class="mt-2 space-y-3 text-xs text-muted-foreground">
 						<div>
 							<p class="font-semibold text-foreground">CSV</p>
@@ -690,15 +689,15 @@ Accounts Receivable,Customer billing,Finance</pre>
 				<!-- Preview results -->
 				{#if importPreview}
 					<div class="mt-4 rounded-md border border-border p-4">
-						<h3 class="font-semibold text-sm">Preview</h3>
+						<h3 class="font-semibold text-sm">{m.tax_import_preview_title()}</h3>
 						<div class="mt-2 flex gap-4 text-sm">
-							<span>{importPreview.totalRows} terms found</span>
-							<span class="text-success font-medium">{importPreview.newTerms} new</span>
+							<span>{m.tax_import_terms_found({ count: importPreview.totalRows.toString() })}</span>
+							<span class="text-success font-medium">{m.tax_import_new({ count: importPreview.newTerms.toString() })}</span>
 							{#if importPreview.duplicates > 0}
-								<span class="text-muted-foreground">{importPreview.duplicates} duplicates (will skip)</span>
+								<span class="text-muted-foreground">{m.tax_import_dupes_skip({ count: importPreview.duplicates.toString() })}</span>
 							{/if}
 							{#if importPreview.errors > 0}
-								<span class="text-destructive font-medium">{importPreview.errors} errors</span>
+								<span class="text-destructive font-medium">{m.tax_import_errors({ count: importPreview.errors.toString() })}</span>
 							{/if}
 						</div>
 						{#if importPreview.rows.length > 0}
@@ -706,10 +705,10 @@ Accounts Receivable,Customer billing,Finance</pre>
 								<table class="w-full text-xs">
 									<thead>
 										<tr class="border-b border-border text-left">
-											<th class="pb-1 pr-2 font-medium">Row</th>
-											<th class="pb-1 pr-2 font-medium">Label</th>
-											<th class="pb-1 pr-2 font-medium">Parent</th>
-											<th class="pb-1 font-medium">Status</th>
+											<th class="pb-1 pr-2 font-medium">{m.tax_import_col_row()}</th>
+											<th class="pb-1 pr-2 font-medium">{m.tax_import_col_label()}</th>
+											<th class="pb-1 pr-2 font-medium">{m.tax_import_col_parent()}</th>
+											<th class="pb-1 font-medium">{m.tax_import_col_status()}</th>
 										</tr>
 									</thead>
 									<tbody>
@@ -741,16 +740,16 @@ Accounts Receivable,Customer billing,Finance</pre>
 					{#if !importPreview}
 						<button onclick={previewImport} disabled={!importFileContent.trim() || importPreviewing}
 							class="rounded-md border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10 focus:outline-2 focus:outline-ring disabled:opacity-50">
-							{importPreviewing ? 'Previewing...' : 'Preview'}
+							{importPreviewing ? m.tax_import_previewing() : m.tax_import_preview_btn()}
 						</button>
 					{:else}
 						<button onclick={previewImport} disabled={importPreviewing}
 							class="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-ring disabled:opacity-50">
-							Re-preview
+							{m.tax_import_repreview()}
 						</button>
 						<button onclick={commitImport} disabled={importCommitting || importPreview.newTerms === 0}
 							class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring disabled:opacity-50">
-							{importCommitting ? 'Importing...' : `Import ${importPreview.newTerms} terms`}
+							{importCommitting ? m.tax_import_committing() : m.tax_import_commit_btn({ count: importPreview.newTerms.toString() })}
 						</button>
 					{/if}
 				</div>

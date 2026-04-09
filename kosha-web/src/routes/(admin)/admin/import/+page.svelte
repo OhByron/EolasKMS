@@ -191,52 +191,46 @@
 					>--auto-provision</code> CLI flag.
 			</p>
 		{:else}
-			<p>
-				User CSVs provision Eòlas accounts and Keycloak accounts in one atomic step. Run the user
-				import <em>before</em> the document import if your documents reference users that don't
-				exist yet (alternatively, use auto-provision on the document import).
-			</p>
+			<p>{m.user_import_desc()}</p>
 			<div class="mt-4 overflow-x-auto">
 				<table class="w-full text-xs">
 					<thead>
 						<tr class="border-b border-border text-left">
-							<th class="pb-1.5 pr-3 font-medium">Column</th>
-							<th class="pb-1.5 pr-3 font-medium">Required</th>
-							<th class="pb-1.5 font-medium">Notes</th>
+							<th class="pb-1.5 pr-3 font-medium">{m.runbook_col_column()}</th>
+							<th class="pb-1.5 pr-3 font-medium">{m.runbook_col_required()}</th>
+							<th class="pb-1.5 font-medium">{m.runbook_col_notes()}</th>
 						</tr>
 					</thead>
 					<tbody class="text-muted-foreground">
 						<tr class="border-b border-border/50">
 							<td class="py-1.5 pr-3"><code>email</code></td>
 							<td class="py-1.5 pr-3">Yes</td>
-							<td class="py-1.5">Must be unique across both Eòlas and Keycloak</td>
+							<td class="py-1.5">{m.user_import_col_unique()}</td>
 						</tr>
 						<tr class="border-b border-border/50">
 							<td class="py-1.5 pr-3"><code>display_name</code></td>
 							<td class="py-1.5 pr-3">Yes</td>
-							<td class="py-1.5">Full name as it appears in the UI</td>
+							<td class="py-1.5">{m.user_import_col_name()}</td>
 						</tr>
 						<tr class="border-b border-border/50">
 							<td class="py-1.5 pr-3"><code>department_name</code></td>
 							<td class="py-1.5 pr-3">Yes</td>
-							<td class="py-1.5">Exact match, case-insensitive; department must exist</td>
+							<td class="py-1.5">{m.user_import_col_dept()}</td>
 						</tr>
 						<tr class="border-b border-border/50">
 							<td class="py-1.5 pr-3"><code>role</code></td>
 							<td class="py-1.5 pr-3">Yes</td>
-							<td class="py-1.5">GLOBAL_ADMIN, DEPT_ADMIN, EDITOR, or CONTRIBUTOR</td>
+							<td class="py-1.5">{m.user_import_col_role()}</td>
 						</tr>
 						<tr>
 							<td class="py-1.5 pr-3"><code>temporary_password</code></td>
 							<td class="py-1.5 pr-3">No</td>
-							<td class="py-1.5">Blank generates a secure random password automatically</td>
+							<td class="py-1.5">{m.user_import_col_pass()}</td>
 						</tr>
 					</tbody>
 				</table>
 			</div>
-			<p class="mt-3 text-xs text-muted-foreground">
-				Click <strong>Load template</strong> above for a ready-to-edit example CSV.
-			</p>
+			<p class="mt-3 text-xs text-muted-foreground">{m.user_import_template_hint()}</p>
 		{/if}
 	</aside>
 
