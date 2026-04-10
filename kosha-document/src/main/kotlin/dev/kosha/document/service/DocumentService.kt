@@ -449,12 +449,7 @@ class DocumentService(
         contentType = contentType,
         ocrApplied = ocrApplied,
         ocrLanguage = ocrLanguage,
-        extractedMetadata = extractedMetadata?.let {
-            try {
-                @Suppress("UNCHECKED_CAST")
-                com.fasterxml.jackson.databind.ObjectMapper().readValue(it, Map::class.java) as Map<String, Any>
-            } catch (_: Exception) { null }
-        },
+        extractedMetadata = extractedMetadata,
         changeSummary = changeSummary,
         status = status,
         createdBy = createdBy.id!!,

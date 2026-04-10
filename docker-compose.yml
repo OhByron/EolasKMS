@@ -27,6 +27,10 @@ services:
       SPRING_DATASOURCE_PASSWORD: kosha
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:8180/realms/kosha
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/kosha/protocol/openid-connect/certs
+      # Health-indicator probe URL. Must be reachable from inside the
+      # kosha-api container, so use the internal docker hostname rather
+      # than the public `localhost:8180` that browsers use.
+      KEYCLOAK_SERVER_URL: http://keycloak:8080
       KOSHA_NATS_URL: nats://nats:4222
       KOSHA_OPENSEARCH_URL: http://opensearch:9200
       KOSHA_STORAGE_MINIO_ENDPOINT: http://minio:9000

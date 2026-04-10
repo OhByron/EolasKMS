@@ -9,6 +9,8 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import java.time.OffsetDateTime
 
 @Entity
@@ -51,12 +53,14 @@ class DocumentVersion(
 
     /**
      * Structured metadata extracted by the AI sidecar's spaCy NER pipeline.
-     * Stored as a JSONB column; Hibernate maps it to a String (the raw
-     * JSON text). The service layer deserialises it to a Map when needed
-     * for conditional workflow evaluation.
+     * Stored as a JSONB column and bound directly as a Map via Hibernate's
+     * JSON type handling, so the conditional workflow engine can evaluate
+     * JSON Logic expressions against it without an intermediate serialise /
+     * deserialise round-trip.
      */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "extracted_metadata", columnDefinition = "jsonb")
-    var extractedMetadata: String? = null,
+    var extractedMetadata: Map<String, Any?>? = null,
 
     @Column(name = "change_summary")
     var changeSummary: String? = null,

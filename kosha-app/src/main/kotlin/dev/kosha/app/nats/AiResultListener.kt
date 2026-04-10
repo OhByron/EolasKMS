@@ -207,7 +207,7 @@ class AiResultListener(
                 log.warn("Version not found for metadata result: {}", result.versionId)
                 return@executeWithoutResult
             }
-            version.extractedMetadata = objectMapper.writeValueAsString(result.extractedMetadata)
+            version.extractedMetadata = result.extractedMetadata
             versionRepo.save(version)
             log.info(
                 "Saved extracted metadata for version {} ({} fields)",

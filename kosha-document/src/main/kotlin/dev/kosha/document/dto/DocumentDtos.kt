@@ -100,7 +100,7 @@ data class VersionDetailResponse(
     val contentType: String?,
     val ocrApplied: Boolean,
     val ocrLanguage: String?,
-    val extractedMetadata: Map<String, Any>?,
+    val extractedMetadata: Map<String, Any?>?,
     val changeSummary: String?,
     val status: String,
     val createdBy: UUID,
