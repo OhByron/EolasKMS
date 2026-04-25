@@ -17,8 +17,9 @@
 	// Editable config fields
 	let provider = $state('ollama');
 	let endpoint = $state('http://localhost:11434');
-	let model = $state('llama3:8b');
+	let model = $state('gemma4:26b');
 	let apiKey = $state('');
+	let numCtx = $state(16384);
 	let summarization = $state(true);
 	let keywords = $state(true);
 	let classification = $state(true);
@@ -26,9 +27,10 @@
 	let ocr = $state(false);
 
 	const needsApiKey = $derived(provider !== 'ollama');
+	const isOllama = $derived(provider === 'ollama');
 
 	const providerDefaults: Record<string, { endpoint: string; model: string }> = {
-		ollama: { endpoint: 'http://localhost:11434', model: 'llama3:8b' },
+		ollama: { endpoint: 'http://localhost:11434', model: 'gemma4:26b' },
 		openai: { endpoint: 'https://api.openai.com/v1', model: 'gpt-4o' },
 		anthropic: { endpoint: 'https://api.anthropic.com', model: 'claude-sonnet-4-20250514' }
 	};
@@ -63,7 +65,8 @@
 				provider = config.llmProvider;
 				endpoint = config.llmEndpoint;
 				model = config.llmModel;
-				apiKey = (config as any).llmApiKey ?? '';
+				apiKey = config.llmApiKey ?? '';
+				numCtx = config.llmNumCtx ?? 16384;
 				summarization = config.summarizationEnabled;
 				keywords = config.keywordExtractionEnabled;
 				classification = config.classificationEnabled;
@@ -87,6 +90,7 @@
 				llmEndpoint: endpoint,
 				llmModel: model,
 				llmApiKey: apiKey || undefined,
+				llmNumCtx: numCtx,
 				summarizationEnabled: summarization,
 				keywordExtractionEnabled: keywords,
 				classificationEnabled: classification,
@@ -183,7 +187,18 @@
 				<label for="ai-model" class="block text-sm font-medium">{m.ai_model()}</label>
 				<input id="ai-model" type="text" bind:value={model}
 					class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-2 focus:outline-ring" />
+				{#if isOllama}
+					<p class="mt-1 text-xs text-muted-foreground">{m.ai_ollama_model_hint()}</p>
+				{/if}
 			</div>
+			{#if isOllama}
+				<div>
+					<label for="ai-num-ctx" class="block text-sm font-medium">{m.ai_num_ctx()}</label>
+					<input id="ai-num-ctx" type="number" bind:value={numCtx} min="2048" step="2048"
+						class="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-2 focus:outline-ring" />
+					<p class="mt-1 text-xs text-muted-foreground">{m.ai_num_ctx_hint()}</p>
+				</div>
+			{/if}
 			{#if needsApiKey}
 				<div>
 					<label for="ai-apikey" class="block text-sm font-medium">

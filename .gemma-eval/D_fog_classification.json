@@ -1,0 +1,44 @@
+```json
+[
+  {
+    "label": "Fog Water Collection",
+    "confidence": 1.0,
+    "evidence": "The authors have conducted a detailed analysis of the project state, community mobilization and history of fog water projects in Kolbung in Eastern Nepal and Tojquia in Guatemala."
+  },
+  {
+    "label": "Programme Sustainability",
+    "confidence": 0.95,
+    "evidence": "An informal examination of the available data, interviews with community members and local NGOs concerning maintenance and training have not resulted in improved project sustainability in the Nepali context."
+  },
+  {
+    "label": "Theory of Change",
+    "confidence": 0.95,
+    "evidence": "The decline of the projects in Nepal, while the projects in Tojquia were thriving raised many questions about theories of change."
+  },
+  {
+    "label": "Programme Failure Analysis",
+    "confidence": 0.95,
+    "evidence": "The authors proceed to deconstruct and analyze the contexts of project success and failure, discussing the causal and supporting factors leading to the current state of fog collection projects."
+  },
+  {
+    "label": "Community Mobilization",
+    "confidence": 0.9,
+    "evidence": "The fog collection project in Tojquia is a model of what success can look like when the community is engaged as an active participant in the design, development, construction and maintenance of the project."
+  },
+  {
+    "label": "Cross-Cultural Comparative Analysis",
+    "confidence": 0.95,
+    "evidence": "The authors have conducted a detailed analysis of the project state, community mobilization and history of fog water projects in Kolbung in Eastern Nepal and Tojquia in Guatemala."
+  },
+  {
+    "label": "Religious and Cultural Context",
+    "confidence": 0.9,
+    "evidence": "The goal of the research is to more clearly understand the patterns of behaviors that contribute (positively or negatively) to project adoption and sustainability within the local cultural, social, religious and economic contexts."
+  },
+  {
+    "label": "Local Partnerships",
+    "confidence": 0.85,
+    "evidence": "FogQuest (FQ), a Canadian non-governmental organization (NGO), along with local and international partners has operated and developed fog-water projects in the research areas."
+  }
+]
+```

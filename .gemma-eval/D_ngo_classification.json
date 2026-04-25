@@ -1,0 +1,54 @@
+```json
+[
+  {
+    "label": "Water Sanitation Hygiene (WASH)",
+    "confidence": 1.0,
+    "evidence": "The author, with the help of the community, developed a digital survey which was deployed in the village in the winter of 2016... to examine the efficacy of the sanitation program."
+  },
+  {
+    "label": "Open Defecation",
+    "confidence": 1.0,
+    "evidence": "In Nepal, waste management has included simple pit toilets and the common practice of open defecation (OD), either directly in the fields and forested areas and ravende."
+  },
+  {
+    "label": "Waterborne Disease",
+    "confidence": 1.0,
+    "evidence": "The project sought to improve community health in the face of increased rates of serious, often life threatening waterborne gastrointestinal pathogens in the region."
+  },
+  {
+    "label": "Mobile Data Collection",
+    "confidence": 1.0,
+    "evidence": "The survey was designed to use a secure mobile application hosted on tablet devices."
+  },
+  {
+    "label": "Geographic Information Systems (GIS)",
+    "confidence": 1.0,
+    "evidence": "The survey included socioeconomic and health information as well as Geographic Information System (GIS) data."
+  },
+  {
+    "label": "Participatory Action Research",
+    "confidence": 1.0,
+    "evidence": "A mixed methods approach rooted in participatory action research (PAR), appreciative inquiry and systems analysis was employed."
+  },
+  {
+    "label": "Programme Sustainability",
+    "confidence": 0.95,
+    "evidence": "This research examines the outcomes and sustainability of the initiative through a process of structured inquiry and observation."
+  },
+  {
+    "label": "Gender and Inclusion",
+    "confidence": 0.9,
+    "evidence": "The research also sought to frame... how local need is often expressed differently across gender, caste and religious divides."
+  },
+  {
+    "label": "Community Mobilization",
+    "confidence": 0.9,
+    "evidence": "Each element of the program required very different but extensive community mobilization as well as construction and logistical resources."
+  },
+  {
+    "label": "Programme Failure Analysis",
+    "confidence": 0.85,
+    "evidence": "The detailed mechanisms of failure (or success) are still not well understood within the context of the study area."
+  }
+]
+```

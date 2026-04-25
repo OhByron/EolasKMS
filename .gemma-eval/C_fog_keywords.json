@@ -1,0 +1,84 @@
+```json
+[
+  {
+    "keyword": "Fog-water collection",
+    "frequency": 12,
+    "confidence": 1.0
+  },
+  {
+    "keyword": "Large Fog Collectors (LFC)",
+    "frequency": 8,
+    "confidence": 0.95
+  },
+  {
+    "keyword": "Project sustainability",
+    "frequency": 6,
+    "confidence": 0.9
+  },
+  {
+    "keyword": "FogQuest",
+    "frequency": 6,
+    "confidence": 0.9
+  },
+  {
+    "keyword": "Tojquia, Guatemala",
+    "frequency": 7,
+    "confidence": 0.9
+  },
+  {
+    "keyword": "Kolbung, Nepal",
+    "frequency": 7,
+    "confidence": 0.9
+  },
+  {
+    "keyword": "Theory of Change",
+    "frequency": 4,
+    "confidence": 0.85
+  },
+  {
+    "keyword": "Community mobilization",
+    "frequency": 3,
+    "confidence": 0.85
+  },
+  {
+    "keyword": "NEWAH",
+    "frequency": 3,
+    "confidence": 0.8
+  },
+  {
+    "keyword": "Socio-cultural context",
+    "frequency": 5,
+    "confidence": 0.85
+  },
+  {
+    "keyword": "Edward Hall's Silent Language",
+    "frequency": 3,
+    "confidence": 0.75
+  },
+  {
+    "keyword": "Non-governmental organization (NGO)",
+    "frequency": 8,
+    "confidence": 0.85
+  },
+  {
+    "keyword": "Cuchumatanes Mountains",
+    "frequency": 2,
+    "confidence": 0.7
+  },
+  {
+    "keyword": "Water scarcity",
+    "frequency": 3,
+    "confidence": 0.8
+  },
+  {
+    "keyword": "Community ownership",
+    "frequency": 2,
+    "confidence": 0.8
+  },
+  {
+    "keyword": "Technical agreements",
+    "frequency": 3,
+    "confidence": 0.75
+  }
+]
+```

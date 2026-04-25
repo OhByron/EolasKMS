@@ -20,8 +20,9 @@ async def summarize(text: str, title: str = "") -> tuple[str, float]:
     if not text or len(text.strip()) < 50:
         return "", 0.0
 
-    # Truncate very long documents to fit context window
-    max_chars = 60_000
+    # Truncate very long documents to fit context window.
+    # 50K chars ≈ 12.5K tokens, leaves output headroom inside Ollama's default num_ctx=16384.
+    max_chars = 50_000
     truncated = text[:max_chars]
     if len(text) > max_chars:
         truncated += "\n\n[Document truncated for processing]"

@@ -32,10 +32,13 @@ class AiConfigEntity(
     var llmEndpoint: String = "http://localhost:11434",
 
     @Column(name = "llm_model", nullable = false, length = 200)
-    var llmModel: String = "llama3:8b",
+    var llmModel: String = "gemma4:26b",
 
     @Column(name = "llm_api_key", length = 1000)
     var llmApiKey: String? = null,
+
+    @Column(name = "llm_num_ctx", nullable = false)
+    var llmNumCtx: Int = 16384,
 
     @Column(name = "summarization_enabled", nullable = false)
     var summarizationEnabled: Boolean = true,
@@ -62,8 +65,9 @@ interface AiConfigRepository : JpaRepository<AiConfigEntity, String>
 data class AiConfigDto(
     val llmProvider: String = "ollama",
     val llmEndpoint: String = "http://localhost:11434",
-    val llmModel: String = "llama3:8b",
+    val llmModel: String = "gemma4:26b",
     val llmApiKey: String? = null,
+    val llmNumCtx: Int = 16384,
     val summarizationEnabled: Boolean = true,
     val keywordExtractionEnabled: Boolean = true,
     val classificationEnabled: Boolean = true,
@@ -111,6 +115,7 @@ class AiAdminController(
         entity.llmProvider = dto.llmProvider
         entity.llmEndpoint = dto.llmEndpoint
         entity.llmModel = dto.llmModel
+        entity.llmNumCtx = dto.llmNumCtx
 
         // Only update the key if it's not masked
         if (dto.llmApiKey != null && !dto.llmApiKey.startsWith("****")) {
@@ -144,6 +149,7 @@ class AiAdminController(
         llmEndpoint = llmEndpoint,
         llmModel = llmModel,
         llmApiKey = llmApiKey,
+        llmNumCtx = llmNumCtx,
         summarizationEnabled = summarizationEnabled,
         keywordExtractionEnabled = keywordExtractionEnabled,
         classificationEnabled = classificationEnabled,

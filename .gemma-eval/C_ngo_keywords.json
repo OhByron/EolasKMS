@@ -1,0 +1,84 @@
+```json
+[
+  {
+    "keyword": "NGO program efficacy",
+    "frequency": 4,
+    "confidence": 0.95
+  },
+  {
+    "keyword": "Namsaling",
+    "frequency": 12,
+    "confidence": 0.98
+  },
+  {
+    "keyword": "Eastern Nepal",
+    "frequency": 6,
+    "confidence": 0.95
+  },
+  {
+    "keyword": "sanitation initiative",
+    "frequency": 4,
+    "confidence": 0.92
+  },
+  {
+    "keyword": "gastrointestinal disease",
+    "frequency": 5,
+    "confidence": 0.90
+  },
+  {
+    "keyword": "Namsaling Community Development Centre",
+    "frequency": 3,
+    "confidence": 0.95
+  },
+  {
+    "keyword": "Nepal Canada Development Foundation",
+    "frequency": 2,
+    "confidence": 0.90
+  },
+  {
+    "keyword": "participatory action research",
+    "frequency": 2,
+    "confidence": 0.88
+  },
+  {
+    "keyword": "waterborne pathogens",
+    "frequency": 2,
+    "confidence": 0.85
+  },
+  {
+    "keyword": "E. coli",
+    "frequency": 3,
+    "confidence": 0.85
+  },
+  {
+    "keyword": "open defecation",
+    "frequency": 3,
+    "confidence": 0.88
+  },
+  {
+    "keyword": "septic tanks",
+    "frequency": 2,
+    "confidence": 0.82
+  },
+  {
+    "keyword": "community development",
+    "frequency": 4,
+    "confidence": 0.85
+  },
+  {
+    "keyword": "Kobo Collect",
+    "frequency": 1,
+    "confidence": 0.80
+  },
+  {
+    "keyword": "Geographic Information System",
+    "frequency": 1,
+    "confidence": 0.85
+  },
+  {
+    "keyword": "sustainability",
+    "frequency": 4,
+    "confidence": 0.88
+  }
+]
+```

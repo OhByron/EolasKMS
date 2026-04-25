@@ -729,6 +729,8 @@ export interface AiConfig {
 	llmProvider: string;
 	llmEndpoint: string;
 	llmModel: string;
+	llmApiKey?: string | null;
+	llmNumCtx: number;
 	summarizationEnabled: boolean;
 	keywordExtractionEnabled: boolean;
 	classificationEnabled: boolean;
