@@ -14,7 +14,7 @@ Successor to [Entrepot (cf_qwikdoks2004)](https://github.com/OhByron), re-engine
 
 - **Document management** — versioning with diff/rollback, check-in/check-out locking, explicit owner + proxy delegation, configurable approval workflows
 - **Dual storage modes** — *Vault* (managed MinIO object storage) or *Connector* (index in-place from SharePoint, file shares, etc.)
-- **AI-powered knowledge** — automatic parsing, summarisation, keyword extraction, taxonomy classification, and confidence scoring via a Python sidecar
+- **AI-powered knowledge** — automatic summarisation, keyword extraction, and two-stage taxonomy classification via a Python sidecar. Local-by-default with [Gemma 4 26B](https://deepmind.google/models/gemma/gemma-4/) (Apache 2.0, runs on consumer GPUs via Ollama); pluggable to Anthropic Claude or OpenAI per-deployer through the admin UI. Markdown-rendered summaries, confidence-scored classifications with quoted evidence, and AI-suggested synonyms on candidate taxonomy terms for admin review.
 - **Enterprise search** — full-text and faceted search powered by OpenSearch, with AI-suggested related documents
 - **Retention & compliance** — policy-driven lifecycle management, scheduled reviews with per-department cadence, legal hold with owner notifications
 - **Multi-department RBAC** — Global Admin, Dept Admin, Editor, Contributor roles with SSO (SAML 2.0 / OIDC) and LDAP/AD integration via Keycloak
@@ -68,8 +68,9 @@ Infrastructure: PostgreSQL · OpenSearch · MinIO · NATS · Keycloak · Mailpit
 | Layer | Technology |
 |---|---|
 | Backend | Kotlin 2.1 + Spring Boot 3.4, Java 21 |
-| AI sidecar | Python, LangChain, spaCy, Tesseract |
-| Frontend | SvelteKit + TypeScript |
+| AI sidecar | Python, LangChain, spaCy (NER for structured metadata), Tesseract (OCR) |
+| LLM (default) | Gemma 4 26B via Ollama; Anthropic Claude and OpenAI selectable per-deployer |
+| Frontend | SvelteKit + TypeScript, `marked` + `dompurify` for rendered AI summaries |
 | Search | OpenSearch 2.12 |
 | Database | PostgreSQL 16 |
 | Object storage | MinIO (S3-compatible) |
@@ -192,7 +193,12 @@ The application is configured via environment variables or `application.yml`. Ke
 | `KOSHA_NATS_URL` | NATS server URL | `nats://nats:4222` |
 | `KOSHA_OPENSEARCH_URL` | OpenSearch URL | `http://opensearch:9200` |
 | `KOSHA_STORAGE_MINIO_ENDPOINT` | MinIO endpoint | `http://minio:9000` |
-| `KOSHA_AI_LLM_PROVIDER` | LLM provider (`ollama`, `anthropic`, etc.) | `ollama` |
+| `KOSHA_AI_LLM_PROVIDER` | LLM provider (`ollama`, `anthropic`, `openai`) | `ollama` |
+| `KOSHA_AI_LLM_MODEL` | Model identifier passed to the provider | `gemma4:26b` |
+| `KOSHA_AI_LLM_ENDPOINT` | Provider base URL (Ollama or OpenAI-compatible) | `http://ollama:11434` |
+| `KOSHA_AI_LLM_NUM_CTX` | Ollama context window in tokens (ignored by hosted providers). 16 384 fits typical documents in ~10 GB VRAM | `16384` |
+| `KOSHA_AI_BACKEND_CLIENT_ID` / `_SECRET` | Keycloak service-account the sidecar uses for backend admin API calls | `kosha-backend` |
+| `KEYCLOAK_MASTER_USERNAME` / `_PASSWORD` | Used only by the first-boot bootstrap step that rotates the seed admin password. Safe to omit after first boot. | `admin` / `admin` |
 | `KOSHA_CRYPTO_PASSWORD` | Master key for encrypting SMTP credentials at rest | (dev fallback — **must set in production**) |
 | `KOSHA_CRYPTO_SALT` | Hex-encoded salt for key derivation | (dev fallback — **must set in production**) |
 
@@ -209,6 +215,7 @@ Eòlas is in active development (`0.1.0-SNAPSHOT`). Completed and working:
 - ✅ Configurable mail gateway with 12 provider presets, hot-reload, test-send
 - ✅ Per-department notification scan cadence with global defaults
 - ✅ Mailpit integration for dev email capture
+- ✅ **LLM-native AI pipeline** — Gemma 4 26B by default (Apache 2.0, runs locally via Ollama), pluggable to Anthropic/OpenAI through admin UI; two-stage classification (extract+match against existing taxonomy, then propose-new with definitions and synonyms); markdown-rendered summaries; admin "Reprocess all" action; first-boot bootstrap that generates a strong admin password and prints it once to the api logs
 
 In progress:
 
