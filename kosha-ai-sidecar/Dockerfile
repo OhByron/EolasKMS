@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 # Tesseract + top-10 language data for OCR (Pass 5.1).
 # ghostscript is required by ocrmypdf for PDF manipulation.
