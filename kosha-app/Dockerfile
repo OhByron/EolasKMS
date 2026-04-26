@@ -4,7 +4,7 @@
 # on by default; on a bare daemon set DOCKER_BUILDKIT=1 (and Compose v2
 # uses BuildKit out of the box).
 
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM eclipse-temurin:25-jdk-alpine AS build
 
 WORKDIR /workspace
 COPY . .
@@ -19,7 +19,7 @@ RUN --mount=type=cache,target=/root/.gradle/caches \
     --mount=type=cache,target=/root/.gradle/wrapper \
     ./gradlew :kosha-app:bootJar --no-daemon -x test
 
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 
 RUN addgroup -S kosha && adduser -S kosha -G kosha
 USER kosha
