@@ -1,0 +1,19 @@
+# Default: let git decide line endings per platform.
+* text=auto
+
+# Shell scripts and gradle wrapper must be LF for Linux containers and POSIX shells.
+# Without this, Windows CRLF line endings make Linux read the shebang as
+# `#!/bin/sh\r` and fail with a misleading "not found" error.
+*.sh        text eol=lf
+gradlew     text eol=lf
+Dockerfile  text eol=lf
+*.dockerfile text eol=lf
+
+# Always-binary files (don't let git mangle them with line-ending conversions)
+*.jar       binary
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.pdf       binary
+*.docx      binary
+*.zip       binary

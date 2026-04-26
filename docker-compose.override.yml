@@ -1,0 +1,13 @@
+# Local dev override: route the AI sidecar to the host's Ollama instance
+# (keeping pulled models in VRAM) instead of starting the profile-gated
+# in-cluster `ollama` service. Remove this file (or comment out the override)
+# if you want the stack to be fully self-contained — then run with
+# `docker compose --profile local-ai up -d` and let the cluster Ollama pull
+# its own models into the `ollama-data` volume.
+
+services:
+  kosha-ai:
+    environment:
+      KOSHA_AI_LLM_ENDPOINT: http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
