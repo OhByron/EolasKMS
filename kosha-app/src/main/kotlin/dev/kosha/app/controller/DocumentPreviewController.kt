@@ -126,7 +126,17 @@ class DocumentPreviewController(
             // renders cleanly in pdf.js just like a native PDF.
             streamingKey = version.ocrStorageKey!!
             forcedContentType = "application/pdf"
-        } else if (officePreview.isOfficeDocument(version.contentType) && officePreview.isAvailable()) {
+        } else if (officePreview.isOfficeDocument(version.contentType)) {
+            // Office docs MUST go through the sidecar — the frontend's
+            // classifier routes them to pdf.js, so streaming the raw
+            // .docx/.xlsx bytes back would feed PDF.js garbage. If the
+            // sidecar isn't configured, return 503 so the frontend
+            // shows its "download instead" fallback.
+            if (!officePreview.isAvailable()) {
+                previewMissing.increment()
+                log.debug("Office preview requested for version {} but sidecar not configured", versionId)
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build()
+            }
             streamingKey = try {
                 officePreview.getOrConvert(docId, versionId, originalKey, version.fileName)
             } catch (ex: Exception) {

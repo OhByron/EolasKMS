@@ -1,7 +1,14 @@
+# syntax=docker/dockerfile:1.7
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+
+# Cache mount on /root/.npm so `npm ci` finds previously-downloaded
+# tarballs instead of re-fetching the entire dep tree on every rebuild
+# where package-lock.json has changed even slightly.
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
+
 COPY . .
 RUN npm run build
 

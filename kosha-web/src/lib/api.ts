@@ -103,6 +103,33 @@ async function request<T>(path: string, options: RequestInit & { skipAuth?: bool
 	return res.json();
 }
 
+// Multipart uploads can't go through request() because that wrapper sets
+// Content-Type: application/json, which would defeat the boundary the
+// browser sets for FormData. They still need ensureFreshToken() — without
+// it, the silently-renewed access token in oidc-client-ts never reaches
+// the request and Spring 401s the upload (which Tomcat then turns into a
+// connection reset because the body exceeds max-swallow-size).
+async function upload<T>(path: string, formData: FormData): Promise<ApiResponse<T>> {
+	const token = await ensureFreshToken();
+	const headers: Record<string, string> = {};
+	if (token) headers['Authorization'] = `Bearer ${token}`;
+
+	const res = await fetch(`${API_BASE}${path}`, { method: 'POST', headers, body: formData });
+
+	if (!res.ok) {
+		if (res.status === 401) {
+			const { login } = await import('./auth');
+			await login();
+			throw new Error('Session expired. Redirecting to login...');
+		}
+		const error = await res.json().catch(() => ({ detail: res.statusText }));
+		throw new Error(error.detail ?? `HTTP ${res.status}`);
+	}
+
+	if (res.status === 204) return { data: null as T };
+	return res.json();
+}
+
 export const api = {
 	get: <T>(path: string) => request<T>(path),
 	post: <T>(path: string, body: unknown) =>
@@ -110,6 +137,7 @@ export const api = {
 	patch: <T>(path: string, body: unknown) =>
 		request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
 	delete: (path: string) => request(path, { method: 'DELETE' }),
+	upload: <T>(path: string, formData: FormData) => upload<T>(path, formData),
 
 	// --- Documents ---
 
@@ -150,6 +178,21 @@ export const api = {
 
 		createVersion: (id: string, body: { fileName: string; fileSizeBytes?: number; storageKey?: string; changeSummary?: string }) =>
 			request<VersionDetail>(`/api/v1/documents/${id}/versions`, { method: 'POST', body: JSON.stringify(body) }),
+
+		// --- Manual keyword editing ---
+		// AI-extracted keywords land via the NATS pipeline; these endpoints
+		// let a user fill gaps the model missed. The backend stamps source =
+		// 'MANUAL' so future re-extraction runs leave them alone.
+		addKeyword: (docId: string, keyword: string) =>
+			request<{ keyword: string; frequency: number; confidence: number; source: string }>(
+				`/api/v1/documents/${docId}/keywords`,
+				{ method: 'POST', body: JSON.stringify({ keyword }) },
+			),
+
+		deleteKeyword: (docId: string, keyword: string) =>
+			request(`/api/v1/documents/${docId}/keywords?keyword=${encodeURIComponent(keyword)}`, {
+				method: 'DELETE',
+			}),
 
 		// --- Signatures (Pass 5.2) ---
 		signatures: (id: string) =>

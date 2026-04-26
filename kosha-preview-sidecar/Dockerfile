@@ -16,6 +16,7 @@
 #   - No network egress expected — compose network isolation
 # ============================================================================
 
+# syntax=docker/dockerfile:1.7
 FROM debian:bookworm-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -46,9 +47,12 @@ RUN useradd --create-home --shell /bin/bash --uid 1000 preview
 WORKDIR /app
 COPY --chown=preview:preview src/ /app/
 
-# Install flask into a venv to avoid the PEP 668 system-python lockdown
-RUN python3 -m venv /opt/venv && \
-    /opt/venv/bin/pip install --no-cache-dir flask==3.0.* gunicorn==22.0.*
+# Install flask into a venv to avoid the PEP 668 system-python lockdown.
+# Cache mount on pip's wheel cache persists across rebuilds; drop
+# --no-cache-dir so the mount actually gets populated.
+RUN --mount=type=cache,target=/root/.cache/pip \
+    python3 -m venv /opt/venv && \
+    /opt/venv/bin/pip install flask==3.0.* gunicorn==22.0.*
 ENV PATH="/opt/venv/bin:$PATH"
 
 USER preview

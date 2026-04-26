@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 FROM python:3.12-slim
 
 # Tesseract + top-10 language data for OCR (Pass 5.1).
@@ -24,7 +25,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 COPY pyproject.toml .
-RUN pip install --no-cache-dir .
+# Cache mount on /root/.cache/pip persists wheel downloads across
+# rebuilds. Drop --no-cache-dir so pip actually populates the mounted
+# cache; image size is unchanged because the cache lives on the host,
+# not in the resulting layer.
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install .
 
 # spaCy model for metadata_extractor (NER on amounts/dates/parties).
 # Pinned at build time so the runtime container has no internet egress

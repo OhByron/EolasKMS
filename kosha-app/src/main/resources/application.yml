@@ -42,6 +42,12 @@ spring:
 
 server:
   port: 8080
+  tomcat:
+    # Match max-request-size so a rejected multipart (401, validation
+    # failure, etc.) can still be drained instead of triggering a TCP
+    # reset. Without this, large uploads that fail auth show up in the
+    # browser as ERR_CONNECTION_ABORTED instead of the actual status.
+    max-swallow-size: 100MB
 
 management:
   endpoints:

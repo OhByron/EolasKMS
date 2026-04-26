@@ -18,6 +18,18 @@ const settings = {
 
 export const userManager = typeof window !== 'undefined' ? new UserManager(settings) : null;
 
+// Keep the Svelte `user` store in sync with oidc-client-ts. `addUserLoaded`
+// fires both on initial sign-in AND on every silent renewal — without this,
+// the store holds the original token forever while the OIDC client quietly
+// rotates it underneath, and any caller that reads u?.accessToken directly
+// (multipart uploads in particular) ends up sending the expired token.
+userManager?.events.addUserLoaded((oidcUser) => {
+	setUser(oidcUser).catch(() => {});
+});
+userManager?.events.addUserUnloaded(() => {
+	user.set(null);
+});
+
 export interface KoshaUser {
 	id: string;          // Keycloak sub
 	profileId: string;   // internal user_profile.id

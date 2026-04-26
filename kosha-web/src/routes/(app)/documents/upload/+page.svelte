@@ -3,7 +3,6 @@
 	import { api } from '$lib/api';
 	import type { Department, DocumentCategory, DocumentDetail, VersionDetail, UserProfile } from '$lib/types/api';
 	import { onMount } from 'svelte';
-	import { user as authUser } from '$lib/auth';
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 	import Markdown from '$lib/components/kosha/Markdown.svelte';
 	import * as m from '$paraglide/messages';
@@ -183,20 +182,8 @@
 			const formData = new FormData();
 			formData.append('file', file);
 
-			const currentUser = (await import('$lib/auth')).user;
-			let token = '';
-			const unsub = currentUser.subscribe((u) => { token = u?.accessToken ?? ''; });
-			unsub();
-
-			const res = await fetch('/api/v1/documents/check-duplicate', {
-				method: 'POST',
-				headers: { Authorization: `Bearer ${token}` },
-				body: formData,
-			});
-			if (res.ok) {
-				const data = await res.json();
-				duplicateInfo = data.data;
-			}
+			const res = await api.upload<typeof duplicateInfo>('/api/v1/documents/check-duplicate', formData);
+			duplicateInfo = res.data;
 		} catch {
 			// Duplicate check failed — proceed without it
 		} finally {
@@ -245,23 +232,10 @@
 			const formData = new FormData();
 			formData.append('file', selectedFile);
 
-			const currentUser = (await import('$lib/auth')).user;
-			let token = '';
-			const unsub = currentUser.subscribe((u) => { token = u?.accessToken ?? ''; });
-			unsub();
-
-			const uploadRes = await fetch(
+			await api.upload(
 				`/api/v1/documents/${createdDoc.id}/versions/${createdVersion.id}/upload`,
-				{
-					method: 'POST',
-					headers: { Authorization: `Bearer ${token}` },
-					body: formData,
-				}
+				formData,
 			);
-			if (!uploadRes.ok) {
-				const err = await uploadRes.json().catch(() => ({ detail: 'Upload failed' }));
-				throw new Error(err.detail ?? `Upload failed: HTTP ${uploadRes.status}`);
-			}
 			uploadProgress = 100;
 
 			// Move to AI step

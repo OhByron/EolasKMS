@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/api';
@@ -16,6 +16,7 @@
 		keyword: string;
 		frequency: number;
 		confidence: number;
+		source?: string;
 	}
 
 	let doc = $state<DocumentDetail | null>(null);
@@ -23,6 +24,9 @@
 	let keywords = $state<Keyword[]>([]);
 	let showAllKeywords = $state(false);
 	let signatures = $state<DocumentSignature[]>([]);
+	let newKeyword = $state('');
+	let savingKeyword = $state(false);
+	let keywordError = $state('');
 
 	// The current spaCy NER pipeline emits ~20 raw noun-chunks per doc, including
 	// noisy items like "the data" / "the village" and case-sensitive duplicates of
@@ -119,7 +123,10 @@
 		doc && (!doc.checkedOut || isLockedByMe) && hasAnyRole('GLOBAL_ADMIN', 'DEPT_ADMIN', 'EDITOR')
 	);
 
-	onMount(() => loadDocument());
+	onMount(() => {
+		loadDocument().then(() => maybeStartAiPoll());
+	});
+	onDestroy(() => stopAiPoll());
 
 	async function loadDocument() {
 		loading = true;
@@ -141,6 +148,86 @@
 			error = e.message;
 		} finally {
 			loading = false;
+		}
+	}
+
+	// AI extraction (summary, keywords) runs async after upload, so a user
+	// who lands on this page right after uploading sees a doc with no
+	// keywords / no summary until they reload. Poll for up to ~45s while
+	// either is missing — once they arrive (or the cap hits) the timer
+	// stops. Steady-state visits to fully-processed docs do zero polls.
+	let aiPollHandle: ReturnType<typeof setTimeout> | null = null;
+	let aiPollCount = 0;
+	const AI_POLL_MAX = 15;
+	const AI_POLL_INTERVAL_MS = 3000;
+
+	function maybeStartAiPoll() {
+		const summary = versions[0]?.metadata?.summary;
+		if (keywords.length === 0 || !summary) {
+			aiPollCount = 0;
+			aiPollHandle = setTimeout(refreshAi, AI_POLL_INTERVAL_MS);
+		}
+	}
+
+	function stopAiPoll() {
+		if (aiPollHandle) {
+			clearTimeout(aiPollHandle);
+			aiPollHandle = null;
+		}
+	}
+
+	async function refreshAi() {
+		aiPollHandle = null;
+		aiPollCount++;
+		try {
+			const [verRes, kwRes] = await Promise.all([
+				api.documents.versions(docId),
+				api.get<Keyword[]>(`/api/v1/documents/${docId}/keywords`).catch(() => ({ data: [] as Keyword[] })),
+			]);
+			versions = verRes.data;
+			keywords = kwRes.data;
+		} catch {
+			// Transient errors are swallowed — the poll cap protects us.
+		}
+		const summary = versions[0]?.metadata?.summary;
+		const done = keywords.length > 0 && !!summary;
+		if (!done && aiPollCount < AI_POLL_MAX) {
+			aiPollHandle = setTimeout(refreshAi, AI_POLL_INTERVAL_MS);
+		}
+	}
+
+	async function addKeyword() {
+		if (!doc) return;
+		const trimmed = newKeyword.trim();
+		if (!trimmed) return;
+		savingKeyword = true;
+		keywordError = '';
+		try {
+			const res = await api.documents.addKeyword(doc.id, trimmed);
+			// Replace the row by lower-cased key so re-adding an existing
+			// keyword updates in place (matches backend ON CONFLICT).
+			const key = res.data.keyword.toLowerCase();
+			keywords = [
+				...keywords.filter((k) => k.keyword.toLowerCase() !== key),
+				res.data,
+			];
+			newKeyword = '';
+		} catch (e: any) {
+			keywordError = e.message ?? 'Failed to add keyword';
+		} finally {
+			savingKeyword = false;
+		}
+	}
+
+	async function removeKeyword(keyword: string) {
+		if (!doc) return;
+		keywordError = '';
+		try {
+			await api.documents.deleteKeyword(doc.id, keyword);
+			const key = keyword.toLowerCase();
+			keywords = keywords.filter((k) => k.keyword.toLowerCase() !== key);
+		} catch (e: any) {
+			keywordError = e.message ?? 'Failed to remove keyword';
 		}
 	}
 
@@ -215,25 +302,7 @@
 			const formData = new FormData();
 			formData.append('file', newVersionFile);
 
-			// Reuse the same bearer-token pattern the initial upload uses —
-			// the /versions/{id}/upload endpoint is JWT-authenticated and
-			// multipart, so we can't go through the generic api.request wrapper.
-			let token = '';
-			const unsub = user.subscribe((u) => { token = u?.accessToken ?? ''; });
-			unsub();
-
-			const uploadRes = await fetch(
-				`/api/v1/documents/${doc.id}/versions/${newVersion.id}/upload`,
-				{
-					method: 'POST',
-					headers: { Authorization: `Bearer ${token}` },
-					body: formData,
-				},
-			);
-			if (!uploadRes.ok) {
-				const err = await uploadRes.json().catch(() => ({ detail: 'Upload failed' }));
-				throw new Error(err.detail ?? `Upload failed: HTTP ${uploadRes.status}`);
-			}
+			await api.upload(`/api/v1/documents/${doc.id}/versions/${newVersion.id}/upload`, formData);
 
 			await loadDocument();
 			addingVersion = false;
@@ -555,20 +624,36 @@
 			{/if}
 
 			<!-- Keywords -->
-			{#if displayKeywords.length > 0}
+			{#if displayKeywords.length > 0 || canEdit}
 				<section class="rounded-lg border border-border bg-card p-5">
 					<h2 class="text-sm font-semibold text-muted-foreground">{m.doc_keywords()}</h2>
-					<div class="mt-3 flex flex-wrap gap-2">
-						{#each displayKeywords as kw}
-							<span
-								class="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1 text-sm"
-								title="Frequency: {kw.frequency}, Confidence: {Math.round(kw.confidence * 100)}%"
-							>
-								{kw.keyword}
-								<span class="text-xs text-muted-foreground">({kw.frequency})</span>
-							</span>
-						{/each}
-					</div>
+					{#if displayKeywords.length > 0}
+						<div class="mt-3 flex flex-wrap gap-2">
+							{#each displayKeywords as kw}
+								<span
+									class="inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm"
+									class:border-border={kw.source !== 'MANUAL'}
+									class:border-primary={kw.source === 'MANUAL'}
+									title="Frequency: {kw.frequency}, Confidence: {Math.round(kw.confidence * 100)}%{kw.source === 'MANUAL' ? ' · added manually' : ''}"
+								>
+									{kw.keyword}
+									<span class="text-xs text-muted-foreground">({kw.frequency})</span>
+									{#if canEdit}
+										<button
+											type="button"
+											onclick={() => removeKeyword(kw.keyword)}
+											aria-label="Remove {kw.keyword}"
+											class="ml-0.5 rounded text-muted-foreground hover:text-destructive focus:outline-2 focus:outline-offset-2 focus:outline-ring"
+										>
+											×
+										</button>
+									{/if}
+								</span>
+							{/each}
+						</div>
+					{:else}
+						<p class="mt-3 text-sm text-muted-foreground">{m.doc_keywords_none()}</p>
+					{/if}
 					{#if totalKeywordCount > 8}
 						<button
 							type="button"
@@ -579,6 +664,32 @@
 								? m.doc_keywords_show_fewer()
 								: m.doc_keywords_show_all({ count: String(totalKeywordCount) })}
 						</button>
+					{/if}
+					{#if canEdit}
+						<form
+							onsubmit={(e) => { e.preventDefault(); addKeyword(); }}
+							class="mt-4 flex gap-2"
+						>
+							<input
+								type="text"
+								bind:value={newKeyword}
+								placeholder={m.doc_keywords_add_placeholder()}
+								maxlength={500}
+								disabled={savingKeyword}
+								class="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-2 focus:outline-offset-2 focus:outline-ring"
+								aria-label={m.doc_keywords_add_placeholder()}
+							/>
+							<button
+								type="submit"
+								disabled={savingKeyword || !newKeyword.trim()}
+								class="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 focus:outline-2 focus:outline-offset-2 focus:outline-ring"
+							>
+								{m.btn_add()}
+							</button>
+						</form>
+						{#if keywordError}
+							<p role="alert" class="mt-2 text-xs text-destructive">{keywordError}</p>
+						{/if}
 					{/if}
 				</section>
 			{/if}

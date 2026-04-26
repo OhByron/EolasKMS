@@ -1,0 +1,47 @@
+# Without this file, `COPY . .` in any Dockerfile ships the entire repo
+# into the build context — most importantly the per-module Gradle build/
+# output and kosha-web/node_modules, which together can be hundreds of MB
+# and invalidate Docker layer caching on every rebuild.
+
+# Version control / IDE
+.git
+.gitignore
+.gitattributes
+.idea
+.vscode
+*.iml
+
+# Gradle output and local config
+**/build
+**/.gradle
+.gradletasknamecache
+
+# Frontend artefacts (Node/Vite/SvelteKit)
+**/node_modules
+**/.svelte-kit
+**/dist
+kosha-web/build
+
+# Python sidecar virtualenvs / caches
+**/__pycache__
+**/.venv
+**/venv
+**/*.pyc
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+
+# Logs and local env
+*.log
+.env
+.env.local
+.env.*.local
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Local data / generated dumps
+data/
+dumps/
+*.dump
