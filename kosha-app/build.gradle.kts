@@ -29,8 +29,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("io.nats:jnats:2.20.5")
-    implementation("org.apache.tika:tika-core:2.9.2")
-    implementation("org.apache.tika:tika-parsers-standard-package:2.9.2")
+    implementation("org.apache.tika:tika-core:3.3.0")
+    implementation("org.apache.tika:tika-parsers-standard-package:3.3.0")
 
     runtimeOnly("org.postgresql:postgresql")
     runtimeOnly("org.flywaydb:flyway-database-postgresql")
