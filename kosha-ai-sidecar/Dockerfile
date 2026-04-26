@@ -26,6 +26,11 @@ WORKDIR /app
 COPY pyproject.toml .
 RUN pip install --no-cache-dir .
 
+# spaCy model for metadata_extractor (NER on amounts/dates/parties).
+# Pinned at build time so the runtime container has no internet egress
+# requirement and metadata extraction is deterministic across deploys.
+RUN python -m spacy download en_core_web_sm
+
 COPY src/ ./src/
 
 ENV PYTHONPATH=/app/src

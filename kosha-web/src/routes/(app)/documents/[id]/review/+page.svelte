@@ -9,6 +9,7 @@
 	import StatusBadge from '$lib/components/kosha/StatusBadge.svelte';
 	import ErrorBoundary from '$lib/components/kosha/ErrorBoundary.svelte';
 	import DocumentPreview from '$lib/components/kosha/DocumentPreview.svelte';
+	import Markdown from '$lib/components/kosha/Markdown.svelte';
 
 	let doc = $state<DocumentDetail | null>(null);
 	let versions = $state<VersionDetail[]>([]);
@@ -154,7 +155,7 @@
 				<section class="rounded-lg border border-border bg-card p-5">
 					<h2 class="text-sm font-semibold text-muted-foreground">AI Summary</h2>
 					{#if latestVersion.metadata.summary}
-						<p class="mt-2 text-sm leading-relaxed">{latestVersion.metadata.summary}</p>
+						<Markdown content={latestVersion.metadata.summary} class="mt-2 text-sm" />
 					{:else}
 						<p class="mt-2 text-sm text-muted-foreground">No AI summary available.</p>
 					{/if}

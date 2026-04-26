@@ -6,6 +6,7 @@
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 	import StatusBadge from '$lib/components/kosha/StatusBadge.svelte';
 	import ErrorBoundary from '$lib/components/kosha/ErrorBoundary.svelte';
+	import Markdown from '$lib/components/kosha/Markdown.svelte';
 	import * as m from '$paraglide/messages';
 
 	let doc = $state<DocumentDetail | null>(null);
@@ -113,7 +114,10 @@
 							</summary>
 							<div class="mt-2 rounded-md bg-muted/50 p-3 text-sm">
 								{#if ver.metadata.summary}
-									<p><strong>{m.versions_ai_summary()}</strong> {ver.metadata.summary}</p>
+									<div>
+										<strong>{m.versions_ai_summary()}</strong>
+										<Markdown content={ver.metadata.summary} class="mt-1" />
+									</div>
 								{/if}
 								{#if ver.metadata.aiConfidence != null}
 									<p class="mt-1">

@@ -19,16 +19,18 @@ STREAM_NAME = "KOSHA_AI"
 async def fetch_ai_config():
     """Fetch AI config from the backend admin API and update local settings."""
     try:
-        # Get an admin token from Keycloak
-        keycloak_url = "http://localhost:8180/realms/kosha/protocol/openid-connect/token"
+        # Service-account client_credentials grant. URL is configurable so this works
+        # both on a developer laptop (localhost:8180) and inside docker-compose
+        # (keycloak:8080 via service-name DNS). Avoids impersonating the seed admin
+        # user, whose password is rotated by the bootstrap step on first boot.
+        keycloak_url = f"{settings.keycloak_url.rstrip('/')}/realms/{settings.keycloak_realm}/protocol/openid-connect/token"
         async with httpx.AsyncClient() as client:
             token_res = await client.post(
                 keycloak_url,
                 data={
-                    "client_id": "kosha-web",
-                    "username": "admin@kosha.dev",
-                    "password": "admin",
-                    "grant_type": "password",
+                    "client_id": settings.backend_client_id,
+                    "client_secret": settings.backend_client_secret,
+                    "grant_type": "client_credentials",
                 },
             )
             if token_res.status_code != 200:

@@ -5,6 +5,7 @@
 	import { onMount } from 'svelte';
 	import { user as authUser } from '$lib/auth';
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
+	import Markdown from '$lib/components/kosha/Markdown.svelte';
 	import * as m from '$paraglide/messages';
 
 	// --- State ---
@@ -741,7 +742,7 @@
 				<section class="rounded-lg border border-border bg-card p-5">
 					<h2 class="text-sm font-semibold text-muted-foreground">{m.doc_ai_summary()}</h2>
 					{#if createdVersion.metadata?.summary}
-						<p class="mt-2 text-sm leading-relaxed">{createdVersion.metadata.summary}</p>
+						<Markdown content={createdVersion.metadata.summary} class="mt-2 text-sm" />
 						{#if createdVersion.metadata.aiConfidence != null}
 							<div class="mt-3">
 								<div class="flex items-center justify-between text-xs text-muted-foreground">

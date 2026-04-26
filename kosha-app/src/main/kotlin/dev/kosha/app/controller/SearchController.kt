@@ -4,6 +4,7 @@ import dev.kosha.common.api.ApiResponse
 import dev.kosha.common.api.PageMeta
 import dev.kosha.search.OpenSearchService
 import dev.kosha.search.SearchQuery
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/search")
 class SearchController(
     private val searchService: OpenSearchService,
+    private val jdbcTemplate: JdbcTemplate,
 ) {
 
     @PostMapping
@@ -31,7 +33,7 @@ class SearchController(
     fun search(@RequestBody request: SearchRequestDto): ApiResponse<List<SearchResultDto>> {
         val result = searchService.search(
             SearchQuery(
-                query = request.query,
+                query = expandQueryWithSynonyms(request.query),
                 departmentId = request.filters?.departmentId,
                 statuses = request.filters?.status,
                 dateFrom = request.filters?.dateFrom,
@@ -66,6 +68,50 @@ class SearchController(
     @PreAuthorize("isAuthenticated()")
     fun suggest(@RequestParam q: String): ApiResponse<List<String>> =
         ApiResponse(data = searchService.suggest(q))
+
+    /**
+     * If any whole-word token in the query matches a taxonomy alias or canonical
+     * term label, append the canonical label and its other aliases so OpenSearch's
+     * multi-match catches documents indexed under any surface form. The expansion
+     * is conservative: only exact normalised label matches trigger expansion, no
+     * fuzzy/substring matching, to avoid surprise broadening.
+     *
+     * Example: query "WatSan reports" → "WatSan reports WASH Water Sanitation Hygiene".
+     */
+    private fun expandQueryWithSynonyms(rawQuery: String): String {
+        if (rawQuery.isBlank()) return rawQuery
+        val tokens = rawQuery.split(Regex("\\s+")).filter { it.isNotBlank() }
+        if (tokens.isEmpty()) return rawQuery
+
+        val expansions = mutableSetOf<String>()
+        for (token in tokens) {
+            val normalised = token.lowercase()
+            // Lookup canonical term + all its aliases when the token matches either
+            // the term's normalised label or any alias's normalised label.
+            val rows = jdbcTemplate.queryForList(
+                """
+                SELECT t.label AS canonical, COALESCE(a2.alias_label, '') AS alias_label
+                FROM tax.taxonomy_term t
+                LEFT JOIN tax.taxonomy_term_alias a ON a.term_id = t.id
+                LEFT JOIN tax.taxonomy_term_alias a2 ON a2.term_id = t.id
+                WHERE t.status = 'ACTIVE'
+                  AND (t.normalized_label = ? OR a.normalized_alias_label = ?)
+                """.trimIndent(),
+                normalised, normalised,
+            )
+            for (row in rows) {
+                val canonical = (row["canonical"] as? String)?.trim().orEmpty()
+                val alias = (row["alias_label"] as? String)?.trim().orEmpty()
+                if (canonical.isNotEmpty() && canonical.lowercase() != normalised) {
+                    expansions += canonical
+                }
+                if (alias.isNotEmpty() && alias.lowercase() != normalised) {
+                    expansions += alias
+                }
+            }
+        }
+        return if (expansions.isEmpty()) rawQuery else "$rawQuery ${expansions.joinToString(" ")}"
+    }
 }
 
 // ── Request/Response DTOs matching the frontend contract ──

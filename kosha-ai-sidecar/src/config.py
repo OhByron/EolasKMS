@@ -4,6 +4,16 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     nats_url: str = "nats://localhost:4222"
     kosha_api_url: str = "http://localhost:8080"
+    # Keycloak base URL the sidecar uses to mint tokens for backend admin calls.
+    # Defaults to the developer-laptop URL; in docker-compose this is overridden
+    # to the in-cluster hostname so the sidecar reaches keycloak via its service name.
+    keycloak_url: str = "http://localhost:8180"
+    # Service-account client used to fetch the taxonomy from the backend.
+    # Replaces the previous brittle pattern of impersonating the seed admin user
+    # (which broke as soon as the bootstrap step rotated that password).
+    keycloak_realm: str = "kosha"
+    backend_client_id: str = "kosha-backend"
+    backend_client_secret: str = "kosha-backend-dev-secret"
 
     # LLM
     llm_provider: str = "ollama"  # ollama | openai | anthropic

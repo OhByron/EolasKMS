@@ -115,17 +115,50 @@ This brings up:
 
 ### First login
 
-Three accounts are seeded automatically on first startup:
+On the very first start, the kosha-api process generates a strong random password
+for the seed admin account and prints it once to its logs in a prominently formatted
+banner. **Look for it now and save it (e.g. password manager) — it is shown only once:**
+
+```bash
+docker logs eolaskms-kosha-api-1 | grep -A 8 "FIRST-BOOT ADMIN ACCOUNT"
+```
+
+You should see something like:
+
+```
+============================================================================
+  EOLAS KMS  -  FIRST-BOOT ADMIN ACCOUNT
+  ------------------------------------------------------------------------
+    email      : admin@kosha.dev
+    password   : <a 24-character random string>
+    sign-in URL: http://localhost:5173 (or your configured kosha-web origin)
+  ------------------------------------------------------------------------
+  This password is shown ONLY ONCE. Save it now (e.g. password manager).
+  After signing in, create your own GLOBAL_ADMIN user and either change
+  this seed account's password or delete the account before exposing this
+  instance to anyone outside your local machine.
+============================================================================
+```
+
+Two test accounts (Editor, Contributor) are also seeded with weak, well-known
+passwords for local development:
 
 | Email | Password | Role |
 |---|---|---|
-| `admin@kosha.dev` | `admin` | Global Admin |
+| `admin@kosha.dev` | *(see banner above)* | Global Admin |
 | `editor@kosha.dev` | `editor` | Editor |
 | `contributor@kosha.dev` | `contributor` | Contributor |
 
-Log in at http://localhost:5175 with `admin@kosha.dev` / `admin` to access the full admin panel.
+If the bootstrap step fails for any reason (e.g. Keycloak unreachable at startup),
+the seed admin's password falls back to the realm-export default `admin` so you
+can still sign in and recover. To re-run the bootstrap, set
+`public.system_bootstrap.bootstrap_completed_at` back to `NULL` and restart
+kosha-api.
 
-**Before going to production:** create your own admin account via Administration > Users > Add User, then delete or deactivate the seeded dev accounts. Change the Keycloak admin password (default: `admin` / `admin`) at http://localhost:8180.
+**Before going to production:** create your own GLOBAL_ADMIN user via
+Administration → Users → Add User, then delete or deactivate the seeded
+dev accounts. Also change the Keycloak admin password (default: `admin` / `admin`)
+at http://localhost:8180.
 
 To include a local Ollama instance for AI:
 

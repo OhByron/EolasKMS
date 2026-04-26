@@ -8,8 +8,11 @@ from minio import Minio
 from config import settings
 from models.messages import AiTaskMessage
 from pipelines.summarizer import summarize
-from pipelines.keyword_extractor import extract_keywords
-from pipelines.classifier import classify_keywords, invalidate_cache
+from pipelines.taxonomy_pipeline import (
+    LlmUnavailable,
+    analyze_for_taxonomy,
+    invalidate_cache,
+)
 from pipelines.ocr import run_ocr
 from pipelines.metadata_extractor import extract_metadata
 
@@ -95,60 +98,82 @@ async def handle_ai_task(payload: dict, js) -> None:
             await js.publish("ai.summary.completed", json.dumps(result).encode())
             logger.info("Published summary for version %s (confidence=%.2f)", task.version_id, confidence)
 
-    # Run keyword extraction + taxonomy classification
+    # Run unified two-stage LLM taxonomy pipeline (keywords + classifications + candidates).
+    # Replaces the legacy spaCy NER + difflib fuzzy-match flow. If the configured LLM is
+    # unreachable, ``LlmUnavailable`` propagates so the NATS handler can nak this message
+    # for re-delivery once the provider is back.
     if task.task_type in ("FULL_ANALYSIS", "EXTRACT_KEYWORDS", "CLASSIFY"):
-        keywords = await extract_keywords(text)
+        try:
+            keywords, classifications, candidates = await analyze_for_taxonomy(
+                text, str(task.document_id),
+            )
+        except LlmUnavailable as exc:
+            logger.warning(
+                "LLM unavailable for task %s — naking for retry. cause=%s",
+                task.task_id, exc,
+            )
+            raise
+
         if keywords:
-            result = {
-                "versionId": str(task.version_id),
-                "keywords": keywords,
-            }
-            await js.publish("ai.keywords.extracted", json.dumps(result).encode())
+            await js.publish(
+                "ai.keywords.extracted",
+                json.dumps({
+                    "versionId": str(task.version_id),
+                    "keywords": keywords,
+                }).encode(),
+            )
             logger.info("Published %d keywords for version %s", len(keywords), task.version_id)
 
-            # Classify keywords against taxonomy
-            classifications, candidates = await classify_keywords(keywords, str(task.document_id))
-
-            if classifications:
-                result = {
+        if classifications:
+            await js.publish(
+                "ai.classification.completed",
+                json.dumps({
                     "documentId": str(task.document_id),
                     "classifications": classifications,
-                }
-                await js.publish("ai.classification.completed", json.dumps(result).encode())
-                logger.info(
-                    "Published %d classifications for document %s",
-                    len(classifications), task.document_id,
-                )
+                }).encode(),
+            )
+            logger.info(
+                "Published %d classifications for document %s",
+                len(classifications), task.document_id,
+            )
 
-            if candidates:
-                result = {
+        if candidates:
+            await js.publish(
+                "ai.taxonomy.candidates",
+                json.dumps({
                     "documentId": str(task.document_id),
                     "candidates": candidates,
-                }
-                await js.publish("ai.taxonomy.candidates", json.dumps(result).encode())
-                logger.info(
-                    "Published %d taxonomy candidates for document %s",
-                    len(candidates), task.document_id,
-                )
-                invalidate_cache()  # New terms will be created, refresh cache
+                }).encode(),
+            )
+            logger.info(
+                "Published %d taxonomy candidates for document %s",
+                len(candidates), task.document_id,
+            )
+            invalidate_cache()  # New terms will be created, refresh cache for next doc
 
     # Run structured metadata extraction (Pass 5.3.0).
     # Uses spaCy NER to produce named fields that the conditional
     # workflow engine (Pass 5.3) evaluates via JSON Logic. Runs on
     # the same extracted text as summarization — no extra fetch.
+    # Wrapped in try/except so a metadata-only failure (e.g. missing
+    # spaCy model) doesn't nak the entire task and re-deliver the
+    # already-published summary/keyword/classification work.
     if task.task_type in ("FULL_ANALYSIS", "EXTRACT_METADATA"):
-        metadata = await extract_metadata(text)
-        if metadata:
-            result = {
-                "versionId": str(task.version_id),
-                "documentId": str(task.document_id),
-                "extractedMetadata": metadata,
-            }
-            await js.publish("ai.metadata.extracted", json.dumps(result).encode())
-            logger.info(
-                "Published structured metadata for version %s (%d fields)",
-                task.version_id, len(metadata),
-            )
+        try:
+            metadata = await extract_metadata(text)
+            if metadata:
+                result = {
+                    "versionId": str(task.version_id),
+                    "documentId": str(task.document_id),
+                    "extractedMetadata": metadata,
+                }
+                await js.publish("ai.metadata.extracted", json.dumps(result).encode())
+                logger.info(
+                    "Published structured metadata for version %s (%d fields)",
+                    task.version_id, len(metadata),
+                )
+        except Exception:
+            logger.exception("Metadata extraction failed for task %s; continuing", task.task_id)
 
     # Run OCR on scanned PDFs (Pass 5.1).
     # Only fires for PDFs — the MIME check is the first gate, the

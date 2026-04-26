@@ -29,8 +29,11 @@
 	"dependencies": {
 		"@inlang/paraglide-sveltekit": "^0.16.1",
 		"@tanstack/svelte-table": "^8.21.3",
+		"@types/dompurify": "^3.0.5",
+		"dompurify": "^3.4.1",
 		"formsnap": "^2.0.1",
 		"lucide-svelte": "^1.0.1",
+		"marked": "^18.0.2",
 		"oidc-client-ts": "^3.5.0",
 		"pdfjs-dist": "^5.6.205",
 		"svelte-sonner": "^1.1.0",

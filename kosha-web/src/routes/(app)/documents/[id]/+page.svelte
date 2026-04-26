@@ -9,6 +9,7 @@
 	import StatusBadge from '$lib/components/kosha/StatusBadge.svelte';
 	import ErrorBoundary from '$lib/components/kosha/ErrorBoundary.svelte';
 	import DocumentPreview from '$lib/components/kosha/DocumentPreview.svelte';
+	import Markdown from '$lib/components/kosha/Markdown.svelte';
 	import * as m from '$paraglide/messages';
 
 	interface Keyword {
@@ -20,7 +21,33 @@
 	let doc = $state<DocumentDetail | null>(null);
 	let versions = $state<VersionDetail[]>([]);
 	let keywords = $state<Keyword[]>([]);
+	let showAllKeywords = $state(false);
 	let signatures = $state<DocumentSignature[]>([]);
+
+	// The current spaCy NER pipeline emits ~20 raw noun-chunks per doc, including
+	// noisy items like "the data" / "the village" and case-sensitive duplicates of
+	// the same entity. Dedupe by normalised label, keep the highest-confidence
+	// variant per group, and surface only the top 8 by default. The full LLM-native
+	// pipeline (P2) replaces this with confidence-ranked extraction so the toggle
+	// can go away.
+	const displayKeywords = $derived.by(() => {
+		const dedup = new Map<string, Keyword>();
+		for (const kw of keywords) {
+			const key = (kw.keyword ?? '').trim().toLowerCase();
+			if (!key) continue;
+			const existing = dedup.get(key);
+			if (!existing || (kw.confidence ?? 0) > (existing.confidence ?? 0)) {
+				dedup.set(key, kw);
+			}
+		}
+		const sorted = [...dedup.values()].sort(
+			(a, b) => (b.confidence ?? 0) - (a.confidence ?? 0)
+		);
+		return showAllKeywords ? sorted : sorted.slice(0, 8);
+	});
+	const totalKeywordCount = $derived(
+		new Set(keywords.map((k) => (k.keyword ?? '').trim().toLowerCase())).size
+	);
 	let loading = $state(true);
 	let error = $state('');
 	let actionLoading = $state(false);
@@ -511,7 +538,7 @@
 							{/if}
 						</div>
 						{#if ver.metadata.summary}
-							<p class="mt-2 text-sm leading-relaxed">{ver.metadata.summary}</p>
+							<Markdown content={ver.metadata.summary} class="mt-2 text-sm" />
 						{:else}
 							<p class="mt-2 text-sm text-muted-foreground">{m.doc_ai_pending()}</p>
 						{/if}
@@ -528,11 +555,11 @@
 			{/if}
 
 			<!-- Keywords -->
-			{#if keywords.length > 0}
+			{#if displayKeywords.length > 0}
 				<section class="rounded-lg border border-border bg-card p-5">
 					<h2 class="text-sm font-semibold text-muted-foreground">{m.doc_keywords()}</h2>
 					<div class="mt-3 flex flex-wrap gap-2">
-						{#each keywords as kw}
+						{#each displayKeywords as kw}
 							<span
 								class="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1 text-sm"
 								title="Frequency: {kw.frequency}, Confidence: {Math.round(kw.confidence * 100)}%"
@@ -542,6 +569,17 @@
 							</span>
 						{/each}
 					</div>
+					{#if totalKeywordCount > 8}
+						<button
+							type="button"
+							onclick={() => (showAllKeywords = !showAllKeywords)}
+							class="mt-3 text-xs font-medium text-primary underline-offset-2 hover:underline focus:outline-2 focus:outline-offset-2 focus:outline-ring"
+						>
+							{showAllKeywords
+								? m.doc_keywords_show_fewer()
+								: m.doc_keywords_show_all({ count: String(totalKeywordCount) })}
+						</button>
+					{/if}
 				</section>
 			{/if}
 

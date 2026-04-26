@@ -1,13 +1,17 @@
 package dev.kosha.taxonomy.service
 
+import dev.kosha.taxonomy.dto.CreateAliasRequest
 import dev.kosha.taxonomy.dto.CreateTermRequest
 import dev.kosha.taxonomy.dto.DuplicateCheckResponse
 import dev.kosha.taxonomy.dto.TaxonomyTermResponse
 import dev.kosha.taxonomy.dto.TaxonomyTreeNodeResponse
+import dev.kosha.taxonomy.dto.TermAliasResponse
 import dev.kosha.taxonomy.dto.UpdateTermRequest
 import dev.kosha.taxonomy.entity.TaxonomyEdge
 import dev.kosha.taxonomy.entity.TaxonomyTerm
+import dev.kosha.taxonomy.entity.TaxonomyTermAlias
 import dev.kosha.taxonomy.repository.TaxonomyEdgeRepository
+import dev.kosha.taxonomy.repository.TaxonomyTermAliasRepository
 import dev.kosha.taxonomy.repository.TaxonomyTermRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -18,7 +22,67 @@ import java.util.UUID
 class TaxonomyService(
     private val termRepo: TaxonomyTermRepository,
     private val edgeRepo: TaxonomyEdgeRepository,
+    private val aliasRepo: TaxonomyTermAliasRepository,
 ) {
+
+    // ----- Aliases (synonyms) -----
+
+    fun listAliases(termId: UUID): List<TermAliasResponse> {
+        // Validate term exists so callers get a 404 rather than an empty list
+        termRepo.findById(termId)
+            .orElseThrow { NoSuchElementException("Taxonomy term not found: $termId") }
+        return aliasRepo.findByTermId(termId).map { it.toResponse() }
+    }
+
+    @Transactional
+    fun addAlias(termId: UUID, request: CreateAliasRequest): TermAliasResponse {
+        val term = termRepo.findById(termId)
+            .orElseThrow { NoSuchElementException("Taxonomy term not found: $termId") }
+
+        val label = request.aliasLabel.trim()
+        require(label.isNotEmpty()) { "alias_label is required" }
+        val normalized = label.lowercase()
+
+        // Reject if the alias is identical to the canonical label — no value, just noise
+        require(normalized != term.normalizedLabel) {
+            "Alias matches the term's canonical label"
+        }
+        // Idempotent: existing identical alias on the same term returns as-is
+        aliasRepo.findByTermIdAndNormalizedAliasLabel(termId, normalized)?.let {
+            return it.toResponse()
+        }
+
+        val source = if (request.source.uppercase() in setOf("AI_SUGGESTED", "MANUAL")) {
+            request.source.uppercase()
+        } else {
+            "MANUAL"
+        }
+        val saved = aliasRepo.save(
+            TaxonomyTermAlias(
+                termId = termId,
+                aliasLabel = label,
+                normalizedAliasLabel = normalized,
+                source = source,
+            )
+        )
+        return saved.toResponse()
+    }
+
+    @Transactional
+    fun deleteAlias(aliasId: UUID) {
+        if (!aliasRepo.existsById(aliasId)) {
+            throw NoSuchElementException("Alias not found: $aliasId")
+        }
+        aliasRepo.deleteById(aliasId)
+    }
+
+    private fun TaxonomyTermAlias.toResponse() = TermAliasResponse(
+        id = this.id!!,
+        termId = this.termId,
+        aliasLabel = this.aliasLabel,
+        source = this.source,
+        createdAt = this.createdAt,
+    )
 
     fun findAll(): List<TaxonomyTermResponse> =
         termRepo.findByStatusIn(listOf("ACTIVE", "CANDIDATE")).map { it.toResponse() }
@@ -146,6 +210,11 @@ class TaxonomyService(
         sourceRef = sourceRef,
         status = status,
         mergedIntoId = mergedInto?.id,
+        // Inline aliases on the canonical term response so the AI sidecar can pull
+        // {term, aliases} in a single call. For very large taxonomies this could
+        // be an N+1 — fine for now; revisit with a batch fetch if it shows up in
+        // a profile.
+        aliases = id?.let { aliasRepo.findByTermId(it).map { a -> a.aliasLabel } } ?: emptyList(),
         createdAt = createdAt,
         updatedAt = updatedAt,
     )

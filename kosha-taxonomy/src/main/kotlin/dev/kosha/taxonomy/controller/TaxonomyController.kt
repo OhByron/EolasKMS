@@ -1,9 +1,11 @@
 package dev.kosha.taxonomy.controller
 
 import dev.kosha.common.api.ApiResponse
+import dev.kosha.taxonomy.dto.CreateAliasRequest
 import dev.kosha.taxonomy.dto.CreateTermRequest
 import dev.kosha.taxonomy.dto.UpdateTermRequest
 import dev.kosha.taxonomy.service.TaxonomyService
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
@@ -78,9 +80,30 @@ class TaxonomyController(
     ) = ApiResponse(data = taxonomyService.findDocumentsByTerm(id, page, size))
 
     @org.springframework.web.bind.annotation.DeleteMapping("/terms/{id}")
-    @org.springframework.web.bind.annotation.ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAnyRole('GLOBAL_ADMIN', 'DEPT_ADMIN')")
     fun deleteTerm(@PathVariable id: UUID) {
         taxonomyService.deleteTerm(id)
+    }
+
+    // ----- Aliases (synonyms) -----
+
+    @GetMapping("/terms/{id}/aliases")
+    @PreAuthorize("isAuthenticated()")
+    fun listAliases(@PathVariable id: UUID) =
+        ApiResponse(data = taxonomyService.listAliases(id))
+
+    @PostMapping("/terms/{id}/aliases")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAnyRole('GLOBAL_ADMIN', 'DEPT_ADMIN')")
+    fun addAlias(@PathVariable id: UUID, @RequestBody request: CreateAliasRequest) =
+        ApiResponse(data = taxonomyService.addAlias(id, request))
+
+    @DeleteMapping("/terms/{termId}/aliases/{aliasId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAnyRole('GLOBAL_ADMIN', 'DEPT_ADMIN')")
+    fun deleteAlias(@PathVariable termId: UUID, @PathVariable aliasId: UUID) {
+        // termId is in the path for REST hierarchy clarity; service deletes by aliasId
+        taxonomyService.deleteAlias(aliasId)
     }
 }

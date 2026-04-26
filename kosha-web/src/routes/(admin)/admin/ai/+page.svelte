@@ -108,15 +108,23 @@
 	async function startReprocess() {
 		reprocessing = true;
 		reprocessProgress = 0;
-		// Simulate — in production this would trigger a batch job and poll
-		const interval = setInterval(() => {
-			reprocessProgress += 5;
-			if (reprocessProgress >= 100) {
-				clearInterval(interval);
-				reprocessing = false;
-				successMsg = m.ai_reprocess_complete();
-			}
-		}, 500);
+		error = '';
+		successMsg = '';
+		try {
+			const res = await api.post<{ scope: string; queued: number; skipped: number }>(
+				`/api/v1/admin/ai/reprocess?scope=${encodeURIComponent(reprocessScope)}`,
+				{},
+			);
+			const data = res.data;
+			successMsg = m.ai_reprocess_queued({
+				queued: String(data?.queued ?? 0),
+				skipped: String(data?.skipped ?? 0),
+			});
+		} catch (e: any) {
+			error = e.message ?? 'Reprocess failed';
+		} finally {
+			reprocessing = false;
+		}
 	}
 
 	const tabs = [

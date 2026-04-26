@@ -29,6 +29,13 @@
 	let editDesc = $state('');
 	let saving = $state(false);
 
+	// Aliases (synonyms) state
+	interface TermAlias { id: string; termId: string; aliasLabel: string; source: string; createdAt: string; }
+	let aliases = $state<TermAlias[]>([]);
+	let newAliasLabel = $state('');
+	let aliasBusy = $state(false);
+	let aliasError = $state('');
+
 	// Import state
 	let showImport = $state(false);
 	let importFileContent = $state('');
@@ -124,13 +131,57 @@
 	async function handleSelect(termId: string) {
 		selectedTermId = termId;
 		detailLoading = true;
+		aliases = [];
+		newAliasLabel = '';
+		aliasError = '';
 		try {
 			const res = await api.taxonomy.get(termId);
 			selectedTerm = res.data;
+			await loadAliases(termId);
 		} catch {
 			selectedTerm = null;
 		} finally {
 			detailLoading = false;
+		}
+	}
+
+	async function loadAliases(termId: string) {
+		try {
+			const res = await api.get<TermAlias[]>(`/api/v1/taxonomy/terms/${termId}/aliases`);
+			aliases = res.data ?? [];
+		} catch {
+			aliases = [];
+		}
+	}
+
+	async function addAlias() {
+		if (!selectedTerm) return;
+		const label = newAliasLabel.trim();
+		if (!label) return;
+		aliasBusy = true;
+		aliasError = '';
+		try {
+			await api.post(`/api/v1/taxonomy/terms/${selectedTerm.id}/aliases`, { aliasLabel: label });
+			newAliasLabel = '';
+			await loadAliases(selectedTerm.id);
+		} catch (e: any) {
+			aliasError = e.message ?? 'Failed to add synonym';
+		} finally {
+			aliasBusy = false;
+		}
+	}
+
+	async function deleteAlias(aliasId: string) {
+		if (!selectedTerm) return;
+		aliasBusy = true;
+		aliasError = '';
+		try {
+			await api.delete(`/api/v1/taxonomy/terms/${selectedTerm.id}/aliases/${aliasId}`);
+			await loadAliases(selectedTerm.id);
+		} catch (e: any) {
+			aliasError = e.message ?? 'Failed to delete synonym';
+		} finally {
+			aliasBusy = false;
 		}
 	}
 
@@ -465,6 +516,62 @@
 								<dd>{new Date(selectedTerm.createdAt).toLocaleDateString()}</dd>
 							</div>
 						</dl>
+					</section>
+
+					<!-- Synonyms (aliases) -->
+					<section class="rounded-lg border border-border bg-card p-5">
+						<div class="flex items-baseline justify-between">
+							<h3 class="text-sm font-semibold">{m.taxmgmt_aliases()}</h3>
+							<span class="text-xs text-muted-foreground">{aliases.length}</span>
+						</div>
+						<p class="mt-1 text-xs text-muted-foreground">{m.taxmgmt_aliases_hint()}</p>
+
+						{#if aliases.length > 0}
+							<ul class="mt-3 flex flex-wrap gap-2">
+								{#each aliases as a}
+									<li
+										class="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-sm"
+										title={a.source === 'AI_SUGGESTED' ? m.taxmgmt_alias_source_ai() : m.taxmgmt_alias_source_manual()}
+									>
+										<span>{a.aliasLabel}</span>
+										{#if a.source === 'AI_SUGGESTED'}
+											<span class="rounded bg-primary/10 px-1 text-[10px] font-medium text-primary">AI</span>
+										{/if}
+										<button
+											type="button"
+											onclick={() => deleteAlias(a.id)}
+											disabled={aliasBusy}
+											aria-label={m.taxmgmt_alias_remove({ alias: a.aliasLabel })}
+											class="ml-0.5 text-muted-foreground hover:text-destructive focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
+										>×</button>
+									</li>
+								{/each}
+							</ul>
+						{:else}
+							<p class="mt-3 text-sm italic text-muted-foreground">{m.taxmgmt_aliases_empty()}</p>
+						{/if}
+
+						<form
+							onsubmit={(e) => { e.preventDefault(); addAlias(); }}
+							class="mt-3 flex gap-2"
+						>
+							<input
+								type="text"
+								bind:value={newAliasLabel}
+								placeholder={m.taxmgmt_alias_placeholder()}
+								aria-label={m.taxmgmt_alias_placeholder()}
+								disabled={aliasBusy}
+								class="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-2 focus:outline-ring disabled:opacity-50"
+							/>
+							<button
+								type="submit"
+								disabled={aliasBusy || !newAliasLabel.trim()}
+								class="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-ring disabled:opacity-50"
+							>{m.taxmgmt_alias_add()}</button>
+						</form>
+						{#if aliasError}
+							<p role="alert" class="mt-2 text-xs text-destructive">{aliasError}</p>
+						{/if}
 					</section>
 
 					<!-- Add child term -->

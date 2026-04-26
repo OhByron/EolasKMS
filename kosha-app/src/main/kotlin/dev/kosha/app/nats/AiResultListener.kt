@@ -5,6 +5,8 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import dev.kosha.document.entity.VersionMetadata
 import dev.kosha.document.repository.DocumentVersionRepository
 import dev.kosha.document.repository.VersionMetadataRepository
+import dev.kosha.search.DocumentIndexData
+import dev.kosha.search.OpenSearchService
 import io.nats.client.Nats
 import io.nats.client.Options
 import jakarta.annotation.PostConstruct
@@ -14,6 +16,7 @@ import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Component
 import org.springframework.transaction.support.TransactionTemplate
 import java.math.BigDecimal
+import java.time.OffsetDateTime
 import java.util.UUID
 import kotlin.concurrent.thread
 
@@ -55,6 +58,8 @@ data class CandidateDto(
     val label: String,
     val description: String?,
     val source: String,
+    /** LLM-suggested synonyms for this candidate (Stage 2 propose-aliases). */
+    val aliases: List<String> = emptyList(),
 )
 
 data class OcrResult(
@@ -80,6 +85,7 @@ class AiResultListener(
     private val metadataRepo: VersionMetadataRepository,
     private val txTemplate: TransactionTemplate,
     private val jdbcTemplate: JdbcTemplate,
+    private val searchService: OpenSearchService,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -262,9 +268,8 @@ class AiResultListener(
     }
 
     private fun saveClassifications(result: ClassificationResult) {
+        val documentId = UUID.fromString(result.documentId)
         txTemplate.executeWithoutResult { _ ->
-            val documentId = UUID.fromString(result.documentId)
-
             for (c in result.classifications) {
                 val termId = UUID.fromString(c.termId)
                 // Upsert: insert or update confidence
@@ -279,6 +284,82 @@ class AiResultListener(
             }
             log.info("Saved {} classifications for document {}", result.classifications.size, result.documentId)
         }
+        // Re-index the document AFTER the tx commits so OpenSearch sees the new
+        // classifications. The upload-time index call leaves `tags` empty, so
+        // until this fires, search-by-classified-term returns nothing.
+        reindexDocumentWithTags(documentId)
+    }
+
+    /**
+     * Push the document back into OpenSearch with its current classifications
+     * inlined as `tags`. Same DocumentIndexData shape as the upload-path index
+     * call — this is just the "tags now exist" refresh.
+     *
+     * Failure is logged and swallowed: search staleness is preferable to a
+     * NATS message nak that would re-trigger the whole AI pipeline.
+     */
+    private fun reindexDocumentWithTags(documentId: UUID) {
+        try {
+            @Suppress("UNCHECKED_CAST")
+            val docRow = jdbcTemplate.queryForMap(
+                """
+                SELECT d.title, d.description, d.status, d.doc_number,
+                       dept.name AS dept_name, dept.id AS dept_id,
+                       cat.name AS cat_name,
+                       owner.display_name AS owner_name,
+                       d.created_at
+                FROM doc.document d
+                JOIN ident.department dept ON dept.id = d.department_id
+                LEFT JOIN doc.document_category cat ON cat.id = d.category_id
+                LEFT JOIN ident.user_profile owner ON owner.id = d.primary_owner_id
+                WHERE d.id = ?
+                """.trimIndent(),
+                documentId,
+            )
+            val tags = jdbcTemplate.queryForList(
+                """
+                SELECT t.label
+                FROM tax.document_classification dc
+                JOIN tax.taxonomy_term t ON t.id = dc.term_id
+                WHERE dc.document_id = ?
+                """.trimIndent(),
+                String::class.java,
+                documentId,
+            )
+            val latestText = jdbcTemplate.queryForList(
+                """
+                SELECT m.extracted_text
+                FROM doc.document_version v
+                JOIN doc.version_metadata m ON m.version_id = v.id
+                WHERE v.document_id = ?
+                  AND m.extracted_text IS NOT NULL
+                ORDER BY v.created_at DESC
+                LIMIT 1
+                """.trimIndent(),
+                String::class.java,
+                documentId,
+            ).firstOrNull().orEmpty()
+
+            searchService.indexDocument(
+                DocumentIndexData(
+                    id = documentId.toString(),
+                    title = docRow["title"] as? String ?: "",
+                    description = docRow["description"] as? String,
+                    content = latestText.take(100_000),
+                    departmentName = docRow["dept_name"] as? String ?: "",
+                    departmentId = (docRow["dept_id"] as? UUID)?.toString() ?: "",
+                    status = docRow["status"] as? String ?: "",
+                    docNumber = docRow["doc_number"] as? String,
+                    categoryName = docRow["cat_name"] as? String,
+                    primaryOwnerName = docRow["owner_name"] as? String,
+                    tags = tags,
+                    createdAt = (docRow["created_at"] as? OffsetDateTime)?.toString(),
+                ),
+            )
+            log.debug("Re-indexed document {} with {} tag(s)", documentId, tags.size)
+        } catch (ex: Exception) {
+            log.warn("Failed to re-index document {} with tags: {}", documentId, ex.message)
+        }
     }
 
     private fun saveCandidates(result: CandidateResult) {
@@ -286,21 +367,41 @@ class AiResultListener(
             for (c in result.candidates) {
                 val normalized = c.label.lowercase().trim()
                 // Check if term already exists (exact match on normalized label)
-                val exists = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM tax.taxonomy_term WHERE normalized_label = ?",
-                    Int::class.java,
+                val existingId = jdbcTemplate.queryForList(
+                    "SELECT id FROM tax.taxonomy_term WHERE normalized_label = ?",
+                    java.util.UUID::class.java,
                     normalized,
-                ) ?: 0
+                ).firstOrNull()
 
-                if (exists == 0) {
+                val termId = existingId ?: run {
+                    val newId = java.util.UUID.randomUUID()
                     jdbcTemplate.update(
                         """
                         INSERT INTO tax.taxonomy_term (id, label, normalized_label, description, source, status, created_at, updated_at)
-                        VALUES (gen_random_uuid(), ?, ?, ?, ?, 'CANDIDATE', now(), now())
+                        VALUES (?, ?, ?, ?, ?, 'CANDIDATE', now(), now())
                         """,
-                        c.label, normalized, c.description, c.source,
+                        newId, c.label, normalized, c.description, c.source,
                     )
                     log.debug("Created CANDIDATE taxonomy term: '{}'", c.label)
+                    newId
+                }
+
+                // Persist Stage-2 LLM-suggested synonyms. Skipped if the alias matches
+                // the canonical label or already exists for this term.
+                for (rawAlias in c.aliases) {
+                    val aliasLabel = rawAlias.trim()
+                    if (aliasLabel.isEmpty()) continue
+                    val normalizedAlias = aliasLabel.lowercase()
+                    if (normalizedAlias == normalized) continue
+                    jdbcTemplate.update(
+                        """
+                        INSERT INTO tax.taxonomy_term_alias
+                            (id, term_id, alias_label, normalized_alias_label, source, created_at, updated_at)
+                        VALUES (gen_random_uuid(), ?, ?, ?, 'AI_SUGGESTED', now(), now())
+                        ON CONFLICT (term_id, normalized_alias_label) DO NOTHING
+                        """,
+                        termId, aliasLabel, normalizedAlias,
+                    )
                 }
             }
             log.info("Processed {} taxonomy candidates", result.candidates.size)

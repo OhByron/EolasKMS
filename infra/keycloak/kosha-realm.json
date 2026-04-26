@@ -39,19 +39,27 @@
   "groups": [
     {
       "name": "Global Admins",
-      "realmRoles": ["GLOBAL_ADMIN"]
+      "realmRoles": [
+        "GLOBAL_ADMIN"
+      ]
     },
     {
       "name": "Department Admins",
-      "realmRoles": ["DEPT_ADMIN"]
+      "realmRoles": [
+        "DEPT_ADMIN"
+      ]
     },
     {
       "name": "Editors",
-      "realmRoles": ["EDITOR"]
+      "realmRoles": [
+        "EDITOR"
+      ]
     },
     {
       "name": "Contributors",
-      "realmRoles": ["CONTRIBUTOR"]
+      "realmRoles": [
+        "CONTRIBUTOR"
+      ]
     }
   ],
   "clients": [
@@ -78,7 +86,15 @@
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "publicClient": false,
-      "protocol": "openid-connect"
+      "protocol": "openid-connect",
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email",
+        "kosha-audience"
+      ]
     },
     {
       "clientId": "kosha-web",
@@ -99,7 +115,21 @@
         "http://localhost:5174",
         "http://localhost:5175"
       ],
-      "protocol": "openid-connect"
+      "protocol": "openid-connect",
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email",
+        "kosha-audience"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
     }
   ],
   "clientScopes": [
@@ -155,8 +185,12 @@
           "temporary": false
         }
       ],
-      "realmRoles": ["GLOBAL_ADMIN"],
-      "groups": ["Global Admins"]
+      "realmRoles": [
+        "GLOBAL_ADMIN"
+      ],
+      "groups": [
+        "Global Admins"
+      ]
     },
     {
       "username": "editor@kosha.dev",
@@ -172,8 +206,12 @@
           "temporary": false
         }
       ],
-      "realmRoles": ["EDITOR"],
-      "groups": ["Editors"]
+      "realmRoles": [
+        "EDITOR"
+      ],
+      "groups": [
+        "Editors"
+      ]
     },
     {
       "username": "contributor@kosha.dev",
@@ -189,14 +227,31 @@
           "temporary": false
         }
       ],
-      "realmRoles": ["CONTRIBUTOR"],
-      "groups": ["Contributors"]
+      "realmRoles": [
+        "CONTRIBUTOR"
+      ],
+      "groups": [
+        "Contributors"
+      ]
+    },
+    {
+      "username": "service-account-kosha-backend",
+      "enabled": true,
+      "serviceAccountClientId": "kosha-backend",
+      "realmRoles": [
+        "GLOBAL_ADMIN"
+      ]
     }
   ],
   "scopeMappings": [
     {
       "client": "kosha-web",
-      "roles": ["GLOBAL_ADMIN", "DEPT_ADMIN", "EDITOR", "CONTRIBUTOR"]
+      "roles": [
+        "GLOBAL_ADMIN",
+        "DEPT_ADMIN",
+        "EDITOR",
+        "CONTRIBUTOR"
+      ]
     }
   ]
 }

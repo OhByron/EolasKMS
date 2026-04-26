@@ -2,6 +2,7 @@ package dev.kosha.taxonomy.repository
 
 import dev.kosha.taxonomy.entity.TaxonomyEdge
 import dev.kosha.taxonomy.entity.TaxonomyTerm
+import dev.kosha.taxonomy.entity.TaxonomyTermAlias
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
@@ -27,4 +28,11 @@ interface TaxonomyEdgeRepository : JpaRepository<TaxonomyEdge, UUID> {
 
     @Query("SELECT e FROM TaxonomyEdge e WHERE e.edgeType = 'BROADER'")
     fun findAllBroaderEdges(): List<TaxonomyEdge>
+}
+
+@Repository
+interface TaxonomyTermAliasRepository : JpaRepository<TaxonomyTermAlias, UUID> {
+    fun findByTermId(termId: UUID): List<TaxonomyTermAlias>
+    fun findByTermIdAndNormalizedAliasLabel(termId: UUID, normalizedAliasLabel: String): TaxonomyTermAlias?
+    fun deleteByTermId(termId: UUID)
 }

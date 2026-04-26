@@ -32,6 +32,7 @@ data class TaxonomyTermResponse(
     val sourceRef: String?,
     val status: String,
     val mergedIntoId: UUID?,
+    val aliases: List<String> = emptyList(),
     val createdAt: OffsetDateTime,
     val updatedAt: OffsetDateTime,
 )
@@ -39,4 +40,17 @@ data class TaxonomyTermResponse(
 data class TaxonomyTreeNodeResponse(
     val term: TaxonomyTermResponse,
     val children: List<TaxonomyTreeNodeResponse>,
+)
+
+data class TermAliasResponse(
+    val id: UUID,
+    val termId: UUID,
+    val aliasLabel: String,
+    val source: String,
+    val createdAt: OffsetDateTime,
+)
+
+data class CreateAliasRequest(
+    val aliasLabel: String,
+    val source: String = "MANUAL", // AI_SUGGESTED | MANUAL — defaults to MANUAL when an admin types one in
 )
