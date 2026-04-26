@@ -103,6 +103,16 @@ updates:
       # Lift this rule as part of the next Spring Boot upgrade.
       - dependency-name: "gradle"
         update-types: ["version-update:semver-major"]
+      # KGP 2.1.21 on Gradle 8.12 fails its own classpath snapshot
+      # transform with NoClassDefFoundError on
+      # org/jetbrains/kotlin/incremental/classpathDiff/ClasspathEntrySnapshotter$Settings
+      # — verified locally on a clean build cache. The 2.1.20→2.1.21
+      # bump was originally taken to enable Gradle 9 (now reverted), so
+      # the justification no longer holds. Pin to 2.1.10 until the
+      # coordinated KGP/Gradle/Spring Boot upgrade and lift alongside
+      # the gradle-major rule above.
+      - dependency-name: "org.jetbrains.kotlin:*"
+        versions: [">2.1.10"]
 
   # ── npm (SvelteKit frontend) ────────────────────────────────────────
   - package-ecosystem: "npm"
