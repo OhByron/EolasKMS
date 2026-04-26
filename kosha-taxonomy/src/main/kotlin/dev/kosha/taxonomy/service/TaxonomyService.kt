@@ -13,6 +13,7 @@ import dev.kosha.taxonomy.entity.TaxonomyTermAlias
 import dev.kosha.taxonomy.repository.TaxonomyEdgeRepository
 import dev.kosha.taxonomy.repository.TaxonomyTermAliasRepository
 import dev.kosha.taxonomy.repository.TaxonomyTermRepository
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -23,6 +24,7 @@ class TaxonomyService(
     private val termRepo: TaxonomyTermRepository,
     private val edgeRepo: TaxonomyEdgeRepository,
     private val aliasRepo: TaxonomyTermAliasRepository,
+    private val jdbcTemplate: JdbcTemplate,
 ) {
 
     // ----- Aliases (synonyms) -----
@@ -150,9 +152,39 @@ class TaxonomyService(
     }
 
     fun findDocumentsByTerm(termId: UUID, page: Int, size: Int): List<Map<String, Any?>> {
-        // Return documents classified under this term
-        // Uses a raw query since we don't have cross-module entity access
-        return emptyList() // TODO: implement with JdbcTemplate when cross-module query is needed
+        // Cross-module raw query: kosha-taxonomy doesn't import doc.* entities,
+        // and the document module doesn't depend on taxonomy. Joining via SQL
+        // here keeps the module boundary clean.
+        //
+        // No status filter on the term itself — both ACTIVE and CANDIDATE terms
+        // can have document classifications. CANDIDATE terms surface their
+        // source document(s) so admins reviewing them have the context to
+        // approve/reject without hunting.
+        val safeSize = size.coerceIn(1, 100)
+        val offset = (page.coerceAtLeast(0).toLong()) * safeSize
+        // Aliases are double-quoted so PostgreSQL preserves the camelCase that
+        // the SvelteKit DocumentListItem type expects. Unquoted identifiers get
+        // folded to lowercase, which yielded `createdat` / `docnumber` and made
+        // the frontend render `Invalid Date`.
+        return jdbcTemplate.queryForList(
+            """
+            SELECT d.id           AS "id",
+                   d.title        AS "title",
+                   d.doc_number   AS "docNumber",
+                   d.status       AS "status",
+                   d.created_at   AS "createdAt",
+                   dept.name      AS "departmentName",
+                   dc.confidence  AS "confidence",
+                   dc.source      AS "classificationSource"
+            FROM tax.document_classification dc
+            JOIN doc.document d ON d.id = dc.document_id
+            JOIN ident.department dept ON dept.id = d.department_id
+            WHERE dc.term_id = ?
+            ORDER BY dc.confidence DESC NULLS LAST, d.created_at DESC
+            LIMIT ? OFFSET ?
+            """.trimIndent(),
+            termId, safeSize, offset,
+        )
     }
 
     @Transactional

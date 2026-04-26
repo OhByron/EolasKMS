@@ -299,11 +299,19 @@ async def _stage2_define_candidates(unmatched: list[dict]) -> list[dict]:
             a for a in (info or {}).get("aliases", [])
             if a.strip().lower() != label.lower()
         ]
+        # Carry the original Stage-1 keyword confidence through so the backend can
+        # populate the document_classification row that links this document to the
+        # new candidate term with a meaningful score (not a synthetic default).
+        try:
+            confidence = round(float(u.get("confidence", 0.0)), 2)
+        except (TypeError, ValueError):
+            confidence = 0.0
         candidates.append({
             "label": label,
             "description": description,
             "source": "AI_GENERATED",
             "aliases": aliases,
+            "confidence": confidence,
         })
     return candidates
 

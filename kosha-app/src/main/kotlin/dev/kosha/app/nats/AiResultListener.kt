@@ -60,6 +60,13 @@ data class CandidateDto(
     val source: String,
     /** LLM-suggested synonyms for this candidate (Stage 2 propose-aliases). */
     val aliases: List<String> = emptyList(),
+    /**
+     * Confidence of the original unmatched keyword that triggered this candidate.
+     * Used to populate the document_classification row that links the source
+     * document to the new candidate term, so admins reviewing the candidate
+     * can see which document(s) it came from.
+     */
+    val confidence: Double? = null,
 )
 
 data class OcrResult(
@@ -363,6 +370,7 @@ class AiResultListener(
     }
 
     private fun saveCandidates(result: CandidateResult) {
+        val documentId = UUID.fromString(result.documentId)
         txTemplate.executeWithoutResult { _ ->
             for (c in result.candidates) {
                 val normalized = c.label.lowercase().trim()
@@ -386,6 +394,21 @@ class AiResultListener(
                     newId
                 }
 
+                // Link the source document to this candidate term. Without this row
+                // the term-detail page shows '0 documents' for every candidate even
+                // though it was extracted from a real document, and admins reviewing
+                // the candidate have no way to see what evidence triggered it.
+                // Confidence floor of 0.5 if the sidecar didn't carry one through.
+                val classificationConfidence = (c.confidence ?: 0.5).coerceIn(0.0, 1.0)
+                jdbcTemplate.update(
+                    """
+                    INSERT INTO tax.document_classification (id, document_id, term_id, confidence, source, created_at, updated_at)
+                    VALUES (gen_random_uuid(), ?, ?, ?, 'AI', now(), now())
+                    ON CONFLICT (document_id, term_id) DO UPDATE SET confidence = EXCLUDED.confidence, updated_at = now()
+                    """,
+                    documentId, termId, BigDecimal.valueOf(classificationConfidence),
+                )
+
                 // Persist Stage-2 LLM-suggested synonyms. Skipped if the alias matches
                 // the canonical label or already exists for this term.
                 for (rawAlias in c.aliases) {
@@ -404,7 +427,10 @@ class AiResultListener(
                     )
                 }
             }
-            log.info("Processed {} taxonomy candidates", result.candidates.size)
+            log.info("Processed {} taxonomy candidates for document {}", result.candidates.size, result.documentId)
         }
+        // Refresh OpenSearch so the new candidate-term tags become searchable
+        // alongside the ACTIVE-term classifications already carried by the doc.
+        reindexDocumentWithTags(documentId)
     }
 }
