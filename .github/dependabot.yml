@@ -94,6 +94,15 @@ updates:
       # Lift this rule once that migration lands.
       - dependency-name: "org.opensearch.client:opensearch-rest-high-level-client"
         update-types: ["version-update:semver-major"]
+      # Gradle 9 needs KGP 2.2.x+, which in turn needs Spring Boot 3.5+
+      # (SB 3.4 ships kotlin-build-tools-impl 2.1.x and the Build Tools
+      # API classpath conflicts with KGP >= 2.2). Verified locally:
+      # Gradle 9.4.1 + KGP 2.1.21 fails ClasspathEntrySnapshotTransform
+      # on every Spring jar, and bumping KGP to 2.3.x doesn't help
+      # because the SB plugin still pins the older build-tools-impl.
+      # Lift this rule as part of the next Spring Boot upgrade.
+      - dependency-name: "gradle"
+        update-types: ["version-update:semver-major"]
 
   # ── npm (SvelteKit frontend) ────────────────────────────────────────
   - package-ecosystem: "npm"
