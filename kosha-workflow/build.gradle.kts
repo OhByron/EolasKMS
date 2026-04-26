@@ -13,5 +13,5 @@ dependencies {
     // JSON Logic evaluation for conditional workflow steps (Pass 5.3).
     // io.github.jamsesso:json-logic-java is a small, dependency-free
     // evaluator — no SpEL, no scripting engine, safe by construction.
-    implementation("io.github.jamsesso:json-logic-java:1.0.7")
+    implementation("io.github.jamsesso:json-logic-java:1.1.0")
 }
