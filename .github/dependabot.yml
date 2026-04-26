@@ -1,0 +1,172 @@
+# Dependabot configuration for EolasKMS.
+#
+# Covers the four ecosystems present in the repo:
+#   - Gradle (Kotlin/JVM backend, multi-module)
+#   - npm    (kosha-web SvelteKit frontend)
+#   - pip    (kosha-ai-sidecar Python services)
+#   - docker (base image bumps in all four Dockerfiles)
+#
+# The kosha-preview-sidecar's pip dependencies are pinned inline in its
+# Dockerfile (no requirements.txt / pyproject.toml), so they're tracked
+# transitively via the docker ecosystem and the base-image bump rather
+# than directly by pip.
+#
+# Schedule: monthly, first Monday morning UTC. Lower noise floor than
+# weekly while still catching CVEs within a sane window — Dependabot's
+# always-on security alerts handle anything urgent in between.
+#
+# Grouping keeps PR volume sane — Kotlin and Spring move as ecosystems,
+# so per-artefact PRs are noise. Major bumps stay un-grouped because
+# they almost always require manual code changes.
+
+version: 2
+updates:
+  # ── Gradle ──────────────────────────────────────────────────────────
+  # Multi-project Gradle requires one directory entry per build file.
+  # The `directories:` plural form lets a single block cover them all
+  # while still applying the same grouping/limits everywhere.
+  - package-ecosystem: "gradle"
+    directories:
+      - "/"
+      - "/kosha-app"
+      - "/kosha-audit"
+      - "/kosha-common"
+      - "/kosha-document"
+      - "/kosha-identity"
+      - "/kosha-import"
+      - "/kosha-notification"
+      - "/kosha-reporting"
+      - "/kosha-retention"
+      - "/kosha-search"
+      - "/kosha-storage"
+      - "/kosha-taxonomy"
+      - "/kosha-workflow"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 8
+    reviewers:
+      - "byronjbignell"
+    assignees:
+      - "byronjbignell"
+    labels:
+      - "dependencies"
+      - "backend"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    groups:
+      kotlin:
+        patterns:
+          - "org.jetbrains.kotlin*"
+          - "org.jetbrains.kotlinx*"
+      spring:
+        patterns:
+          - "org.springframework*"
+          - "io.spring*"
+        # Spring Boot majors usually require a coordinated upgrade
+        # across all modules — keep majors as a separate PR per artefact.
+        update-types:
+          - "minor"
+          - "patch"
+      testing:
+        patterns:
+          - "org.junit*"
+          - "io.mockk*"
+          - "org.testcontainers*"
+          - "org.assertj*"
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ── npm (SvelteKit frontend) ────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/kosha-web"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 8
+    reviewers:
+      - "byronjbignell"
+    assignees:
+      - "byronjbignell"
+    labels:
+      - "dependencies"
+      - "frontend"
+    commit-message:
+      prefix: "deps(web)"
+    groups:
+      svelte:
+        patterns:
+          - "svelte"
+          - "@sveltejs/*"
+          - "svelte-*"
+      tailwind:
+        patterns:
+          - "tailwindcss"
+          - "@tailwindcss/*"
+      types:
+        patterns:
+          - "@types/*"
+        update-types:
+          - "minor"
+          - "patch"
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ── pip (AI sidecar) ────────────────────────────────────────────────
+  - package-ecosystem: "pip"
+    directory: "/kosha-ai-sidecar"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "byronjbignell"
+    assignees:
+      - "byronjbignell"
+    labels:
+      - "dependencies"
+      - "ai-sidecar"
+    commit-message:
+      prefix: "deps(ai)"
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ── Docker base images ──────────────────────────────────────────────
+  # One entry per Dockerfile directory. Kept ungrouped because each
+  # service has independent base-image risk (Temurin JDK vs Node vs
+  # Debian) and a coordinated bump rarely makes sense.
+  - package-ecosystem: "docker"
+    directories:
+      - "/kosha-app"
+      - "/kosha-web"
+      - "/kosha-ai-sidecar"
+      - "/kosha-preview-sidecar"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 4
+    reviewers:
+      - "byronjbignell"
+    assignees:
+      - "byronjbignell"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "deps(docker)"
