@@ -25,9 +25,14 @@ updates:
   # Multi-project Gradle requires one directory entry per build file.
   # The `directories:` plural form lets a single block cover them all
   # while still applying the same grouping/limits everywhere.
+  #
+  # The root build.gradle.kts intentionally has no direct `implementation`
+  # declarations — it only configures plugins for `subprojects { … }`.
+  # Listing "/" here causes Dependabot to resolve the subproject
+  # classpath through the root and open a second PR for every module
+  # dep. Module entries below are sufficient.
   - package-ecosystem: "gradle"
     directories:
-      - "/"
       - "/kosha-app"
       - "/kosha-audit"
       - "/kosha-common"
