@@ -1,0 +1,80 @@
+@startuml seq-approval-workflow
+' Eòlas KMS — Approval workflow (DRAFT → IN_REVIEW → PUBLISHED / DRAFT)
+' Source:
+'   kosha-workflow/.../service/WorkflowActionService.kt
+'   kosha-document/.../listener/DocumentWorkflowListener.kt
+' Cross-module coupling is via Spring ApplicationEvents
+' (WorkflowCompleted, WorkflowRejected, WorkflowSignOffApproved).
+
+title Sequence — Approval workflow (LINEAR variant, with rejection branch)
+
+actor "Submitter" as Sub
+actor "Approver (step N)" as Apv
+participant "kosha-web" as Web
+participant "DocumentService\n(kosha-document)" as DocSvc
+participant "WorkflowEngineService\n(kosha-workflow)" as Eng
+participant "WorkflowActionService\n(kosha-workflow)" as Act
+participant "DocumentWorkflowListener\n(kosha-document)" as Bridge
+participant "SignatureService" as Sig
+participant "Notification listeners\n(kosha-notification)" as Notif
+database "PostgreSQL" as PG
+
+== Submit for review ==
+Sub -> Web : Click "Submit for review"
+Web -> DocSvc : PATCH document.status = IN_REVIEW
+DocSvc -> PG : update doc.document
+DocSvc -->> Eng : DocumentStatusChanged(DRAFT→IN_REVIEW)
+Eng -> PG : INSERT WorkflowInstance(status=IN_PROGRESS)
+Eng -> PG : INSERT WorkflowStepInstance per step\n(first step = IN_PROGRESS, rest = WAITING)
+Eng -->> Notif : WorkflowStepAssigned(step 1)
+Notif -> Apv : email "You have a step to approve"
+
+== Approve step (happy path, repeated per step) ==
+Apv -> Web : Open task, click Approve
+Web -> Act : POST /workflow/{id}/steps/{step}/approve
+Act -> PG : UPDATE step.status = APPROVED
+Act -->> Notif : WorkflowStepCompleted(APPROVED)
+
+alt step.actionType == SIGN_OFF
+  Act -->> Bridge : WorkflowSignOffApproved
+  Bridge -> Sig : signFromWorkflow(documentId, versionId, signerId)
+  Sig -> PG : INSERT DocumentSignature
+end
+
+alt LINEAR — promote next step
+  Act -> PG : find next WAITING step
+  loop while next step has falsy conditionJson
+    Act -> PG : UPDATE next.status = SKIPPED
+    Act -> PG : load step after that
+  end
+  Act -> PG : UPDATE next.status = IN_PROGRESS, dueAt
+  Act -->> Notif : WorkflowStepAssigned(next assignee)
+end
+
+alt all steps terminal (APPROVED or SKIPPED)
+  Act -> PG : UPDATE WorkflowInstance.status = COMPLETED
+  Act -->> Bridge : WorkflowCompleted
+  Bridge -> PG : UPDATE document.status = IN_REVIEW → PUBLISHED
+  Bridge -->> Notif : DocumentStatusChanged(IN_REVIEW→PUBLISHED)
+  Notif -> Sub : email "Your document has been published"
+else still waiting on siblings (PARALLEL) or next step
+  Act --> Web : 200 ActionResult{workflowInstanceStatus=IN_PROGRESS}
+end
+
+== Rejection branch (any step) ==
+Apv -> Web : Click Reject (mandatory comments)
+Web -> Act : POST /workflow/{id}/steps/{step}/reject {comments}
+Act -> PG : UPDATE step.status = REJECTED
+Act -> PG : UPDATE WorkflowInstance.status = REJECTED,\nrejectionComments, rejectedAtStepId, rejectedBy
+Act -->> Notif : WorkflowStepCompleted(REJECTED)
+Act -->> Bridge : WorkflowRejected(reason)
+Bridge -> PG : UPDATE document.status = IN_REVIEW → DRAFT
+Bridge -->> Notif : DocumentStatusChanged(IN_REVIEW→DRAFT)
+Notif -> Sub : email "Rejected — please revise"
+note right of Sub
+  Submitter must revise and resubmit;
+  resubmission spawns a new WorkflowInstance
+  (we never reuse a rejected instance).
+end note
+
+@enduml

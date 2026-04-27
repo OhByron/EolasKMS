@@ -1,0 +1,59 @@
+@startuml class-identity
+' Eòlas KMS — Identity & access domain
+' Source: kosha-identity/src/main/kotlin/dev/kosha/identity/entity/*.kt
+' Keycloak is the source of truth for credentials; Kosha mirrors profile
+' rows keyed by keycloakId (UUID).
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty members
+title Domain model — Identity &amp; access (kosha-identity)
+
+class UserProfile <<ident.user_profile>> {
+  + id : UUID
+  + keycloakId : UUID  <i>FK to IdP</i>
+  + displayName : String
+  + email : String
+  + role : String  <i>GLOBAL_ADMIN | DEPT_ADMIN | EDITOR | CONTRIBUTOR</i>
+  + status : String  <i>ACTIVE | DISABLED</i>
+}
+
+class Department <<ident.department>> {
+  + id : UUID
+  + name : String
+  + description : String?
+  + status : String
+  + scanIntervalHours : Int?
+  + lastScanAt : OffsetDateTime?
+  + handlesLegalReview : Boolean
+}
+
+class AccessGroup <<ident.access_group>> {
+  + id : UUID
+  + name : String
+  + externalRef : String?
+}
+
+' --- relationships --------------------------------------------------
+UserProfile "many" --> "1" Department : department
+UserProfile "many" -- "many" AccessGroup : groups\n(user_group_membership)
+AccessGroup "many" --> "0..1" Department : department
+Department "many" --> "0..1" Department : parent
+Department "0..1" --> "0..1" UserProfile : manager
+
+note right of UserProfile
+  keycloakId is set by UserCreationService
+  after a successful Keycloak Admin API call.
+  Local rollback deletes the Keycloak user
+  to keep both systems in sync.
+end note
+
+note bottom of Department
+  handlesLegalReview = true makes members
+  selectable on Document.legalReviewer.
+  A document with requiresLegalReview = true
+  forces the workflow engine to add a parallel
+  legal review step.
+end note
+
+@enduml
