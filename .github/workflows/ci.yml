@@ -49,6 +49,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Paraglide-generated files (src/paraglide/) are gitignored — they're
+      # produced by the @inlang/paraglide-sveltekit vite plugin during
+      # `vite dev` / `vite build`. `svelte-kit sync` alone doesn't trigger
+      # the vite plugin, so we compile them explicitly here before
+      # svelte-check runs and resolves `$paraglide/messages`.
+      - name: Generate paraglide messages
+        run: npx --yes @inlang/paraglide-js@latest compile --project ./project.inlang --outdir ./src/paraglide
+
       - name: Type-check
         run: npm run check
 
