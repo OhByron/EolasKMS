@@ -1,11 +1,12 @@
 """LLM provider abstraction — returns a chat model based on config."""
 
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Protocol, Sequence
+from typing import Protocol
 
 import httpx
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage, SystemMessage
 
 from config import settings
 

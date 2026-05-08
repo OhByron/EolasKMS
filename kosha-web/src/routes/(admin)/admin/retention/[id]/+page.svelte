@@ -18,7 +18,7 @@
 	let editAction = $state('ARCHIVE');
 	let editStatus = $state('ACTIVE');
 
-	const policyId = $derived(page.params.id);
+	const policyId = $derived(page.params.id ?? '');
 
 	onMount(() => loadPolicy());
 

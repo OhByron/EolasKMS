@@ -14,7 +14,7 @@
 	let loading = $state(true);
 	let error = $state('');
 
-	const docId = $derived(page.params.id);
+	const docId = $derived(page.params.id ?? '');
 
 	onMount(() => loadData());
 

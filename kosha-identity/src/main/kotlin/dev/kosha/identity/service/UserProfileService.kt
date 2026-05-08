@@ -6,8 +6,11 @@ import dev.kosha.identity.dto.UserProfileResponse
 import dev.kosha.identity.entity.UserProfile
 import dev.kosha.identity.repository.DepartmentRepository
 import dev.kosha.identity.repository.UserProfileRepository
+import dev.kosha.identity.security.AuthorityService
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import org.springframework.security.access.AccessDeniedException
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -17,11 +20,13 @@ import java.util.UUID
 class UserProfileService(
     private val userProfileRepo: UserProfileRepository,
     private val departmentRepo: DepartmentRepository,
+    private val authorityService: AuthorityService,
 ) {
 
     companion object {
         val VALID_ROLES = setOf("GLOBAL_ADMIN", "DEPT_ADMIN", "EDITOR", "CONTRIBUTOR")
         val VALID_STATUSES = setOf("ACTIVE", "INACTIVE")
+        val ELEVATED_ROLES = setOf("GLOBAL_ADMIN", "DEPT_ADMIN")
     }
 
     fun findAll(pageable: Pageable): Page<UserProfileResponse> =
@@ -67,9 +72,11 @@ class UserProfileService(
         val user = userProfileRepo.findById(id)
             .orElseThrow { NoSuchElementException("User not found: $id") }
 
-        // Authority check — the caller must be allowed to manage this user.
-        // Stubbed for dev; real implementation will inspect the current JWT
-        // and enforce dept admin scope. See checkUpdateAuthority() below.
+        // Defense-in-depth check on top of the controller-level
+        // @PreAuthorize("@authorityService.canManageUser(...)"). The
+        // controller already enforces dept-scope and blocks self-edit; the
+        // remaining concern is field-level role escalation, which the
+        // annotation can't see (the new role lives in the request body).
         checkUpdateAuthority(user, request)
 
         request.role?.let {
@@ -91,30 +98,37 @@ class UserProfileService(
     }
 
     /**
-     * Authority stub — in production this inspects the current JWT to verify:
+     * Field-level role-escalation block for [update].
      *
-     * - GLOBAL_ADMIN can edit any user.
-     * - DEPT_ADMIN can edit any user whose current department matches one they
-     *   administer. They may change that user's role (within their dept),
-     *   toggle their status, or transfer them *out* to another department.
-     *   Transferring users *into* a department they don't administer is always
-     *   allowed — the sending admin is losing a team member, and adding to the
-     *   target dept is out of the receiving admin's control in this simple
-     *   model. A future consent workflow can tighten this.
-     * - Users may not edit themselves via this endpoint (self-service goes
-     *   through /api/v1/me instead).
+     * Promoting a user to GLOBAL_ADMIN or DEPT_ADMIN is GLOBAL_ADMIN-only.
+     * The controller's `canManageUser` SpEL check already enforces:
+     *   - GLOBAL_ADMIN can manage anyone
+     *   - DEPT_ADMIN can only manage users currently in their own department
+     *   - no self-management through this path (`/me` is the self-service surface)
+     *   - missing/non-JWT auth fails closed
      *
-     * Currently a no-op in dev because JWT roles are not fully wired up.
-     * When restored, throw [org.springframework.security.access.AccessDeniedException]
-     * on violation so the controller advice returns 403.
+     * So by the time control reaches this method we know the caller is a
+     * legitimately-scoped admin. The only remaining risk is a DEPT_ADMIN
+     * elevating someone in their dept to GLOBAL_ADMIN/DEPT_ADMIN, which is
+     * what we block here.
+     *
+     * `targetUser` is intentionally unused today — kept on the signature as
+     * a seam for future field-level rules ("can't promote a user above your
+     * own role", etc.) without changing the call site.
      */
     @Suppress("UNUSED_PARAMETER")
     private fun checkUpdateAuthority(
         targetUser: UserProfile,
         request: UpdateUserProfileRequest,
     ) {
-        // TODO: read current JWT, enforce the rules above. See session memory
-        //       "Workflow requirements" for the authority model.
+        val auth = SecurityContextHolder.getContext().authentication
+        if (authorityService.isGlobalAdmin(auth)) return
+
+        request.role?.let { newRole ->
+            if (newRole in ELEVATED_ROLES) {
+                throw AccessDeniedException("Promoting users to $newRole is GLOBAL_ADMIN-only")
+            }
+        }
     }
 
     private fun UserProfile.toResponse() = UserProfileResponse(

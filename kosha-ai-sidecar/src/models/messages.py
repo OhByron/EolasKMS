@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
 
@@ -48,4 +48,4 @@ class FeedbackCorrection(BaseModel):
     original: dict
     corrected: dict
     corrected_by: UUID
-    corrected_at: datetime = datetime.now()
+    corrected_at: datetime = Field(default_factory=datetime.now)

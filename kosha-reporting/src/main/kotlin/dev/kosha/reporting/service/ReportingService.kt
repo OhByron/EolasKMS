@@ -459,6 +459,7 @@ class ReportingService(
                 rr.document_id,
                 d.title,
                 rr.policy_id,
+                d.department_id,
                 d.primary_owner_id,
                 d.proxy_owner_id,
                 EXTRACT(DAY FROM now() - rr.due_at)::BIGINT AS days_overdue
@@ -483,9 +484,10 @@ class ReportingService(
                 documentId = r[1] as UUID,
                 documentTitle = r[2] as String,
                 policyId = r[3] as UUID,
-                primaryOwnerId = r[4] as UUID,
-                proxyOwnerId = r[5] as? UUID,
-                daysOverdue = (r[6] as Number).toLong(),
+                departmentId = r[4] as UUID,
+                primaryOwnerId = r[5] as UUID,
+                proxyOwnerId = r[6] as? UUID,
+                daysOverdue = (r[7] as Number).toLong(),
             ))
             count++
         }

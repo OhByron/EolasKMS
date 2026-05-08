@@ -7,14 +7,14 @@ from minio import Minio
 
 from config import settings
 from models.messages import AiTaskMessage
+from pipelines.metadata_extractor import extract_metadata
+from pipelines.ocr import run_ocr
 from pipelines.summarizer import summarize
 from pipelines.taxonomy_pipeline import (
-    LlmUnavailable,
+    LlmUnavailableError,
     analyze_for_taxonomy,
     invalidate_cache,
 )
-from pipelines.ocr import run_ocr
-from pipelines.metadata_extractor import extract_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -96,18 +96,21 @@ async def handle_ai_task(payload: dict, js) -> None:
                 "confidence": confidence,
             }
             await js.publish("ai.summary.completed", json.dumps(result).encode())
-            logger.info("Published summary for version %s (confidence=%.2f)", task.version_id, confidence)
+            logger.info(
+                "Published summary for version %s (confidence=%.2f)",
+                task.version_id, confidence,
+            )
 
     # Run unified two-stage LLM taxonomy pipeline (keywords + classifications + candidates).
     # Replaces the legacy spaCy NER + difflib fuzzy-match flow. If the configured LLM is
-    # unreachable, ``LlmUnavailable`` propagates so the NATS handler can nak this message
+    # unreachable, ``LlmUnavailableError`` propagates so the NATS handler can nak this message
     # for re-delivery once the provider is back.
     if task.task_type in ("FULL_ANALYSIS", "EXTRACT_KEYWORDS", "CLASSIFY"):
         try:
             keywords, classifications, candidates = await analyze_for_taxonomy(
                 text, str(task.document_id),
             )
-        except LlmUnavailable as exc:
+        except LlmUnavailableError as exc:
             logger.warning(
                 "LLM unavailable for task %s — naking for retry. cause=%s",
                 task.task_id, exc,

@@ -107,12 +107,13 @@ This brings up:
 | Service | URL |
 |---|---|
 | Eòlas API | http://localhost:8080 |
-| Eòlas Web (dev) | http://localhost:5175 |
 | Keycloak admin | http://localhost:8180 |
 | MinIO console | http://localhost:9001 |
 | OpenSearch | http://localhost:9200 |
 | NATS monitoring | http://localhost:8222 |
 | Mailpit (captured emails) | http://localhost:8025 |
+
+**The frontend is run separately** — see [Build locally (without Docker)](#3-build-locally-without-docker) below. Default URL: `http://localhost:5173` (Vite dev server).
 
 ### First login
 
