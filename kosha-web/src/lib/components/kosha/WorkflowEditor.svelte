@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { api } from '$lib/api';
+	import * as m from '$paraglide/messages';
 	import type {
 		ActionType,
 		UpdateWorkflowStepRequest,
@@ -230,12 +231,12 @@
 			const res = await api.departments.updateWorkflow(departmentId, body);
 			workflow = res.data;
 			draft = toDraft(workflow);
-			saveSuccess = 'Workflow saved';
+			saveSuccess = m.workflow_save_success();
 			// Refresh validation so any new problems show immediately
 			const valRes = await api.departments.validateWorkflow(departmentId);
 			validation = valRes.data;
 		} catch (e: any) {
-			saveError = e.message ?? 'Failed to save workflow';
+			saveError = e.message ?? m.workflow_save_error();
 		} finally {
 			saving = false;
 		}
@@ -301,7 +302,7 @@
 
 		<!-- Workflow type -->
 		<fieldset class="mt-4">
-			<legend class="text-sm font-medium">Type</legend>
+			<legend class="text-sm font-medium">{m.workflow_type_legend()}</legend>
 			<div class="mt-2 flex gap-4 text-sm">
 				<label class="flex items-center gap-2">
 					<input
@@ -312,8 +313,8 @@
 						onchange={() => (draft!.workflowType = 'LINEAR')}
 					/>
 					<span>
-						Linear
-						<span class="text-xs text-muted-foreground">(steps run in sequence)</span>
+						{m.workflow_type_linear_label()}
+						<span class="text-xs text-muted-foreground">{m.workflow_type_linear_hint()}</span>
 					</span>
 				</label>
 				<label class="flex items-center gap-2">
@@ -325,8 +326,8 @@
 						onchange={() => (draft!.workflowType = 'PARALLEL')}
 					/>
 					<span>
-						Parallel
-						<span class="text-xs text-muted-foreground">(all steps fire concurrently)</span>
+						{m.workflow_type_parallel_label()}
+						<span class="text-xs text-muted-foreground">{m.workflow_type_parallel_hint()}</span>
 					</span>
 				</label>
 			</div>
@@ -334,11 +335,11 @@
 
 		<!-- Steps -->
 		<div class="mt-5 space-y-3">
-			<h3 class="text-sm font-medium">Steps</h3>
+			<h3 class="text-sm font-medium">{m.workflow_steps_heading()}</h3>
 
 			{#if draft.steps.length === 0}
 				<p class="rounded-md border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
-					No steps yet. Add at least one to publish a working workflow.
+					{m.workflow_no_steps_hint()}
 				</p>
 			{/if}
 
@@ -384,28 +385,28 @@
 									aria-label="Remove step {idx + 1}"
 									class="rounded-md border border-border px-2 py-1 text-xs hover:bg-destructive/10 hover:text-destructive focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 								>
-									Remove
+									{m.workflow_step_remove()}
 								</button>
 							</div>
 
 							<div class="grid gap-2 sm:grid-cols-2">
 								<div>
 									<label class="block text-xs font-medium text-muted-foreground" for="step-{idx}-action">
-										Action
+										{m.workflow_step_action_label()}
 									</label>
 									<select
 										id="step-{idx}-action"
 										bind:value={step.actionType}
 										class="mt-1 w-full rounded-md border border-border bg-background px-2 py-1 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 									>
-										<option value="REVIEW">Review</option>
-										<option value="APPROVE">Approve</option>
-										<option value="SIGN_OFF">Sign-off</option>
+										<option value="REVIEW">{m.workflow_action_review()}</option>
+										<option value="APPROVE">{m.btn_approve()}</option>
+										<option value="SIGN_OFF">{m.workflow_action_signoff()}</option>
 									</select>
 								</div>
 								<div>
 									<label class="block text-xs font-medium text-muted-foreground" for="step-{idx}-days">
-										Time limit (days)
+										{m.workflow_step_time_limit_label()}
 									</label>
 									<input
 										id="step-{idx}-days"
@@ -418,7 +419,7 @@
 								</div>
 								<div>
 									<label class="block text-xs font-medium text-muted-foreground" for="step-{idx}-assignee">
-										Assignee
+										{m.workflow_step_assignee_label()}
 									</label>
 									<select
 										id="step-{idx}-assignee"
@@ -426,7 +427,7 @@
 										class="mt-1 w-full rounded-md border border-border bg-background px-2 py-1 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 										class:border-destructive={!step.assigneeId}
 									>
-										<option value="">-- select --</option>
+										<option value="">{m.workflow_step_select_placeholder()}</option>
 										{#each activeMembers as m}
 											<option value={m.id}>{m.displayName} ({m.role})</option>
 										{/each}
@@ -434,7 +435,7 @@
 								</div>
 								<div>
 									<label class="block text-xs font-medium text-muted-foreground" for="step-{idx}-escalation">
-										Escalation contact
+										{m.workflow_step_escalation_label()}
 									</label>
 									<select
 										id="step-{idx}-escalation"
@@ -442,7 +443,7 @@
 										class="mt-1 w-full rounded-md border border-border bg-background px-2 py-1 text-sm focus:border-ring focus:outline-2 focus:outline-offset-2 focus:outline-ring"
 										class:border-destructive={!step.escalationId}
 									>
-										<option value="">-- select --</option>
+										<option value="">{m.workflow_step_select_placeholder()}</option>
 										{#each activeMembers as m}
 											<option value={m.id}>{m.displayName} ({m.role})</option>
 										{/each}
@@ -486,7 +487,7 @@
 				disabled={activeMembers.length === 0}
 				class="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 			>
-				+ Add step
+				{m.btn_add_step()}
 			</button>
 			{#if draft.steps.length === 0 || draft.steps[0]?.actionType !== 'REVIEW'}
 				<button
@@ -495,7 +496,7 @@
 					disabled={activeMembers.length === 0}
 					class="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 				>
-					+ Review at start
+					{m.workflow_btn_review_at_start()}
 				</button>
 			{/if}
 			{#if draft.steps.length === 0 || draft.steps[draft.steps.length - 1]?.actionType !== 'SIGN_OFF'}
@@ -505,7 +506,7 @@
 					disabled={activeMembers.length === 0}
 					class="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50"
 				>
-					+ Sign-off at end
+					{m.workflow_btn_signoff_at_end()}
 				</button>
 			{/if}
 		</div>
@@ -518,9 +519,9 @@
 				{:else if saveSuccess}
 					<span class="text-success">{saveSuccess}</span>
 				{:else if dirty}
-					<span class="text-muted-foreground">Unsaved changes</span>
+					<span class="text-muted-foreground">{m.workflow_unsaved_changes()}</span>
 				{:else}
-					<span class="text-muted-foreground">No changes</span>
+					<span class="text-muted-foreground">{m.workflow_no_changes()}</span>
 				{/if}
 			</div>
 			<div class="flex gap-2">
@@ -538,7 +539,7 @@
 					disabled={!dirty || !localValid || saving}
 					class="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 focus:outline-2 focus:outline-offset-2 focus:outline-ring disabled:opacity-50 disabled:cursor-not-allowed"
 				>
-					{saving ? 'Saving…' : 'Save workflow'}
+					{saving ? m.workflow_btn_saving() : m.btn_save_workflow()}
 				</button>
 			</div>
 		</div>

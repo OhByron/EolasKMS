@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Avoid stacking parallel runs from rapid pushes — keep only the latest per ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  jvm:
+    name: Kotlin (gradle check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build & test
+        run: ./gradlew check --no-daemon --stacktrace
+
+  web:
+    name: kosha-web (svelte-check)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kosha-web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: kosha-web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run check
+
+  ai-sidecar:
+    name: kosha-ai-sidecar (ruff)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kosha-ai-sidecar
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dev deps
+        run: pip install '.[dev]'
+
+      - name: Lint
+        run: ruff check .
+
+      # Tests do not exist yet. When they're added, replace this block with:
+      #   - name: Test
+      #     run: pytest -q

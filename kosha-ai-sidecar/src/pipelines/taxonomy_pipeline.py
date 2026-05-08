@@ -19,7 +19,7 @@ Stage 2 — propose-new (only if stage 1 produced ``unmatched`` items)
 
 Routes through ``providers.llm_provider.get_llm()`` so the configured provider
 (Ollama+gemma4 by default, Anthropic, or OpenAI) drives both stages — there is
-no spaCy fallback. If the LLM is unreachable a ``LlmUnavailable`` exception is
+no spaCy fallback. If the LLM is unreachable a ``LlmUnavailableError`` exception is
 raised so the NATS handler can nak the message for re-delivery.
 """
 
@@ -36,7 +36,7 @@ from providers.llm_provider import get_llm
 logger = logging.getLogger(__name__)
 
 
-class LlmUnavailable(RuntimeError):
+class LlmUnavailableError(RuntimeError):
     """Raised when the configured LLM cannot be reached. Triggers NATS nak."""
 
 
@@ -73,7 +73,10 @@ async def load_active_taxonomy() -> list[dict]:
                 },
             )
             if token_res.status_code != 200:
-                logger.warning("Could not get service-account token for taxonomy fetch: %s", token_res.status_code)
+                logger.warning(
+                    "Could not get service-account token for taxonomy fetch: %s",
+                    token_res.status_code,
+                )
                 return []
             token = token_res.json().get("access_token", "")
 
@@ -132,7 +135,7 @@ async def _call_llm_json(system: str, user: str, *, max_predict_hint: int = 1500
     """Call the configured LLM and parse its response as JSON.
 
     Raises:
-        LlmUnavailable: connection refused / timeout / 5xx
+        LlmUnavailableError: connection refused / timeout / 5xx
         ValueError: 200 response but unparseable JSON
     """
     try:
@@ -142,14 +145,14 @@ async def _call_llm_json(system: str, user: str, *, max_predict_hint: int = 1500
             HumanMessage(content=user),
         ])
     except (httpx.ConnectError, httpx.ReadTimeout, httpx.RemoteProtocolError) as exc:
-        raise LlmUnavailable(str(exc)) from exc
+        raise LlmUnavailableError(str(exc)) from exc
     except Exception as exc:
         # Provider client (Anthropic/OpenAI/Ollama) may raise its own types;
         # treat anything network-shaped as unavailable so we re-deliver, but
         # propagate genuine programmer errors.
         msg = str(exc).lower()
         if any(term in msg for term in ("connect", "timeout", "unreachable", "network")):
-            raise LlmUnavailable(str(exc)) from exc
+            raise LlmUnavailableError(str(exc)) from exc
         raise
 
     content = (getattr(response, "content", "") or "").strip()
@@ -157,7 +160,7 @@ async def _call_llm_json(system: str, user: str, *, max_predict_hint: int = 1500
         # Empty content from a thinking-mode model usually means our
         # ``think: false`` flag wasn't honoured. Treat as unavailable so the
         # task is retried after the operator fixes the provider config.
-        raise LlmUnavailable("LLM returned empty content (thinking-mode trap?)")
+        raise LlmUnavailableError("LLM returned empty content (thinking-mode trap?)")
 
     cleaned = _strip_code_fences(content)
     try:
@@ -186,7 +189,8 @@ _STAGE1_SYSTEM = (
     "Return ONLY valid JSON in this exact shape, no preamble, no code fences:\n"
     "{\n"
     '  "keywords":        [{"keyword": str, "frequency": int, "confidence": float}, ...],\n'
-    '  "classifications": [{"keyword": str, "termId": str, "confidence": float, "evidence": str}, ...],\n'
+    '  "classifications": '
+    '[{"keyword": str, "termId": str, "confidence": float, "evidence": str}, ...],\n'
     '  "unmatched":       [{"keyword": str, "frequency": int, "confidence": float}, ...]\n'
     "}\n"
     "Confidence is a float 0.0-1.0. Evidence is a short quote or paraphrase from the document."
@@ -334,14 +338,16 @@ async def analyze_for_taxonomy(
       * candidates      → ``ai.taxonomy.candidates`` payload
 
     Raises:
-        LlmUnavailable: provider unreachable; NATS handler should nak.
+        LlmUnavailableError: provider unreachable; NATS handler should nak.
     """
     if not text or len(text.strip()) < 50:
         return [], [], []
 
     taxonomy_terms = await load_active_taxonomy()
 
-    keywords, raw_classifications, unmatched = await _stage1_extract_and_classify(text, taxonomy_terms)
+    keywords, raw_classifications, unmatched = await _stage1_extract_and_classify(
+        text, taxonomy_terms,
+    )
 
     # The backend's classification topic expects {documentId, termId, confidence, source};
     # rebuild from the LLM output shape.
@@ -359,7 +365,7 @@ async def analyze_for_taxonomy(
     if unmatched:
         try:
             candidates = await _stage2_define_candidates(unmatched)
-        except LlmUnavailable:
+        except LlmUnavailableError:
             # Re-raise so the whole task is naked and retried.
             raise
         except Exception:

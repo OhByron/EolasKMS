@@ -104,7 +104,7 @@ async function setUser(oidcUser: any) {
 	const accessToken = oidcUser.access_token;
 	const name = oidcUser.profile.name ?? oidcUser.profile.preferred_username ?? '';
 	const email = oidcUser.profile.email ?? '';
-	const roles = oidcUser.profile.roles ?? [];
+	const roles = oidcUser.profile.roles ?? oidcUser.profile.realm_access?.roles ?? [];
 	const keycloakId = oidcUser.profile.sub ?? '';
 
 	// Fetch the user profile to get the internal user ID

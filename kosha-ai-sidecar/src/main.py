@@ -4,11 +4,10 @@ import logging
 
 import httpx
 import nats
-from nats.js.api import ConsumerConfig, DeliverPolicy
 
 from config import settings
-from handlers.task_handler import handle_ai_task
 from handlers.feedback_handler import handle_feedback
+from handlers.task_handler import handle_ai_task
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("kosha-ai")
@@ -23,7 +22,11 @@ async def fetch_ai_config():
         # both on a developer laptop (localhost:8180) and inside docker-compose
         # (keycloak:8080 via service-name DNS). Avoids impersonating the seed admin
         # user, whose password is rotated by the bootstrap step on first boot.
-        keycloak_url = f"{settings.keycloak_url.rstrip('/')}/realms/{settings.keycloak_realm}/protocol/openid-connect/token"
+        keycloak_url = (
+            f"{settings.keycloak_url.rstrip('/')}"
+            f"/realms/{settings.keycloak_realm}"
+            "/protocol/openid-connect/token"
+        )
         async with httpx.AsyncClient() as client:
             token_res = await client.post(
                 keycloak_url,
@@ -99,7 +102,8 @@ async def smoke_test_llm() -> None:
         if not content:
             logger.error(
                 "MODEL_PROBE_FAILED: %s/%s returned empty content. "
-                "If this is a thinking-mode model (e.g. gemma4), confirm the provider sends 'think: false'. "
+                "If this is a thinking-mode model (e.g. gemma4), "
+                "confirm the provider sends 'think: false'. "
                 "AI tasks will produce empty results until this is resolved.",
                 settings.llm_provider, settings.llm_model,
             )

@@ -89,7 +89,8 @@ def detect_needs_ocr(pdf_bytes: bytes) -> bool:
         return needs_ocr
     except Exception as ex:
         logger.warning("OCR detection failed, defaulting to skip: %s", ex)
-        os.unlink(tmp_path) if "tmp_path" in dir() else None
+        if "tmp_path" in locals():
+            os.unlink(tmp_path)
         return False
 
 

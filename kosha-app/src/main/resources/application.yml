@@ -29,8 +29,8 @@ spring:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/kosha}
 
   mail:
-    host: ${MAIL_HOST:localhost}
-    port: ${MAIL_PORT:1025}
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
     properties:
       mail.smtp.auth: false
       mail.smtp.starttls.enable: false
@@ -86,14 +86,14 @@ kosha:
       url: ${KOSHA_PREVIEW_SIDECAR_URL:}
   storage:
     minio:
-      endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
-      access-key: ${MINIO_ACCESS_KEY:minioadmin}
-      secret-key: ${MINIO_SECRET_KEY:minioadmin}
-      bucket: ${MINIO_BUCKET:kosha-vault}
+      endpoint: ${KOSHA_STORAGE_MINIO_ENDPOINT:http://localhost:9000}
+      access-key: ${KOSHA_STORAGE_MINIO_ACCESS_KEY:minioadmin}
+      secret-key: ${KOSHA_STORAGE_MINIO_SECRET_KEY:minioadmin}
+      bucket: ${KOSHA_STORAGE_MINIO_BUCKET:kosha-vault}
   nats:
-    url: ${NATS_URL:nats://localhost:4222}
+    url: ${KOSHA_NATS_URL:nats://localhost:4222}
   opensearch:
-    url: ${OPENSEARCH_URL:https://localhost:9200}
+    url: ${KOSHA_OPENSEARCH_URL:http://localhost:9200}
   keycloak:
     # Base URL Keycloak is running at (no /realms suffix).
     server-url: ${KEYCLOAK_SERVER_URL:http://localhost:8180}
