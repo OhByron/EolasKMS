@@ -25,6 +25,8 @@ import type {
 	ReviewTask,
 	TaxonomyTerm,
 	TaxonomyTreeNode,
+	TaxonomyImportPreview,
+	TaxonomyImportResult,
 	SearchResult,
 	SearchRequest,
 	DocumentClassification,

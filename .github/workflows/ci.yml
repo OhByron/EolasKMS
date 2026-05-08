@@ -55,7 +55,12 @@ jobs:
       # the vite plugin, so we compile them explicitly here before
       # svelte-check runs and resolves `$paraglide/messages`.
       - name: Generate paraglide messages
-        run: npx --yes @inlang/paraglide-js@latest compile --project ./project.inlang --outdir ./src/paraglide
+        # Use the locally-installed paraglide-sveltekit CLI (v0.16.1, which
+        # bundles paraglide-js v1.11.8). Don't use `@inlang/paraglide-js@latest`
+        # — that pulls v2.x, which generates a getLocale/setLocale runtime
+        # incompatible with the v1-API call sites in hooks.server.ts,
+        # +layout.svelte, TopBar.svelte, profile/+page.svelte, etc.
+        run: npx paraglide-js compile --project ./project.inlang --outdir ./src/paraglide
 
       - name: Type-check
         run: npm run check
