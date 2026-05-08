@@ -1,0 +1,74 @@
+@startuml class-workflow
+' Eòlas KMS — Workflow engine domain
+' Source: kosha-workflow/src/main/kotlin/dev/kosha/workflow/entity/*.kt
+' Step definitions are soft-deleted (deletedAt) so in-flight instances
+' keep a stable FK target even when the admin edits the workflow.
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty members
+title Domain model — Workflow engine (kosha-workflow)
+
+class WorkflowDefinition <<wf.workflow_definition>> {
+  + id : UUID
+  + name : String
+  + workflowType : String  <i>LINEAR | PARALLEL</i>
+  + isDefault : Boolean
+}
+
+class WorkflowStepDefinition <<wf.workflow_step_definition>> {
+  + id : UUID
+  + stepOrder : Int
+  + name : String
+  + actionType : String  <i>REVIEW | APPROVE | SIGN_OFF</i>
+  + timeLimitDays : Int
+  + conditionJson : String?  <i>JSON Logic (auto-skip)</i>
+  + deletedAt : OffsetDateTime?
+}
+
+class WorkflowInstance <<wf.workflow_instance>> {
+  + id : UUID
+  + documentId : UUID
+  + versionId : UUID
+  + status : String  <i>IN_PROGRESS | COMPLETED | REJECTED | CANCELLED</i>
+  + startedAt : OffsetDateTime
+  + completedAt : OffsetDateTime?
+  + rejectionComments : String?
+  + rejectedAtStepId : UUID?
+}
+
+class WorkflowStepInstance <<wf.workflow_step_instance>> {
+  + id : UUID
+  + status : String  <i>WAITING | IN_PROGRESS | APPROVED | REJECTED | SKIPPED</i>
+  + comments : String?
+  + decidedAt : OffsetDateTime?
+  + dueAt : OffsetDateTime?
+  + escalatedAt : OffsetDateTime?
+}
+
+class UserProfile <<ident.user_profile>>
+
+' --- relationships --------------------------------------------------
+WorkflowDefinition "1" *-- "many" WorkflowStepDefinition : steps\n(ordered, soft-deletable)
+WorkflowDefinition "0..1" --> "0..1" Department : department
+WorkflowInstance "many" --> "1" WorkflowDefinition
+WorkflowInstance "1" *-- "many" WorkflowStepInstance
+WorkflowStepInstance "many" --> "1" WorkflowStepDefinition : stepDefinition
+WorkflowStepInstance "0..1" --> "1" UserProfile : assignedTo
+WorkflowStepDefinition "0..1" --> "1" UserProfile : assignee
+WorkflowStepDefinition "0..1" --> "1" UserProfile : escalation
+WorkflowInstance --> UserProfile : initiatedBy / rejectedBy
+
+class Department <<ident.department>>
+
+note bottom of WorkflowStepInstance
+  Engine: WorkflowActionService.approve()
+   - LINEAR: promote next non-skipped WAITING step
+   - PARALLEL: complete when all siblings terminal
+   - SIGN_OFF approval emits WorkflowSignOffApproved
+   - Final terminal state emits WorkflowCompleted
+   - Any reject emits WorkflowRejected
+  See diagram 11-seq-approval-workflow.
+end note
+
+@enduml

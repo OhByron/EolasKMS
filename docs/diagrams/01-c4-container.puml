@@ -1,0 +1,54 @@
+@startuml c4-container
+' Eòlas KMS — Container view (C4 Level 2)
+' Generated from settings.gradle.kts modules and runtime topology in
+' docker-compose.yml + kosha-app config. Edit the source, re-render with
+'   plantuml -tsvg 01-c4-container.puml
+' (or run docs/diagrams/render.sh from the repo root.)
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+title Eòlas KMS — Container view
+
+Person(user, "Editor / Reviewer / Admin", "Authors, reviews, classifies and retains knowledge artefacts")
+Person(public, "Public share-link recipient", "Unauthenticated viewer of a share token")
+
+System_Boundary(eolas, "Eòlas KMS") {
+  Container(web, "kosha-web", "SvelteKit + TypeScript", "Browser SPA. OIDC client. Renders document detail, approval queue, taxonomy admin.")
+
+  Container(api, "kosha-app (REST API)", "Spring Boot · Kotlin", "Hosts REST controllers, Spring Security OAuth2 RS, JPA persistence and the AiResultListener subscriber. Bundles the 12 domain modules as Spring beans.")
+
+  Container(natspub, "AI dispatch", "kosha-app · NatsService", "Publishes ai.task.submitted on document upload")
+  Container(natssub, "AI fan-in", "kosha-app · AiResultListener", "Subscribes to ai.summary.completed, ai.keywords.extracted, ai.classification.completed, ai.taxonomy.candidates, ai.ocr.completed, ai.metadata.extracted")
+
+  Container(ai_sidecar, "kosha-ai-sidecar", "Python · LangChain · spaCy · Tesseract", "Consumes ai.task.submitted; runs OCR, NER, summarisation, classification; publishes ai.* result subjects")
+  Container(preview_sidecar, "kosha-preview", "LibreOffice headless (optional)", "Office → PDF rendering for non-PDF previews")
+}
+
+SystemDb(postgres, "PostgreSQL 16", "Schemas: doc, ident, wf, tax, ret, notif, audit. Single DB, schema-per-module.")
+SystemDb(opensearch, "OpenSearch 2.12", "Full-text + faceted index for documents")
+SystemDb(minio, "MinIO (S3)", "Document originals, OCR'd PDFs, connector staging")
+System(nats, "NATS JetStream", "Subjects: ai.>, doc.>, wf.>, ident.>, tax.>, ret.>, storage.>")
+System(keycloak, "Keycloak 24", "OIDC / OAuth2 IdP. Source of truth for users, passwords, roles.")
+System_Ext(mail, "Mail gateway", "12 providers: SMTP, SendGrid, Mailgun, Postmark, SES, …")
+System_Ext(llm, "LLM provider", "Ollama (default, local) · Claude · OpenAI — selectable per deployment")
+
+Rel(user, web, "Uses", "HTTPS")
+Rel(public, api, "Resolves share token", "HTTPS · /api/v1/share/{token}")
+Rel(web, keycloak, "Authorisation Code + PKCE", "OIDC")
+Rel(web, api, "Calls REST API with bearer JWT", "HTTPS · JSON")
+
+Rel(api, keycloak, "Fetches JWKS, validates JWT", "HTTPS")
+Rel(api, postgres, "Reads / writes via JPA", "JDBC")
+Rel(api, opensearch, "Indexes / searches", "REST")
+Rel(api, minio, "Stores / reads originals", "S3")
+Rel(api, mail, "Sends notifications", "SMTP / HTTPS")
+Rel(api, preview_sidecar, "Office → PDF (optional)", "HTTP")
+
+Rel(natspub, nats, "publishAiTask → ai.task.submitted", "NATS")
+Rel(nats, ai_sidecar, "Delivers task", "NATS")
+Rel(ai_sidecar, llm, "Summary / classification calls", "HTTPS")
+Rel(ai_sidecar, nats, "Publishes ai.* results", "NATS")
+Rel(nats, natssub, "Delivers results", "NATS")
+
+@enduml

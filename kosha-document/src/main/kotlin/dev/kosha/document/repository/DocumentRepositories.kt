@@ -34,8 +34,7 @@ interface DocumentRepository : JpaRepository<Document, UUID> {
 interface DocumentVersionRepository : JpaRepository<DocumentVersion, UUID> {
     fun findByDocumentIdOrderByCreatedAtDesc(documentId: UUID): List<DocumentVersion>
 
-    @Query("SELECT v FROM DocumentVersion v WHERE v.document.id = :docId ORDER BY v.createdAt DESC LIMIT 1")
-    fun findLatestByDocumentId(docId: UUID): DocumentVersion?
+    fun findFirstByDocumentIdOrderByCreatedAtDesc(documentId: UUID): DocumentVersion?
 }
 
 @Repository

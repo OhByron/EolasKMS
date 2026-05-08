@@ -1,0 +1,79 @@
+@startuml class-knowledge-core
+' Eòlas KMS — Knowledge core domain
+' Source: kosha-document/src/main/kotlin/dev/kosha/document/entity/*.kt
+' Only the load-bearing fields are shown; full schemas live in the
+' Flyway migrations under kosha-app/src/main/resources/db/migration.
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty members
+title Domain model — Knowledge core (kosha-document)
+
+class Document <<doc.document>> {
+  + id : UUID
+  + docNumber : String?
+  + title : String
+  + description : String?
+  + status : String  <i>DRAFT | IN_REVIEW | PUBLISHED</i>
+  + storageMode : String  <i>VAULT | CONNECTOR</i>
+  + workflowType : String  <i>NONE | LINEAR | PARALLEL</i>
+  + checkedOut : Boolean
+  + lockedAt : OffsetDateTime?
+  + reviewCycle : String?
+  + nextReviewAt : OffsetDateTime?
+  + requiresLegalReview : Boolean
+}
+
+class DocumentVersion <<doc.document_version>> {
+  + id : UUID
+  + versionNumber : String
+  + fileName : String
+  + fileSizeBytes : Long?
+  + contentHash : String?  <i>SHA-256</i>
+  + storageKey : String?  <i>MinIO</i>
+  + contentType : String?
+  + ocrApplied : Boolean
+  + ocrStorageKey : String?
+  + ocrLanguage : String?
+  + extractedMetadata : JsonB?  <i>spaCy NER output</i>
+  + changeSummary : String?
+  + status : String
+  + publishAt : OffsetDateTime?
+  + unpublishAt : OffsetDateTime?
+}
+
+class VersionMetadata <<doc.version_metadata>> {
+  + id : UUID
+  + summary : String?  <i>LLM-generated</i>
+  + extractedText : String?  <i>Tika-extracted</i>
+  + aiConfidence : BigDecimal?
+  + humanReviewed : Boolean
+}
+
+class DocumentCategory <<doc.document_category>> {
+  + id : UUID
+  + name : String
+  + parent : DocumentCategory?
+}
+
+class ShareLink <<doc.share_link>>
+class DocumentSignature <<doc.document_signature>>
+
+' --- relationships --------------------------------------------------
+Document "1" *-- "many" DocumentVersion : versions
+Document "0..1" --> "1" DocumentCategory : category
+DocumentVersion "1" -- "0..1" VersionMetadata : metadata
+DocumentVersion "0..1" --> "1" DocumentVersion : parentVersion
+Document "1" o-- "many" ShareLink
+Document "1" o-- "many" DocumentSignature
+
+' Cross-aggregate references (rendered loosely, see other diagrams)
+note right of Document
+  Cross-aggregate FKs:
+  - department_id → ident.department
+  - primary_owner_id, proxy_owner_id,
+    legal_reviewer_id, locked_by → ident.user_profile
+  - many-to-many doc.document_owner → user_profile
+end note
+
+@enduml

@@ -8,11 +8,14 @@ from providers.llm_provider import get_llm
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """You are a document summarization assistant for an enterprise knowledge management system.
-Produce a clear, concise summary of the document content.
-Focus on the key points, purpose, and conclusions.
-Keep the summary under 300 words.
-Do not include preamble like "This document..." — start directly with the content."""
+SYSTEM_PROMPT = (
+    "You are a document summarization assistant for "
+    "an enterprise knowledge management system.\n"
+    "Produce a clear, concise summary of the document content.\n"
+    "Focus on the key points, purpose, and conclusions.\n"
+    "Keep the summary under 300 words.\n"
+    "Do not include preamble like \"This document...\" — start directly with the content."
+)
 
 
 async def summarize(text: str, title: str = "") -> tuple[str, float]:

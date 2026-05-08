@@ -1,0 +1,70 @@
+@startuml seq-login-jwt
+' Eòlas KMS — Login & JWT validation
+' Source:
+'   kosha-app/.../config/SecurityConfig.kt   (resource server + KeycloakJwtConverter)
+'   kosha-identity/.../service/UserCreationService.kt   (provisioning, separate flow)
+' Keycloak holds credentials; Kosha mirrors a UserProfile keyed by keycloakId.
+
+title Sequence — Login &amp; JWT validation (OIDC Authorization Code + PKCE)
+
+actor User
+participant "kosha-web\n(SvelteKit)" as Web
+participant "Keycloak 24" as KC
+participant "Spring Security\nfilter chain" as Sec
+participant "KeycloakJwtConverter" as Conv
+participant "REST controller\n(@PreAuthorize)" as Ctrl
+participant "UserProfileRepository" as Repo
+database "PostgreSQL\n(ident.user_profile)" as PG
+
+== Initial login ==
+User -> Web : Visit kosha.example.com
+Web -> User : Redirect to Keycloak\n(/auth, response_type=code, PKCE)
+User -> KC : Enter credentials
+KC --> User : Redirect back with ?code=...
+User -> Web : /callback?code=...
+Web -> KC : POST /token (code + verifier)
+KC --> Web : {access_token, refresh_token, id_token}
+Web -> Web : Store tokens (httpOnly cookie or memory)
+
+== Authenticated API call ==
+User -> Web : Click "Search documents"
+Web -> Sec : GET /api/v1/search\nAuthorization: Bearer <access_token>
+Sec -> KC : Fetch JWKS (cached)
+Sec -> Sec : Validate signature, exp, iss, aud
+Sec -> Conv : convert(jwt)
+Conv -> Conv : authorities = roles.map { ROLE_$it }\nname = preferred_username
+Conv --> Sec : JwtAuthenticationToken
+Sec -> Ctrl : invoke handler
+Ctrl -> Ctrl : @PreAuthorize hasAnyRole(...) check
+Ctrl -> Repo : findByKeycloakId(jwt.subject)
+
+alt UserProfile already exists
+  Repo --> Ctrl : profile
+else first call after admin provisioned in Keycloak only
+  note right of Ctrl
+    Edge case: out-of-band Keycloak users
+    are not auto-mirrored here. The supported
+    path is admin → POST /api/v1/users/provision,
+    which creates Keycloak + UserProfile atomically
+    via UserCreationService (separate flow).
+  end note
+end
+
+Ctrl --> Web : 200 result
+Web --> User : Render
+
+== Token refresh (silent) ==
+Web -> KC : POST /token\ngrant_type=refresh_token
+KC --> Web : new access_token
+
+== Failure paths ==
+note over Sec, KC
+  - Invalid signature / expired token → 401
+  - Token valid but role missing → @PreAuthorize denies → 403
+  - kosha.security.dev-bypass.enabled=true (dev only):
+    a separate Order(0) filter chain skips JWT entirely
+    for a fixed list of admin paths. Logs a loud banner
+    on startup. NEVER set in production.
+end note
+
+@enduml

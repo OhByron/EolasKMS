@@ -146,16 +146,9 @@ export interface VersionMetadata {
 }
 
 // --- Workflow ---
-
-export interface WorkflowDefinition {
-	id: string;
-	name: string;
-	description: string | null;
-	workflowType: string;
-	departmentId: string | null;
-	isDefault: boolean;
-	createdAt: string;
-}
+// Canonical WorkflowDefinition lives further down (it carries the full step
+// list and uses the WorkflowType union). The earlier minimal copy that lived
+// here has been removed to fix the duplicate-declaration TS errors.
 
 export interface WorkflowInstance {
 	id: string;

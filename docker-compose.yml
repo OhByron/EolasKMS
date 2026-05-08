@@ -58,6 +58,8 @@ services:
         condition: service_healthy
       nats-init:
         condition: service_completed_successfully
+      kosha-api:
+        condition: service_healthy
     environment:
       KOSHA_AI_NATS_URL: nats://nats:4222
       KOSHA_AI_KOSHA_API_URL: http://kosha-api:8080

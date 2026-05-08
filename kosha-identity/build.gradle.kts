@@ -9,5 +9,5 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("org.keycloak:keycloak-admin-client:24.0.5")
+    implementation("org.keycloak:keycloak-admin-client:26.0.9")
 }

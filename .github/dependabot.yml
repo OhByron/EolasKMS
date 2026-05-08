@@ -86,6 +86,33 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # opensearch-rest-high-level-client is deprecated upstream and
+      # superseded by org.opensearch.client:opensearch-java. Skip its
+      # major bumps (which are just security-patched zombies of the old
+      # API) until OpenSearchService.kt is ported to the new client.
+      # Lift this rule once that migration lands.
+      - dependency-name: "org.opensearch.client:opensearch-rest-high-level-client"
+        update-types: ["version-update:semver-major"]
+      # Gradle 9 needs KGP 2.2.x+, which in turn needs Spring Boot 3.5+
+      # (SB 3.4 ships kotlin-build-tools-impl 2.1.x and the Build Tools
+      # API classpath conflicts with KGP >= 2.2). Verified locally:
+      # Gradle 9.4.1 + KGP 2.1.21 fails ClasspathEntrySnapshotTransform
+      # on every Spring jar, and bumping KGP to 2.3.x doesn't help
+      # because the SB plugin still pins the older build-tools-impl.
+      # Lift this rule as part of the next Spring Boot upgrade.
+      - dependency-name: "gradle"
+        update-types: ["version-update:semver-major"]
+      # KGP 2.1.21 on Gradle 8.12 fails its own classpath snapshot
+      # transform with NoClassDefFoundError on
+      # org/jetbrains/kotlin/incremental/classpathDiff/ClasspathEntrySnapshotter$Settings
+      # — verified locally on a clean build cache. The 2.1.20→2.1.21
+      # bump was originally taken to enable Gradle 9 (now reverted), so
+      # the justification no longer holds. Pin to 2.1.10 until the
+      # coordinated KGP/Gradle/Spring Boot upgrade and lift alongside
+      # the gradle-major rule above.
+      - dependency-name: "org.jetbrains.kotlin:*"
+        versions: [">2.1.10"]
 
   # ── npm (SvelteKit frontend) ────────────────────────────────────────
   - package-ecosystem: "npm"
@@ -125,6 +152,11 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # TypeScript 6.x is too fresh — the SvelteKit + svelte-check type
+      # surface lags new majors. Defer until the ecosystem catches up.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   # ── pip (AI sidecar) ────────────────────────────────────────────────
   - package-ecosystem: "pip"
@@ -175,3 +207,17 @@ updates:
       - "docker"
     commit-message:
       prefix: "deps(docker)"
+    ignore:
+      # Node odd-numbered majors are not LTS — skip them entirely.
+      # Even-numbered LTS majors (24, 26, …) still come through.
+      - dependency-name: "node"
+        versions: ["23.x", "25.x", "27.x", "29.x"]
+      # Python 3.14 wheels for spaCy / ocrmypdf still lag (Apr 2026).
+      # Lift once `python -m spacy download en_core_web_sm` works
+      # cleanly on 3.14 in the kosha-ai-sidecar build.
+      - dependency-name: "python"
+        versions: ["3.14", "3.14.x"]
+      # Temurin 25 LTS needs Spring Boot 3.5+ for official support;
+      # current SB is 3.4.4. Lift when SB is bumped.
+      - dependency-name: "eclipse-temurin"
+        versions: ["25", "25.x"]

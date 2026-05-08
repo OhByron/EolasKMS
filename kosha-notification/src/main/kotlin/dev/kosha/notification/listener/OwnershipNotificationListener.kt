@@ -62,7 +62,7 @@ class OwnershipNotificationListener(
             "daysOverdue" to event.daysOverdue.toString(),
             "policyName" to policy,
             "reviewDueDate" to event.occurredAt.minusDays(event.daysOverdue).toLocalDate().toString(),
-            "departmentName" to "",
+            "departmentName" to lookupDepartmentName(event.departmentId),
             "documentUrl" to "/documents/${event.documentId}",
         )
 
@@ -89,7 +89,7 @@ class OwnershipNotificationListener(
             "daysUntilDue" to event.daysUntilDue.toString(),
             "dueDate" to event.dueAt.toLocalDate().toString(),
             "policyName" to event.policyName,
-            "departmentName" to "",
+            "departmentName" to lookupDepartmentName(event.departmentId),
             "documentUrl" to "/documents/${event.documentId}",
         )
 

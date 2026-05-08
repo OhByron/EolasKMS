@@ -6,8 +6,11 @@ import dev.kosha.identity.dto.UpdateDepartmentRequest
 import dev.kosha.identity.entity.Department
 import dev.kosha.identity.repository.DepartmentRepository
 import dev.kosha.identity.repository.UserProfileRepository
+import dev.kosha.identity.security.AuthorityService
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import org.springframework.security.access.AccessDeniedException
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -17,6 +20,7 @@ import java.util.UUID
 class DepartmentService(
     private val departmentRepo: DepartmentRepository,
     private val userProfileRepo: UserProfileRepository,
+    private val authorityService: AuthorityService,
 ) {
 
     fun findAll(pageable: Pageable): Page<DepartmentResponse> =
@@ -84,9 +88,10 @@ class DepartmentService(
         }
 
         // handles_legal_review toggle — only GLOBAL_ADMIN should be able to
-        // set this (company-wide concern). Authority enforcement is stubbed
-        // in dev; see the workflow user management service for the pattern
-        // that will replace it when JWT roles are wired up.
+        // set this (company-wide concern). The controller-level @PreAuthorize
+        // on PATCH /departments/{id} authorises any DEPT_ADMIN scoped to the
+        // department, which is fine for ordinary fields but not for this
+        // privilege-elevating flag, so we re-check here.
         request.handlesLegalReview?.let {
             checkGlobalAdminAuthority()
             department.handlesLegalReview = it
@@ -96,13 +101,17 @@ class DepartmentService(
     }
 
     /**
-     * Stubbed authority check — in production this inspects the current JWT
-     * and throws [org.springframework.security.access.AccessDeniedException]
-     * if the caller is not a GLOBAL_ADMIN. Currently a no-op in dev.
+     * Field-level GLOBAL_ADMIN check for [update]. Defense in depth on top
+     * of the controller-level @PreAuthorize, which can't inspect request
+     * body fields. Reads the current authentication from SecurityContextHolder
+     * and delegates to [AuthorityService.isGlobalAdmin] for the same role
+     * resolution used by the @authorityService SpEL beans elsewhere.
      */
     private fun checkGlobalAdminAuthority() {
-        // TODO: when JWT roles are wired up, read SecurityContextHolder and
-        //       enforce hasRole('GLOBAL_ADMIN'). See session memory.
+        val auth = SecurityContextHolder.getContext().authentication
+        if (!authorityService.isGlobalAdmin(auth)) {
+            throw AccessDeniedException("Only GLOBAL_ADMIN can change handlesLegalReview")
+        }
     }
 
     private fun Department.toResponse() = DepartmentResponse(

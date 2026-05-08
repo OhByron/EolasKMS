@@ -1,0 +1,85 @@
+@startuml class-taxonomy-retention
+' Eòlas KMS — Taxonomy & retention domains
+' Source: kosha-taxonomy/, kosha-retention/ entity packages.
+' AI candidates land as TaxonomyTerm.status = CANDIDATE for admin review;
+' merged terms point at their canonical via mergedInto.
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty members
+title Domain model — Taxonomy &amp; retention
+
+package "kosha-taxonomy" {
+  class TaxonomyTerm <<tax.taxonomy_term>> {
+    + id : UUID
+    + label : String
+    + normalizedLabel : String
+    + source : String  <i>SEED | AI_GENERATED | MANUAL</i>
+    + status : String  <i>ACTIVE | CANDIDATE | MERGED | DEPRECATED</i>
+  }
+
+  class TaxonomyTermAlias <<tax.taxonomy_term_alias>> {
+    + id : UUID
+    + aliasLabel : String
+    + normalizedAliasLabel : String
+    + source : String  <i>AI_SUGGESTED | MANUAL</i>
+  }
+
+  class TaxonomyEdge <<tax.taxonomy_edge>> {
+    + parent : TaxonomyTerm
+    + child : TaxonomyTerm
+  }
+
+  class DocumentClassification <<tax.document_classification>> {
+    + documentId : UUID
+    + termId : UUID
+    + confidence : BigDecimal
+    + source : String
+  }
+
+  class ExtractedKeyword <<tax.extracted_keyword>> {
+    + versionId : UUID
+    + keyword : String
+    + frequency : Int
+    + confidence : BigDecimal
+  }
+
+  TaxonomyTerm "1" o-- "many" TaxonomyTermAlias : aliases
+  TaxonomyTerm "1" o-- "0..1" TaxonomyTerm : mergedInto
+  TaxonomyEdge "many" --> "1" TaxonomyTerm : parent
+  TaxonomyEdge "many" --> "1" TaxonomyTerm : child
+  DocumentClassification "many" --> "1" TaxonomyTerm
+}
+
+package "kosha-retention" {
+  class RetentionPolicy <<ret.retention_policy>> {
+    + id : UUID
+    + name : String
+    + retentionPeriod : String  <i>ISO-8601 duration</i>
+    + reviewInterval : String?
+    + actionOnExpiry : String  <i>REVIEW | DELETE | ARCHIVE</i>
+    + status : String  <i>ACTIVE | INACTIVE</i>
+  }
+
+  class RetentionReview <<ret.retention_review>> {
+    + documentId : UUID
+    + dueAt : OffsetDateTime
+    + warningTier : String  <i>90D | 60D | 30D | OVERDUE</i>
+    + legalHold : Boolean
+  }
+
+  RetentionPolicy "1" o-- "many" RetentionReview
+}
+
+class Department <<ident.department>>
+RetentionPolicy "0..1" --> "1" Department
+TaxonomyTerm .. DocumentClassification : applied to documents
+
+note right of DocumentClassification
+  Inserted by AiResultListener.saveClassifications()
+  on `ai.classification.completed`. Re-indexes the
+  document into OpenSearch with `tags` populated
+  from the linked TaxonomyTerm labels.
+end note
+
+@enduml

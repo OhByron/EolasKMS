@@ -222,7 +222,7 @@ class DocumentService(
                 // throws (broken workflow, missing assignees) the status update
                 // rolls back and the document stays in DRAFT.
                 if (oldStatus == "DRAFT" && newStatus == "IN_REVIEW") {
-                    val latest = versionRepo.findLatestByDocumentId(doc.id!!)
+                    val latest = versionRepo.findFirstByDocumentIdOrderByCreatedAtDesc(doc.id!!)
                         ?: throw IllegalStateException(
                             "Cannot submit document ${doc.id} for review: no version uploaded"
                         )
@@ -302,7 +302,7 @@ class DocumentService(
         val creator = userProfileRepo.findById(actorId)
             .orElseThrow { NoSuchElementException("User not found: $actorId") }
 
-        val latest = versionRepo.findLatestByDocumentId(documentId)
+        val latest = versionRepo.findFirstByDocumentIdOrderByCreatedAtDesc(documentId)
         val nextVersion = latest?.let { incrementVersion(it.versionNumber) } ?: "1.0"
         val hadPriorVersion = latest != null
 
@@ -386,7 +386,7 @@ class DocumentService(
     }
 
     private fun Document.toListResponse(): DocumentListResponse {
-        val latest = versionRepo.findLatestByDocumentId(id!!)
+        val latest = versionRepo.findFirstByDocumentIdOrderByCreatedAtDesc(id!!)
         return DocumentListResponse(
             id = id!!,
             docNumber = docNumber,
@@ -401,7 +401,7 @@ class DocumentService(
     }
 
     private fun Document.toDetailResponse(): DocumentResponse {
-        val latest = versionRepo.findLatestByDocumentId(id!!)
+        val latest = versionRepo.findFirstByDocumentIdOrderByCreatedAtDesc(id!!)
         return DocumentResponse(
             id = id!!,
             docNumber = docNumber,

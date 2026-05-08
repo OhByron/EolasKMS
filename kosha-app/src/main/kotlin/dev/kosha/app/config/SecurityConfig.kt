@@ -138,7 +138,17 @@ class DevBypassWarning {
 
 class KeycloakJwtConverter : Converter<Jwt, AbstractAuthenticationToken> {
     override fun convert(jwt: Jwt): AbstractAuthenticationToken {
-        val roles = jwt.getClaimAsStringList("roles").orEmpty()
+        // Read roles from the flat `roles` claim (configured via a "User Realm
+        // Role" mapper on the kosha-backend client) — falling back to
+        // `realm_access.roles`, which is Keycloak's default location. This
+        // keeps role-based authorisation working on a fresh Keycloak install
+        // without requiring the operator to configure the optional flat
+        // mapper themselves.
+        val flatRoles = jwt.getClaimAsStringList("roles")
+        val realmAccessRoles = jwt.getClaim<Map<String, Any>?>("realm_access")
+            ?.let { it["roles"] as? List<*> }
+            ?.filterIsInstance<String>()
+        val roles = (flatRoles ?: realmAccessRoles).orEmpty()
         val authorities = roles.map { SimpleGrantedAuthority("ROLE_$it") }
         return JwtAuthenticationToken(jwt, authorities, jwt.getClaimAsString("preferred_username"))
     }

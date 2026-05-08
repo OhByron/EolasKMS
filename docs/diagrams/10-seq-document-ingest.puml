@@ -1,0 +1,91 @@
+@startuml seq-document-ingest
+' Eòlas KMS — Document ingest → AI pipeline → search
+' Source:
+'   kosha-app/.../controller/DocumentUploadController.kt   (upload path)
+'   kosha-app/.../nats/NatsService.kt                      (publish ai.task.submitted)
+'   kosha-app/.../nats/AiResultListener.kt                 (consume ai.* results)
+' Sidecar lives outside this repo (kosha-ai-sidecar, Python).
+
+title Sequence — Document upload, AI enrichment, search indexing
+
+actor Editor as U
+participant "kosha-web\n(SvelteKit)" as Web
+participant "DocumentUploadController" as Ctrl
+participant "Tika" as Tika
+participant "MinioStorageService" as Minio
+database "PostgreSQL\n(doc.*)" as PG
+participant "NatsService" as Pub
+queue "NATS JetStream" as NATS
+participant "kosha-ai-sidecar\n(Python)" as Sidecar
+participant "LLM provider\n(Ollama/Claude/OpenAI)" as LLM
+participant "AiResultListener" as Sub
+participant "OpenSearchService" as OS
+database "OpenSearch" as OSdb
+
+== Upload (synchronous) ==
+U -> Web : Drop file on document version
+Web -> Ctrl : POST /api/v1/documents/{docId}/versions/{versionId}/upload\n(multipart, bearer JWT)
+Ctrl -> Ctrl : computeSha256(bytes)
+alt content-type missing or octet-stream
+  Ctrl -> Tika : detect(bytes, filename)
+  Tika --> Ctrl : mimeType
+end
+
+Ctrl -> Minio : put(storageKey, bytes, contentType)
+note right of Minio : Fail-fast: storage write failure aborts upload.\nOnce bytes are in MinIO, downstream failures\nare non-fatal — version row stays consistent.
+Minio --> Ctrl : ok
+
+Ctrl -> Tika : parseToString(bytes)
+Tika --> Ctrl : extractedText (best-effort)
+
+Ctrl -> PG : save VersionMetadata{extractedText}
+Ctrl -> PG : update DocumentVersion{size, hash, storageKey, contentType}
+
+Ctrl -> Pub : publishAiTask(AiTaskMessage{taskType=FULL_ANALYSIS, …})
+Pub -> NATS : publish "ai.task.submitted"
+
+Ctrl -> OS : indexDocument(initial, no tags yet)
+OS -> OSdb : index/update doc
+
+Ctrl --> Web : 200 ApiResponse{versionId, hash, aiTaskSubmitted}
+Web --> U : "Uploaded — AI processing in background"
+
+== AI processing (asynchronous, sidecar) ==
+NATS -> Sidecar : deliver ai.task.submitted
+activate Sidecar
+Sidecar -> Sidecar : OCR (Tesseract) if scanned
+Sidecar -> Sidecar : NER metadata extraction (spaCy)
+Sidecar -> LLM : summarise + extract keywords + classify
+LLM --> Sidecar : results
+
+Sidecar -> NATS : publish ai.ocr.completed
+Sidecar -> NATS : publish ai.metadata.extracted
+Sidecar -> NATS : publish ai.summary.completed
+Sidecar -> NATS : publish ai.keywords.extracted
+Sidecar -> NATS : publish ai.classification.completed
+Sidecar -> NATS : publish ai.taxonomy.candidates
+deactivate Sidecar
+
+== Result fan-in (kosha-app, AiResultListener) ==
+NATS -> Sub : ai.summary.completed
+Sub -> PG : upsert VersionMetadata{summary, aiConfidence}
+
+NATS -> Sub : ai.keywords.extracted
+Sub -> PG : replace tax.extracted_keyword rows
+
+NATS -> Sub : ai.classification.completed
+Sub -> PG : upsert tax.document_classification (per term)
+Sub -> OS : reindexDocumentWithTags(documentId)
+note right of OS : Re-emits the document with `tags`\nso term-faceted search returns it.
+
+NATS -> Sub : ai.taxonomy.candidates
+Sub -> PG : insert CANDIDATE TaxonomyTerm + alias rows
+Sub -> OS : reindexDocumentWithTags(documentId)
+
+NATS -> Sub : ai.ocr.completed
+Sub -> PG : update DocumentVersion{ocrStorageKey, ocrApplied, ocrLanguage}
+
+NATS -> Sub : ai.metadata.extracted
+Sub -> PG : update DocumentVersion.extractedMetadata (JSONB)
+
+@enduml
