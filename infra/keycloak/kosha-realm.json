@@ -33,6 +33,10 @@
       {
         "name": "CONTRIBUTOR",
         "description": "Upload and submit documents for review"
+      },
+      {
+        "name": "SERVICE",
+        "description": "Machine-to-machine service account role; grants access only to internal service endpoints"
       }
     ]
   },
@@ -239,7 +243,7 @@
       "enabled": true,
       "serviceAccountClientId": "kosha-backend",
       "realmRoles": [
-        "GLOBAL_ADMIN"
+        "SERVICE"
       ]
     }
   ],

@@ -116,6 +116,7 @@ class AiAdminController(
     }
 
     @GetMapping("/config/internal")
+    @PreAuthorize("hasAnyRole('GLOBAL_ADMIN', 'SERVICE')")
     fun getConfigInternal(): ApiResponse<AiConfigDto> =
         ApiResponse(data = loadConfig().toDto())
 
