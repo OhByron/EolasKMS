@@ -1,6 +1,6 @@
 import type { Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
-import { setLanguageTag, availableLanguageTags, type AvailableLanguageTag } from '$paraglide/runtime';
+import { setLocale, locales } from '$paraglide/runtime';
 
 /**
  * i18n middleware — resolves the user's preferred language and sets it
@@ -14,7 +14,7 @@ import { setLanguageTag, availableLanguageTags, type AvailableLanguageTag } from
  *   4. `en` (fallback)
  */
 const i18n: Handle = async ({ event, resolve }) => {
-	const supported = new Set<string>(availableLanguageTags as readonly string[]);
+	const supported = new Set<string>(locales as readonly string[]);
 
 	// Resolve from sources, normalising to lowercase
 	const paramLang = event.url.searchParams.get('lang')?.toLowerCase();
@@ -29,8 +29,8 @@ const i18n: Handle = async ({ event, resolve }) => {
 
 	// Set on the Paraglide runtime so m.key() calls during SSR return
 	// the right language. This is the critical line — without it,
-	// languageTag() returns 'en' forever and no translation renders.
-	setLanguageTag(lang as AvailableLanguageTag);
+	// getLocale() returns 'en' forever and no translation renders.
+	setLocale(lang as typeof locales[number]);
 
 	event.locals.lang = lang;
 

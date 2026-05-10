@@ -1,7 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { page } from '$app/state';
-	import { setLanguageTag, availableLanguageTags, type AvailableLanguageTag } from '$paraglide/runtime';
+	import { setLocale, locales } from '$paraglide/runtime';
 
 	let { children } = $props();
 
@@ -9,12 +9,12 @@
 	// the server hook doesn't run, so we need to read the lang from the
 	// URL and set it on the Paraglide runtime ourselves. This $effect
 	// fires on every navigation and keeps the runtime in sync.
-	const supported = new Set<string>(availableLanguageTags as readonly string[]);
+	const supported = new Set<string>(locales as readonly string[]);
 
 	$effect(() => {
 		const paramLang = page.url?.searchParams.get('lang')?.toLowerCase();
 		if (paramLang && supported.has(paramLang)) {
-			setLanguageTag(paramLang as AvailableLanguageTag);
+			setLocale(paramLang as typeof locales[number], { reload: false });
 		}
 	});
 </script>

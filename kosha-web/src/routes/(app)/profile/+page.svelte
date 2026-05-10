@@ -6,12 +6,12 @@
 	import PageHeader from '$lib/components/kosha/PageHeader.svelte';
 	import StatusBadge from '$lib/components/kosha/StatusBadge.svelte';
 	import * as m from '$paraglide/messages';
-	import { languageTag } from '$paraglide/runtime';
+	import { getLocale } from '$paraglide/runtime';
 
 	let profile = $state<UserProfile | null>(null);
 	let loading = $state(true);
 
-	const currentLang = $derived(languageTag());
+	const currentLang = $derived(getLocale());
 
 	onMount(async () => {
 		try {
