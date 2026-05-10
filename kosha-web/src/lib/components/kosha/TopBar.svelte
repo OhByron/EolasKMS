@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { user, logout } from '$lib/auth';
 	import * as m from '$paraglide/messages';
-	import { languageTag } from '$paraglide/runtime';
+	import { getLocale } from '$paraglide/runtime';
 
 	let searchQuery = $state('');
 	let userMenuOpen = $state(false);
@@ -37,7 +37,7 @@
 		ko: '한국어',
 	};
 
-	const currentLang = $derived(languageTag());
+	const currentLang = $derived(getLocale());
 
 	function switchLanguage(lang: string) {
 		// Persist the choice in a cookie so the server hook picks it up
